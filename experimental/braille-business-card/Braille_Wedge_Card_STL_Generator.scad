@@ -1,35 +1,25 @@
-// Braille Leaning Card STL Generator (OpenSCAD) — EXPERIMENTAL "Path 2"
-// Generates a FLAT braille card that leans back at face_angle_deg from the bed
-// (default 75°), held stable during printing by a parametric array of
-// triangular BREAK-AWAY SUPPORT FINS: triangular fins on a fixed interval,
-// offset from the card back, joined to it by tiny break-away bridges, with a
-// built-in brim for bed adhesion. The whole thing exports as ONE fused STL and
-// the fins snap/flex off after printing.
+// =============================================================================
+// Braille Wedge Card STL Generator (OpenSCAD)
+// =============================================================================
+// VERSION = 1.0.0
+// License: PolyForm Noncommercial 1.0.0
+//          https://polyformproject.org/licenses/noncommercial/1.0.0
 //
-// =============================================================================
-// STATUS
-// =============================================================================
-//  • Self-contained experimental prototype. Lives entirely under
-//    experimental/braille-business-card/ so the folder can be
-//    `git subtree split` into its own repo later without touching the parent
-//    cylinder generator's tests (the main repo's
-//    tests/test_openscad_customizer.py::test_card_support_removed guards
-//    against re-introducing card geometry into the main .scad).
-//  • Reuses the proven dot, recess, and indicator modules from the parent
-//    Braille_Cylinder_STL_Generator.scad, de-globalized (no preset routing,
-//    no include/use) so this file stands alone. If/when this prototype
-//    graduates, the duplicated modules should be extracted into a shared
-//    braille_common.scad.
+// A directly readable 3D-printed braille card. The card prints leaning back
+// at face_angle_deg from the bed (default 75 degrees -- the angle CHI 2024
+// research found fastest and most comfortable to read, because near-vertical
+// printing moves the layer seams off the finger-contact surface). A
+// parametric array of triangular BREAK-AWAY SUPPORT FINS stands behind the
+// card, joined to it by tiny snap-off bridges and grounded by a built-in
+// brim, so the whole thing prints support-free and exports as ONE fused STL.
+// After printing, the fins snap/flex off and the card is ready to read.
 //
 // =============================================================================
 // WHAT THIS MAKES
 // =============================================================================
-//  • Embossing Plate — a flat leaning card with raised braille dots on the
-//    angled reading face, plus a break-away support-fin structure behind it.
-//  • Counter Plate — the same flat leaning card body, but the braille pattern
-//    is recessed into the face (and indicators are mirrored left/right) so the
-//    two plates form a matching emboss/counter pair, mirroring the cylinder
-//    generator's emboss/counter relationship.
+//  • The Braille Card — a flat leaning card with raised braille dots on the
+//    angled reading face. The dots are readable directly off the printer; no
+//    other tooling or post-processing is required.
 //  • Support Fins (toggle) — a row of triangular fins, on fin_interval_mm
 //    spacing (always including both outer edges, so the minimum is 2 edge fins
 //    and the maximum is hundreds), standing fin_offset_mm behind the card's
@@ -43,7 +33,8 @@
 //  1. Translate your text at https://www.branah.com/braille-translator
 //     (Grade 1 or Grade 2, Unicode Braille output — NOT ASCII Braille).
 //  2. Paste pre-translated braille into Line_1..Line_4 in the Customizer.
-//  3. Pick plate_type (Embossing Plate or Counter Plate) and dot_shape.
+//  3. Pick dot_shape (Rounded is the ADA-friendly default; Cone is easier to
+//     print on some machines).
 //  4. Leave auto_size_card = On (the default) and the card face auto-sizes to
 //     fit your text plus a margin — the effective size is reported in the
 //     console (the Customizer sliders can't show computed values). Switch it
@@ -70,15 +61,17 @@
 // =============================================================================
 // REFERENCES
 // =============================================================================
-//  [A] Parent cylinder generator (source of the dot / recess / indicator
-//      modules adapted below):
-//      ../../Braille_Cylinder_STL_Generator.scad on this repo's main branch.
-//  [B] Path recommendation + print-stability research:
+//  [A] Puerta, Crnovrsanin, South, Dunne — "The Effect of Orientation on the
+//      Readability and Comfort of 3D-Printed Braille", CHI 2024. Braille
+//      printed at 75–90° reads significantly faster and more comfortably than
+//      flat-printed braille; 75° also reduces dot overhangs vs. 90°:
+//      https://doi.org/10.1145/3613904.3642719
+//  [B] Print-stability + path recommendation research:
 //      ./research-print-stability-and-path-recommendation.md
 //  [C] Dot geometry and slicer-quality research:
 //      ./research-dot-geometry-and-slicer-quality.md
-//  [D] Reference model (leaning card with CAD support fins):
-//      ../Leaning Braille Research Folder/Leaning card example (support fins).obj
+//  [D] Customizer usability research (auto-size, centering, warnings):
+//      ./research-customizer-usability.md
 //  [E] Slant3D, "Stop Using Slicer Supports" — triangular fin spaced off the
 //      part, thin horizontal prongs, wide base, chamfer to snap off:
 //      https://youtu.be/_R2E8VwyNz0
@@ -90,6 +83,10 @@
 //      https://www.wevolver.com/article/3d-print-supports-a-guide-for-engineers
 //  [H] BANA size and spacing: https://brailleauthority.org/size-and-spacing-braille-characters
 //  [I] 2010 ADA Standards: https://archive.ada.gov/
+//
+//  Lineage: the braille dot geometry was adapted from the Braille Cylinder
+//  STL Generator (https://github.com/BrennenJohnston/braille-stl-generator-openscad),
+//  then simplified for this standalone, directly-readable card project.
 // =============================================================================
 
 /* [Text Input - Pre-Translated Braille] */
@@ -102,10 +99,6 @@ Line_2 = "⠺⠕⠗⠇⠙";
 Line_3 = "";
 // Fourth line of braille text
 Line_4 = "";
-
-/* [Plate Selection] */
-// Choose which plate to generate
-plate_type = "Embossing Plate"; // [Embossing Plate, Counter Plate]
 
 /* [Card Size] */
 // Auto-size the card face to fit the braille text plus margins. Turn Off to use the manual width/height below.
@@ -153,22 +146,19 @@ brim_width_mm = 3;           // [0:0.25:25]
 brim_thickness_mm = 0.3;     // [0.1:0.05:3]
 
 /* [Expert Mode - Shape Selection] */
-// Braille Dot Shape (Emboss and Counter) - affects both plate types
+// Shape of the raised braille dots
 dot_shape = "Rounded"; // [Rounded, Cone]
-// Indicator Shapes (Emboss and Counter) - Row start/end markers (always recessed)
-indicators = "On"; // [On, Off]
 
 /* [Expert Mode - Card Shape] */
 // Face angle from horizontal bed (deg). 75 = 15 deg lean back from vertical =
 // CHI sweet spot. The base footprint is derived from this angle + height.
 face_angle_deg = 75;         // [60:1:90]
-// Flat card thickness (mm). Must be greater than the counter-plate recess depth
-// so recesses don't break through (default recess depth is 0.7-0.8 mm, so keep
-// >= ~1.5 mm).
+// Flat card thickness (mm). 1.5-2 mm prints rigid; thinner saves filament but
+// is whippier during the print.
 card_thickness_mm = 2.0;     // [1:0.1:5]
 
 /* [Expert Mode - Braille Spacing] */
-// Text capacity in braille cells per row (ignored when auto_size_card = On). When indicators On, 2 extra cells are added for markers; text capacity is unchanged.
+// Text capacity in braille cells per row (ignored when auto_size_card = On)
 grid_columns = 11;           // [1:1:30]
 // Number of lines of braille (ignored when auto_size_card = On)
 grid_rows = 3;               // [1:1:10]
@@ -180,15 +170,13 @@ line_spacing = 10.0;         // [5:0.01:25]
 dot_spacing = 2.5;           // [1:0.01:5]
 
 // --- Braille Positioning ---
-// Both axes are meaningful on a flat face (unlike the cylinder, which only
-// exposes Y because X = angular wrap around the seam).
+// Braille is centered on the face by default; these are additive nudges.
 // Horizontal adjustment of braille pattern (mm)
 braille_x_adjust = 0.0;      // [-20:0.01:20]
 // Vertical (down-the-slope) adjustment of braille pattern (mm)
 braille_y_adjust = 0.0;      // [-20:0.01:20]
 
-/* [Expert Mode - Braille Dot Adjustments] */
-// --- Embossing Braille Dot Dimensions (Rounded Shape) ---
+/* [Braille Dot Shape - Rounded] */
 // Defaults chosen to stay ADA-legal: base_height + dome_height <= 0.9 mm.
 // Rounded dot base diameter / cone base (mm)
 rounded_dot_base_diameter = 1.5; // [0.5:0.01:3]
@@ -199,27 +187,13 @@ rounded_dot_dome_diameter = 1.0; // [0.5:0.01:3]
 // Rounded dot dome height (mm)
 rounded_dot_dome_height   = 0.5; // [0.1:0.01:2]
 
-// --- Embossing Braille Dot Dimensions (Cone Shape) ---
+/* [Braille Dot Shape - Cone] */
 // Cone dot base diameter (mm)
-emboss_dot_base_diameter = 1.5; // [0.5:0.01:3]
+cone_dot_base_diameter = 1.5; // [0.5:0.01:3]
 // Cone dot height (mm)
-emboss_dot_height        = 0.8; // [0.3:0.01:2]
+cone_dot_height        = 0.8; // [0.3:0.01:2]
 // Cone dot flat hat diameter (mm)
-emboss_dot_flat_hat      = 0.4; // [0.1:0.01:2]
-
-// --- Counter Braille Recessed Dot Dimensions (Rounded Shape / Bowl) ---
-// Bowl recess base diameter (mm)
-bowl_counter_dot_base_diameter = 1.8; // [0.5:0.01:5]
-// Bowl recess depth (mm)
-counter_dot_depth              = 0.8; // [0.1:0.01:2]
-
-// --- Counter Braille Recessed Dot Dimensions (Cone Shape) ---
-// Cone recess base diameter (mm)
-cone_counter_dot_base_diameter = 1.9; // [0.5:0.01:3]
-// Cone recess height (mm)
-cone_counter_dot_height        = 0.7; // [0.3:0.01:2]
-// Cone recess flat hat diameter (mm)
-cone_counter_dot_flat_hat      = 1.0; // [0.1:0.01:2]
+cone_dot_flat_hat      = 0.4; // [0.1:0.01:2]
 
 /* [Rendering Quality] */
 // Sphere quality for rounded shapes
@@ -229,39 +203,21 @@ cone_segments = 16; // [8:1:64]
 
 /* [Hidden] */
 $fn = 32;
-PI = 3.14159265359;
-
-// Backward-compatibility shim for the parent cylinder generator's test
-// system (it passes parameters via -D flags using these names). Kept hidden
-// and only consumed by the normalization expressions below.
-combined_shape    = ""; // "rounded" or "cone"
-indicator_shapes  = ""; // "on" or "off"
-hemisphere_quality = ""; // "low", "medium", "high"
 
 // =============================================================================
 // CALCULATED VALUES (Do not modify)
 // =============================================================================
 
-// Normalize dropdown selections to internal values (UI + test-system parity)
-is_emboss_plate = (plate_type == "positive") ? true :
-                  (plate_type == "negative") ? false :
-                  (plate_type == "Embossing Plate");
-
-use_rounded_dots = (combined_shape == "rounded") ? true :
-                   (combined_shape == "cone") ? false :
-                   (dot_shape == "Rounded");
-
-indicator_on = (indicator_shapes == "on") ? true :
-               (indicator_shapes == "off") ? false :
-               (indicators == "On");
+// Normalize dropdown selections to internal values
+use_rounded_dots = (dot_shape == "Rounded");
 
 fins_on = (support_fins == "On") || (support_fins == true);
 
 warnings_on = (show_warnings == "On") || (show_warnings == true);
 
-quality_fn = (hemisphere_quality == "low"    || render_quality == "Low")    ? 24 :
-             (hemisphere_quality == "medium" || render_quality == "Medium") ? 32 :
-             (hemisphere_quality == "high"   || render_quality == "High")   ? 64 : 32;
+quality_fn = (render_quality == "Low")    ? 24 :
+             (render_quality == "Medium") ? 32 :
+             (render_quality == "High")   ? 64 : 32;
 
 // --- Content metrics (actual typed text, not grid capacity) ---
 _all_lines = [Line_1, Line_2, Line_3, Line_4];
@@ -269,7 +225,7 @@ _all_lines = [Line_1, Line_2, Line_3, Line_4];
 content_max_len = max([for (l = _all_lines) len(l)]);
 // Rows spanned by content = index of last non-empty line + 1
 // (preserves intentional blank lines between non-empty lines)
-_nonempty_idx = [for (i = [0:3]) if (len(_all_lines[i]) > 0) i];
+_nonempty_idx = [for (i = [0:len(_all_lines)-1]) if (len(_all_lines[i]) > 0) i];
 content_rows = len(_nonempty_idx) == 0 ? 0 : _nonempty_idx[len(_nonempty_idx) - 1] + 1;
 
 auto_size_on = (auto_size_card == "On");
@@ -277,79 +233,38 @@ auto_size_on = (auto_size_card == "On");
 effective_grid_columns = auto_size_on ? max(content_max_len, 1) : grid_columns;
 effective_grid_rows    = auto_size_on ? max(content_rows, 1)    : grid_rows;
 
-// -----------------------------------------------------------------------------
-// _preset_* shim
-// -----------------------------------------------------------------------------
-// The dot, recess, and indicator modules copied from the cylinder generator
-// read globals named `_preset_*` (a routing layer between the Customizer
-// values and an optional paper-thickness preset table). This file has no
-// preset table, so the shim just passes Customizer values through. This
-// keeps the copied modules byte-identical to their cylinder counterparts,
-// minimising drift risk if we ever extract a shared braille_common.scad.
-_preset_rounded_dot_base_diameter      = rounded_dot_base_diameter;
-_preset_rounded_dot_base_height        = rounded_dot_base_height;
-_preset_rounded_dot_dome_diameter      = rounded_dot_dome_diameter;
-_preset_rounded_dot_dome_height        = rounded_dot_dome_height;
+// Total dot height above the face (used for seating dots on the face surface).
+dot_total_height = use_rounded_dots
+    ? (rounded_dot_base_height + rounded_dot_dome_height)
+    : cone_dot_height;
 
-_preset_emboss_dot_base_diameter       = emboss_dot_base_diameter;
-_preset_emboss_dot_height              = emboss_dot_height;
-_preset_emboss_dot_flat_hat            = emboss_dot_flat_hat;
-
-_preset_bowl_counter_dot_base_diameter = bowl_counter_dot_base_diameter;
-_preset_counter_dot_depth              = counter_dot_depth;
-
-_preset_cone_counter_dot_base_diameter = cone_counter_dot_base_diameter;
-_preset_cone_counter_dot_height        = cone_counter_dot_height;
-_preset_cone_counter_dot_flat_hat      = cone_counter_dot_flat_hat;
-
-// Active height (used for placing emboss dots on the face surface).
-active_emboss_height = use_rounded_dots
-    ? (_preset_rounded_dot_base_height + _preset_rounded_dot_dome_height)
-    : _preset_emboss_dot_height;
-
-// Active counter recess depth (used for indicator recess depth on counter plate).
-active_counter_height = use_rounded_dots
-    ? _preset_counter_dot_depth
-    : _preset_cone_counter_dot_height;
-
-// Spacing pass-through aliases (mirrors the cylinder generator's
-// `active_*` naming so the copied modules stay readable).
+// Spacing pass-through aliases (`active_*` naming kept for readability in the
+// geometry modules below).
 active_grid_columns  = effective_grid_columns;
 active_grid_rows     = effective_grid_rows;
 active_cell_spacing  = cell_spacing;
 active_line_spacing  = line_spacing;
 active_dot_spacing   = dot_spacing;
 
-// Grid dimensions (accounting for indicator columns)
-actual_grid_columns = indicator_on ? (active_grid_columns + 2) : active_grid_columns;
-grid_width  = (actual_grid_columns - 1) * active_cell_spacing;
+// Grid dimensions (capacity extents, center-to-center)
+grid_width  = (active_grid_columns - 1) * active_cell_spacing;
 grid_height = (active_grid_rows - 1) * active_line_spacing;
 
 // Rendered content extent (what is actually drawn after capacity truncation)
 rendered_cols = min(content_max_len, active_grid_columns);
 rendered_rows = min(content_rows, active_grid_rows);
-content_cols_with_ind = rendered_cols + (indicator_on ? 2 : 0);
 // Center-to-center extents of the rendered block; empty text falls back to capacity
-content_width  = (rendered_cols == 0) ? grid_width  : (content_cols_with_ind - 1) * active_cell_spacing;
+content_width  = (rendered_cols == 0) ? grid_width  : (rendered_cols - 1) * active_cell_spacing;
 content_height = (rendered_rows == 0) ? grid_height : (rendered_rows - 1) * active_line_spacing;
-// Indicator rows actually rendered (emboss plate); empty text falls back to capacity
-indicator_rows_rendered = (rendered_rows == 0) ? active_grid_rows : rendered_rows;
 
-// Per-cell dot offsets — planar (X/Y) instead of the cylinder's angular form.
-// `dot_positions[i]` is `[row, col]` where row 0/1/2 = top/middle/bottom of the
-// braille cell and col 0/1 = left/right column. In our face-local frame, +Y is
-// down-the-slope (see face_transform()), so row 0 must get a NEGATIVE Y offset
-// to sit at the TOP of the cell. This is the only sign flip vs. the cylinder
-// generator's `dot_row_offsets = [+ds, 0, -ds]`.
+// Per-cell dot offsets — planar (X/Y). `dot_positions[i]` is `[row, col]`
+// where row 0/1/2 = top/middle/bottom of the braille cell and col 0/1 =
+// left/right column. In our face-local frame, +Y is down-the-slope (see
+// face_transform()), so row 0 gets a NEGATIVE Y offset to sit at the TOP of
+// the cell.
 dot_col_x_offsets = [-active_dot_spacing / 2, +active_dot_spacing / 2];
 dot_row_y_offsets = [-active_dot_spacing,      0,                     +active_dot_spacing];
 dot_positions     = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]];
-
-// Counter plate recess radii (spherical cap, identical formula to cylinder)
-_bowl_a = _preset_bowl_counter_dot_base_diameter / 2;
-_bowl_h = _preset_counter_dot_depth;
-bowl_recess_radius = (_bowl_a * _bowl_a + _bowl_h * _bowl_h) / (2 * _bowl_h);
-bowl_center_offset = bowl_recess_radius - _bowl_h;
 
 // -----------------------------------------------------------------------------
 // Leaning-card geometry (calculated) — flat sheared slab on the bed
@@ -382,8 +297,7 @@ bowl_center_offset = bowl_recess_radius - _bowl_h;
 // manual sliders. The Customizer can't write computed values back into the
 // sliders, so the effective size is reported via echo() instead.
 // Outermost dot extent beyond cell centers: half a dot column/row pitch + largest dot radius
-_max_dot_dia = max([rounded_dot_base_diameter, emboss_dot_base_diameter,
-                    bowl_counter_dot_base_diameter, cone_counter_dot_base_diameter]);
+_max_dot_dia = max([rounded_dot_base_diameter, cone_dot_base_diameter]);
 _block_w = content_width  + active_dot_spacing     + _max_dot_dia; // dot columns at +/- dot_spacing/2
 _block_h = content_height + 2 * active_dot_spacing + _max_dot_dia; // dot rows at +/- dot_spacing
 
@@ -403,7 +317,7 @@ base_run    = effective_card_face_height_mm * cos(face_angle_deg);
 function back_y(z) = base_run * (1 - z / card_height) - card_thickness_mm;
 
 // =============================================================================
-// HELPER FUNCTIONS  (copied verbatim from the cylinder generator)
+// HELPER FUNCTIONS
 // =============================================================================
 function is_braille_char(c) = (c >= 10240 && c <= 10495);
 function has_invalid_chars(str) =
@@ -424,108 +338,43 @@ function get_dot_pattern(char) =
     : [0, 0, 0, 0, 0, 0];
 
 // =============================================================================
-// INDICATOR SHAPE MODULES  (adapted from the cylinder generator)
-// =============================================================================
-INDICATOR_TRIANGLE_DEPTH_EMBOSS = 0.6;
-INDICATOR_RECT_DEPTH_EMBOSS     = 0.5;
-
-// "INVALID CHARACTERS" warning text placement (above the card top)
-INVALID_TEXT_Z_OFFSET   = 5;
-INVALID_TEXT_SIZE       = 5;
-INVALID_TEXT_DEPTH      = 2;
-INVALID_TEXT_STACK_GAP  = 8;
-
-module indicator_triangle_2d(rotate_180 = false) {
-    polygon(points = rotate_180 ?
-        [
-            [+active_dot_spacing/2, +active_dot_spacing],
-            [+active_dot_spacing/2, -active_dot_spacing],
-            [-active_dot_spacing/2, 0]
-        ] :
-        [
-            [-active_dot_spacing/2, -active_dot_spacing],
-            [-active_dot_spacing/2, +active_dot_spacing],
-            [+active_dot_spacing/2, 0]
-        ]
-    );
-}
-
-module indicator_rectangle_2d() {
-    translate([active_dot_spacing/2, 0])
-        square([active_dot_spacing, 2 * active_dot_spacing], center = true);
-}
-
-module indicator_triangle_prism_centered(depth, rotate_180 = false) {
-    translate([0, 0, -depth/2])
-        linear_extrude(height = depth)
-            indicator_triangle_2d(rotate_180 = rotate_180);
-}
-
-module indicator_rectangle_prism_centered(depth) {
-    translate([0, 0, -depth/2])
-        linear_extrude(height = depth)
-            indicator_rectangle_2d();
-}
-
-// =============================================================================
-// DOT CREATION MODULES  (copied verbatim from the cylinder generator)
+// DOT CREATION MODULE
 // =============================================================================
 // `braille_dot_centered()` builds the dot at the origin with its central
 // axis on +Z and total height centred at z = 0. To sit on a surface, the
-// caller translates by +totalHeight/2. Used unchanged on the flat face.
+// caller translates by +totalHeight/2.
 module braille_dot_centered() {
-    _total_height = use_rounded_dots ?
-                    (_preset_rounded_dot_base_height + _preset_rounded_dot_dome_height) :
-                    _preset_emboss_dot_height;
     if (use_rounded_dots) {
-        _dome_r = _preset_rounded_dot_dome_diameter / 2;
-        _R_sphere = (_dome_r * _dome_r + _preset_rounded_dot_dome_height * _preset_rounded_dot_dome_height) / (2 * _preset_rounded_dot_dome_height);
-        _center_z = _preset_rounded_dot_base_height + _preset_rounded_dot_dome_height - _R_sphere;
+        _total_height = rounded_dot_base_height + rounded_dot_dome_height;
+        _dome_r = rounded_dot_dome_diameter / 2;
+        _R_sphere = (_dome_r * _dome_r + rounded_dot_dome_height * rounded_dot_dome_height) / (2 * rounded_dot_dome_height);
+        _center_z = rounded_dot_base_height + rounded_dot_dome_height - _R_sphere;
         translate([0, 0, -_total_height / 2]) {
             union() {
-                translate([0, 0, _preset_rounded_dot_base_height / 2])
+                translate([0, 0, rounded_dot_base_height / 2])
                 cylinder(
-                    h  = _preset_rounded_dot_base_height,
-                    r1 = _preset_rounded_dot_base_diameter / 2,
-                    r2 = _preset_rounded_dot_dome_diameter / 2,
+                    h  = rounded_dot_base_height,
+                    r1 = rounded_dot_base_diameter / 2,
+                    r2 = rounded_dot_dome_diameter / 2,
                     center = true,
                     $fn = cone_segments
                 );
                 intersection() {
                     translate([0, 0, _center_z])
                     sphere(r = _R_sphere, $fn = quality_fn);
-                    translate([0, 0, _preset_rounded_dot_base_height + _R_sphere])
+                    translate([0, 0, rounded_dot_base_height + _R_sphere])
                     cube([_R_sphere * 4, _R_sphere * 4, _R_sphere * 2], center = true);
                 }
             }
         }
     } else {
         cylinder(
-            h  = _preset_emboss_dot_height,
-            r1 = _preset_emboss_dot_base_diameter / 2,
-            r2 = _preset_emboss_dot_flat_hat / 2,
+            h  = cone_dot_height,
+            r1 = cone_dot_base_diameter / 2,
+            r2 = cone_dot_flat_hat / 2,
             center = true,
             $fn = cone_segments
         );
-    }
-}
-
-// Counter recess. Built so the opening sits at z = 0 and the recess extends
-// into z < 0 — exactly what we need to difference() out of the face panel's
-// front (z = 0) surface.
-module counter_recess() {
-    if (use_rounded_dots) {
-        translate([0, 0, bowl_center_offset])
-            sphere(r = bowl_recess_radius, $fn = quality_fn);
-    } else {
-        translate([0, 0, -_preset_cone_counter_dot_height / 2])
-            cylinder(
-                h  = _preset_cone_counter_dot_height,
-                r1 = _preset_cone_counter_dot_flat_hat / 2,
-                r2 = _preset_cone_counter_dot_base_diameter / 2,
-                center = true,
-                $fn = cone_segments
-            );
     }
 }
 
@@ -534,8 +383,7 @@ module counter_recess() {
 // =============================================================================
 // face_transform() places its children in a face-local frame whose +X axis is
 // the face width direction, +Y axis is DOWN-THE-SLOPE (so row 0 of the braille
-// grid sits at the TOP of the face — same convention as the cylinder
-// generator's row indexing), and +Z axis is the OUTWARD face normal.
+// grid sits at the TOP of the face), and +Z axis is the OUTWARD face normal.
 //
 // The origin is the centre of the reading face's TOP edge, the top-front corner
 // C of the leaning slab. In global coordinates that point is (0, 0, card_height).
@@ -543,8 +391,8 @@ module counter_recess() {
 // A rotation of -face_angle_deg about +X is the unique single-axis rotation
 // that maps local +Z to the outward face normal (0, sin(face), cos(face))
 // while keeping the frame right-handed. Local +Y then necessarily points
-// down-the-slope (this is the reason `dot_row_y_offsets` has the row 0/2
-// signs flipped relative to the cylinder generator).
+// down-the-slope (this is the reason `dot_row_y_offsets` puts row 0 at a
+// negative offset).
 module face_transform() {
     translate([0, 0, card_height])
         rotate([-face_angle_deg, 0, 0])
@@ -693,28 +541,26 @@ function face_row_y(row) =
     + row * active_line_spacing
     + braille_y_adjust;
 
-// Horizontal centre of a grid column (actual column index, including indicator
-// columns when enabled) in face-local X. Lines are left-aligned within the
-// block; the block is centered by the longest line. braille_x_adjust is an
-// additive nudge on top (default 0 = centered).
-function face_col_x(actual_col) =
-    -content_width/2 + actual_col * active_cell_spacing + braille_x_adjust;
+// Horizontal centre of a grid column in face-local X. Lines are left-aligned
+// within the block; the block is centered by the longest line.
+// braille_x_adjust is an additive nudge on top (default 0 = centered).
+function face_col_x(col) =
+    -content_width/2 + col * active_cell_spacing + braille_x_adjust;
 
 module place_face_dots_for_text() {
-    lines = [Line_1, Line_2, Line_3, Line_4];
+    lines = _all_lines;
     for (row = [0 : min(active_grid_rows - 1, len(lines) - 1)]) {
         if (len(lines[row]) > 0) {
             y_pos = face_row_y(row);
             for (col = [0 : min(active_grid_columns - 1, len(lines[row]) - 1)]) {
-                actual_col = indicator_on ? (col + 2) : col;
-                x_cell = face_col_x(actual_col);
+                x_cell = face_col_x(col);
                 dots = get_dot_pattern(lines[row][col]);
                 for (i = [0:5]) {
                     if (dots[i] == 1) {
                         dot_pos = dot_positions[i];
                         dot_x = x_cell + dot_col_x_offsets[dot_pos[1]];
                         dot_y = y_pos  + dot_row_y_offsets[dot_pos[0]];
-                        translate([dot_x, dot_y, active_emboss_height / 2])
+                        translate([dot_x, dot_y, dot_total_height / 2])
                             braille_dot_centered();
                     }
                 }
@@ -723,49 +569,22 @@ module place_face_dots_for_text() {
     }
 }
 
-module place_face_recesses_all_cells() {
-    // Counter plate: a recess at EVERY possible dot position in the grid,
-    // matching how cylinder_counter_plate() recesses all cells regardless of
-    // the typed text.
-    for (row = [0 : active_grid_rows - 1]) {
-        y_pos = face_row_y(row);
-        for (col = [0 : active_grid_columns - 1]) {
-            actual_col = indicator_on ? (col + 2) : col;
-            x_cell = face_col_x(actual_col);
-            for (i = [0:5]) {
-                dot_pos = dot_positions[i];
-                dot_x = x_cell + dot_col_x_offsets[dot_pos[1]];
-                dot_y = y_pos  + dot_row_y_offsets[dot_pos[0]];
-                translate([dot_x, dot_y, 0])
-                    counter_recess();
-            }
-        }
-    }
-}
-
-// One row's indicator recesses (triangle at column 0, rectangle at column 1)
-// in the raw face-local layout. The emboss plate renders this (and the dots)
-// under mirror([1,0,0]) so it reads correctly; the counter plate renders it
-// un-mirrored, making the two plates a true left-right mirrored pair.
-module place_face_row_indicators(y_pos, tri_depth, rect_depth) {
-    tri_x  = face_col_x(0);
-    rect_x = face_col_x(1);
-    translate([tri_x, y_pos, 0])
-        indicator_triangle_prism_centered(tri_depth, rotate_180 = true);
-    translate([rect_x, y_pos, 0])
-        indicator_rectangle_prism_centered(rect_depth);
-}
-
 // =============================================================================
-// WARNING MODULES  (adapted from the cylinder generator)
+// WARNING MODULES
 // =============================================================================
 // Each warning is wrapped in the `%` background modifier so it is visible in
-// the F5 preview but EXCLUDED from the F6 render / STL export (fixing the old
-// bug where warning text fused into the exported solid). Stacked into fixed
-// slots; the whole system is gated by warnings_on (the [Warnings] tab).
+// the F5 preview but EXCLUDED from the F6 render / STL export. Stacked into
+// fixed slots; the whole system is gated by warnings_on (the [Warnings] tab).
 //
 // NOTE: the `%` modifier may render the text transparent gray instead of red in
 // some OpenSCAD builds — acceptable; visibility plus export-exclusion is the goal.
+
+// Warning text placement (above the card top)
+INVALID_TEXT_Z_OFFSET   = 5;
+INVALID_TEXT_SIZE       = 5;
+INVALID_TEXT_DEPTH      = 2;
+INVALID_TEXT_STACK_GAP  = 8;
+
 module warning_slot(k, msg) {
     translate([0, base_run/2, card_height + INVALID_TEXT_Z_OFFSET + k * INVALID_TEXT_STACK_GAP])
         %color("red")
@@ -784,66 +603,22 @@ module warnings_3d() {
 }
 
 // =============================================================================
-// TOP-LEVEL PLATES
+// TOP-LEVEL CARD
 // =============================================================================
 
-// READING ORIENTATION / EMBOSS-vs-COUNTER MIRRORING
-// -------------------------------------------------
-// On the parent cylinder generator the emboss plate reads correctly (left to
-// right, indicators on the left) with NO mirror, because increasing column ->
-// increasing wrap angle -> the reader's right. On this back-leaning planar
-// face the same local +X maps to the reader's LEFT, so the raw layout would
-// read right-to-left. We therefore mirror the EMBOSS content in face-local X
-// so the directly-read emboss plate reads correctly. The COUNTER plate is then
-// produced by the UN-mirrored layout, making it the exact left-right mirror of
-// the emboss plate (so recesses sit under dots when the plates mate) — the
-// same emboss/counter relationship the cylinder achieves via angle negation.
-module card_emboss_plate() {
-    difference() {
-        union() {
-            card_body();
-            // Raised dots on the outer face surface (mirrored to read L->R).
-            face_transform()
-                mirror([1, 0, 0])
-                    place_face_dots_for_text();
-            warnings_3d();
-        }
-        // Indicators are ALWAYS recessed (emboss + counter both subtract them).
-        // Only stamp indicators on rendered content rows (not empty capacity rows).
-        if (indicator_on) {
-            face_transform()
-                mirror([1, 0, 0])
-                    for (row = [0 : indicator_rows_rendered - 1]) {
-                        place_face_row_indicators(
-                            face_row_y(row),
-                            INDICATOR_TRIANGLE_DEPTH_EMBOSS,
-                            INDICATOR_RECT_DEPTH_EMBOSS
-                        );
-                    }
-        }
-    }
-}
-
-module card_counter_plate() {
-    difference() {
-        union() {
-            card_body();
-            warnings_3d();
-        }
-        // Un-mirrored layout = exact left-right mirror image of the emboss
-        // plate. Recess every possible dot position into the face.
+// READING ORIENTATION
+// -------------------
+// On this back-leaning face, face-local +X maps to the reader's LEFT, so the
+// raw layout would read right-to-left. The content is therefore mirrored in
+// face-local X so the finished card reads correctly left-to-right.
+module braille_card() {
+    union() {
+        card_body();
+        // Raised dots on the outer face surface (mirrored to read L->R).
         face_transform()
-            place_face_recesses_all_cells();
-        if (indicator_on) {
-            face_transform()
-                for (row = [0 : active_grid_rows - 1]) {
-                    place_face_row_indicators(
-                        face_row_y(row),
-                        active_counter_height,
-                        active_counter_height
-                    );
-                }
-        }
+            mirror([1, 0, 0])
+                place_face_dots_for_text();
+        warnings_3d();
     }
 }
 
@@ -856,13 +631,13 @@ echo(str("Card face (effective): ", effective_card_face_width_mm, " x ",
          auto_size_on ? " [auto-sized - manual sliders ignored]" : " [manual]"));
 
 // Per-line invalid characters (actionable: where to re-translate)
-for (i = [0:3])
+for (i = [0:len(_all_lines)-1])
     if (has_invalid_chars(_all_lines[i]))
         echo(str("WARNING: Line ", i + 1, " contains non-braille characters. ",
                  "Re-translate at branah.com with Unicode Braille output."));
 
 // Per-line over capacity (only meaningful in manual mode; auto mode can't overflow)
-for (i = [0:3])
+for (i = [0:len(_all_lines)-1])
     if (!auto_size_on && len(_all_lines[i]) > active_grid_columns)
         echo(str("WARNING: Line ", i + 1, " is ", len(_all_lines[i]),
                  " cells but capacity is ", active_grid_columns,
@@ -878,10 +653,6 @@ if (fins_on)
     echo(str("Support fins: ", len(fin_x_positions()), " at ", fin_interval_mm, " mm interval"));
 
 // Cheap, high-confidence sanity checks
-if (!is_emboss_plate && card_thickness_mm < active_counter_height + 0.7)
-    echo(str("WARNING: card_thickness_mm (", card_thickness_mm,
-             ") is near the recess depth (", active_counter_height,
-             "); counter-plate recesses may break through. Increase card_thickness_mm."));
 if (cell_spacing < dot_spacing * 2)
     echo(str("WARNING: cell_spacing (", cell_spacing, ") < dot_spacing*2 (",
              dot_spacing * 2, "); braille cells will overlap."));
@@ -892,14 +663,10 @@ if (line_spacing < dot_spacing * 2 + _max_dot_dia)
 // =============================================================================
 // MAIN RENDERING
 // =============================================================================
-// The active plate (card + braille) is fused with the break-away support-fin
-// structure into a single solid so it slices as one print-ready object.
+// The card (body + braille) is fused with the break-away support-fin structure
+// into a single solid so it slices as one print-ready object.
 union() {
-    if (is_emboss_plate) {
-        card_emboss_plate();
-    } else {
-        card_counter_plate();
-    }
+    braille_card();
     if (fins_on) {
         support_fins_all();
     }
