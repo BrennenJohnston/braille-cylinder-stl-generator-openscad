@@ -1,0 +1,10 @@
+# Python dependencies for the Braille Wedge Card test suite
+#
+# Installation: pip install -r tests/requirements.txt
+
+pytest>=7.4
+pytest-timeout>=2.2
+
+# Mesh analysis (STL loading, watertightness, bounding boxes)
+trimesh>=4.0
+numpy>=1.24

@@ -1,0 +1,169 @@
+# CI for the Braille Wedge Card STL Generator
+#
+# Jobs:
+# 1. lint: Python linting + presets JSON validation
+# 2. test-quick: source-based tests (no OpenSCAD required)
+# 3. test-render: OpenSCAD render smoke tests (watertight / bbox assertions)
+#
+# NOTE: this workflow activates when this folder is a repository root (it was
+# authored inside the parent repo's experimental/ folder, where nested
+# .github/ directories are ignored by GitHub Actions).
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  CI: true
+  OPENSCAD_VERSION: "2026.01.03"
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ==========================================================================
+  # Job 1: Code Quality
+  # ==========================================================================
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'tests/requirements.txt'
+
+      - name: Run Python linting (ruff)
+        run: |
+          pip install ruff
+          ruff check tests/ --ignore E501
+
+      - name: Validate presets JSON
+        run: python -c "import json; json.load(open('Braille_Wedge_Card_STL_Generator.json', encoding='utf-8'))"
+
+  # ==========================================================================
+  # Job 2: Quick Tests (No OpenSCAD Required)
+  # ==========================================================================
+  test-quick:
+    name: Quick Tests
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'tests/requirements.txt'
+
+      - name: Install Python dependencies
+        run: pip install -r tests/requirements.txt
+
+      - name: Run Customizer validation tests
+        run: pytest tests/test_customizer.py -v
+
+      - name: Run source guard tests (incl. mission guard)
+        run: pytest tests/test_source_guards.py -v
+
+  # ==========================================================================
+  # Job 3: Render Smoke Tests (OpenSCAD)
+  # ==========================================================================
+  test-render:
+    name: Render Smoke Tests
+    runs-on: ubuntu-latest
+    needs: test-quick
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'tests/requirements.txt'
+
+      - name: Install Python dependencies
+        run: pip install -r tests/requirements.txt
+
+      - name: Install OpenSCAD (Ubuntu)
+        run: |
+          # The OpenSCAD nightly AppImage bundles Qt and most of its runtime,
+          # but still dynamically links against the host's OpenGL / EGL / xcb
+          # stack. On ubuntu-latest those libraries are NOT preinstalled, so
+          # AppRun fails with "libEGL.so.1: cannot open shared object file"
+          # before the version banner ever prints. Install the OpenGL + EGL +
+          # xcb + font runtime dependencies first, then unpack the AppImage.
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            libegl1 \
+            libgl1 \
+            libgles2 \
+            libopengl0 \
+            libglu1-mesa \
+            libglib2.0-0t64 \
+            libdbus-1-3 \
+            libfontconfig1 \
+            libfreetype6 \
+            libharfbuzz0b \
+            libxkbcommon0 \
+            libxkbcommon-x11-0 \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-sync1 \
+            libxcb-util1 \
+            libxcb-xfixes0 \
+            libxcb-xkb1 \
+            libxkbfile1
+
+          # Download OpenSCAD nightly AppImage
+          wget -q "https://files.openscad.org/snapshots/OpenSCAD-${{ env.OPENSCAD_VERSION }}-x86_64.AppImage" -O openscad.AppImage || \
+          wget -q "https://files.openscad.org/OpenSCAD-${{ env.OPENSCAD_VERSION }}-x86_64.AppImage" -O openscad.AppImage
+          chmod +x openscad.AppImage
+
+          # Extract AppImage (required for CI environments without FUSE)
+          ./openscad.AppImage --appimage-extract
+          sudo mv squashfs-root /opt/openscad
+
+          # Create wrapper script that properly invokes OpenSCAD from the
+          # extracted location (AppRun must be called from within its
+          # directory for relative paths to work)
+          sudo tee /usr/local/bin/openscad > /dev/null << 'EOF'
+          #!/bin/bash
+          cd /opt/openscad && exec ./AppRun "$@"
+          EOF
+          sudo chmod +x /usr/local/bin/openscad
+
+          # Verify installation
+          openscad --version
+
+      - name: Run render smoke tests
+        run: pytest tests/test_render_smoke.py -v
+
+      - name: Upload rendered STLs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-render-stls
+          path: /tmp/pytest-of-*/**/*.stl
+          retention-days: 7
+          if-no-files-found: ignore

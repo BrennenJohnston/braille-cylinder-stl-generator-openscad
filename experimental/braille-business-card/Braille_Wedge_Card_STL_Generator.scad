@@ -67,11 +67,11 @@
 //      flat-printed braille; 75° also reduces dot overhangs vs. 90°:
 //      https://doi.org/10.1145/3613904.3642719
 //  [B] Print-stability + path recommendation research:
-//      ./research-print-stability-and-path-recommendation.md
+//      ./docs/research-print-stability-and-path-recommendation.md
 //  [C] Dot geometry and slicer-quality research:
-//      ./research-dot-geometry-and-slicer-quality.md
+//      ./docs/research-dot-geometry-and-slicer-quality.md
 //  [D] Customizer usability research (auto-size, centering, warnings):
-//      ./research-customizer-usability.md
+//      ./docs/research-customizer-usability.md
 //  [E] Slant3D, "Stop Using Slicer Supports" — triangular fin spaced off the
 //      part, thin horizontal prongs, wide base, chamfer to snap off:
 //      https://youtu.be/_R2E8VwyNz0
