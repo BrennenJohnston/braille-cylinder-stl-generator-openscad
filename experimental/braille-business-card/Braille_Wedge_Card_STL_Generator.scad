@@ -32,7 +32,7 @@
 // =============================================================================
 //  1. Translate your text at https://www.branah.com/braille-translator
 //     (Grade 1 or Grade 2, Unicode Braille output — NOT ASCII Braille).
-//  2. Paste pre-translated braille into Line_1..Line_4 in the Customizer.
+//  2. Paste pre-translated braille into Line_1..Line_20 in the Customizer.
 //  3. Pick dot_shape (Rounded is the ADA-friendly default; Cone is easier to
 //     print on some machines).
 //  4. Leave auto_size_card = On (the default) and the card face auto-sizes to
@@ -99,6 +99,38 @@ Line_2 = "⠺⠕⠗⠇⠙";
 Line_3 = "";
 // Fourth line of braille text
 Line_4 = "";
+// Line 5 of braille text
+Line_5 = "";
+// Line 6 of braille text
+Line_6 = "";
+// Line 7 of braille text
+Line_7 = "";
+// Line 8 of braille text
+Line_8 = "";
+// Line 9 of braille text
+Line_9 = "";
+// Line 10 of braille text
+Line_10 = "";
+// Line 11 of braille text
+Line_11 = "";
+// Line 12 of braille text
+Line_12 = "";
+// Line 13 of braille text
+Line_13 = "";
+// Line 14 of braille text
+Line_14 = "";
+// Line 15 of braille text
+Line_15 = "";
+// Line 16 of braille text
+Line_16 = "";
+// Line 17 of braille text
+Line_17 = "";
+// Line 18 of braille text
+Line_18 = "";
+// Line 19 of braille text
+Line_19 = "";
+// Line 20 of braille text
+Line_20 = "";
 
 /* [Card Size] */
 // Auto-size the card face to fit the braille text plus margins. Turn Off to use the manual width/height below.
@@ -106,9 +138,9 @@ auto_size_card = "On"; // [On, Off]
 // Margin between the braille block and the card edges when auto-sizing (mm)
 auto_size_margin_mm = 6;     // [2:0.5:20]
 // Manual face width (mm) - only used when auto_size_card = Off
-card_face_width_mm = 85;     // [40:1:200]
+card_face_width_mm = 85;     // [40:1:300]
 // Manual face height (mm) - only used when auto_size_card = Off
-card_face_height_mm = 55;    // [25:1:150]
+card_face_height_mm = 55;    // [25:1:250]
 
 /* [Warnings] */
 // Show red 3D warning text above the card when input has problems. Warnings are preview-only and are NEVER exported to the STL.
@@ -161,7 +193,7 @@ card_thickness_mm = 2.0;     // [1:0.1:5]
 // Text capacity in braille cells per row (ignored when auto_size_card = On)
 grid_columns = 11;           // [1:1:30]
 // Number of lines of braille (ignored when auto_size_card = On)
-grid_rows = 3;               // [1:1:10]
+grid_rows = 3;               // [1:1:20]
 // Horizontal spacing between cells (mm)
 cell_spacing = 6.5;          // [2:0.01:15]
 // Vertical spacing between lines (mm)
@@ -220,7 +252,14 @@ quality_fn = (render_quality == "Low")    ? 24 :
              (render_quality == "High")   ? 64 : 32;
 
 // --- Content metrics (actual typed text, not grid capacity) ---
-_all_lines = [Line_1, Line_2, Line_3, Line_4];
+// _all_lines is the SINGLE SOURCE OF TRUTH for the text content. Every loop,
+// warning, and layout module iterates this list — never Line_N directly.
+// To extend beyond 20 lines: declare `Line_21 = "";` (etc.) in the text-input
+// section above, append it here, and raise the grid_rows slider max to match.
+_all_lines = [Line_1,  Line_2,  Line_3,  Line_4,  Line_5,
+              Line_6,  Line_7,  Line_8,  Line_9,  Line_10,
+              Line_11, Line_12, Line_13, Line_14, Line_15,
+              Line_16, Line_17, Line_18, Line_19, Line_20];
 // Longest line in braille cells (0 when all lines are empty)
 content_max_len = max([for (l = _all_lines) len(l)]);
 // Rows spanned by content = index of last non-empty line + 1
@@ -237,6 +276,13 @@ effective_grid_rows    = auto_size_on ? max(content_rows, 1)    : grid_rows;
 dot_total_height = use_rounded_dots
     ? (rounded_dot_base_height + rounded_dot_dome_height)
     : cone_dot_height;
+
+// How deep each dot is buried into the face (mm). A dot seated EXACTLY on the
+// face plane only touches it (zero overlap), which can leave the dot as a
+// separate floating shell in the exported STL. A tiny embed guarantees the
+// union genuinely fuses; the 0.02 mm protrusion loss is far below print
+// tolerance.
+DOT_FACE_EMBED = 0.02;
 
 // Spacing pass-through aliases (`active_*` naming kept for readability in the
 // geometry modules below).
@@ -473,7 +519,12 @@ module fin_brim(x) {
         y_back  = -card_thickness_mm - fin_offset_mm;
         y_front = base_run - card_thickness_mm - fin_offset_mm;
         y_lo = min(y_back, y_front) - brim_width_mm;
-        y_hi = max(y_back, y_front) + brim_width_mm;
+        // Stop the brim just short of the card's bottom-back corner: a brim
+        // face exactly tangent to that corner line would export as a
+        // non-manifold (self-touching) boundary. The bridges already join the
+        // fin structure to the card, so the brim does not need to reach it.
+        y_hi = min(max(y_back, y_front) + brim_width_mm,
+                   base_run - card_thickness_mm - 0.05);
         translate([x - fin_thickness_mm / 2 - brim_width_mm, y_lo, 0])
             cube([fin_thickness_mm + 2 * brim_width_mm, y_hi - y_lo, brim_thickness_mm]);
     }
@@ -485,9 +536,16 @@ module fin_brim(x) {
 // over [z_lo, fin top], starting clear of the bed.
 module bridges(x) {
     eps   = 0.01;
-    z_lo  = max(bridge_height_mm, 2);          // start clear of the bed/brim
+    // Keep the top bridge's top face strictly below the fin/card top plane:
+    // an exactly-coplanar bridge top exports as a non-manifold tangency.
+    top_clear = 0.1;
+    // Start clear of the bed/brim, but clamp to the fin top so bridges never
+    // sit above the fin (short cards / small fin_height_frac would otherwise
+    // leave floating prongs attached to nothing).
+    z_lo  = min(max(bridge_height_mm, 2),
+                max(fin_top_z() - bridge_height_mm / 2 - top_clear, bridge_height_mm / 2));
     // Clamp so small fin_height_frac (short fins) can't invert the bridge span.
-    z_hi  = max(z_lo, fin_top_z() - bridge_height_mm / 2);
+    z_hi  = max(z_lo, fin_top_z() - bridge_height_mm / 2 - top_clear);
     for (k = [0 : bridge_count - 1]) {
         z_k = (bridge_count == 1)
             ? (z_lo + z_hi) / 2
@@ -560,7 +618,7 @@ module place_face_dots_for_text() {
                         dot_pos = dot_positions[i];
                         dot_x = x_cell + dot_col_x_offsets[dot_pos[1]];
                         dot_y = y_pos  + dot_row_y_offsets[dot_pos[0]];
-                        translate([dot_x, dot_y, dot_total_height / 2])
+                        translate([dot_x, dot_y, dot_total_height / 2 - DOT_FACE_EMBED])
                             braille_dot_centered();
                     }
                 }
@@ -593,8 +651,7 @@ module warning_slot(k, msg) {
 }
 
 module warnings_3d() {
-    _invalid = has_invalid_chars(Line_1) || has_invalid_chars(Line_2) ||
-               has_invalid_chars(Line_3) || has_invalid_chars(Line_4);
+    _invalid = len([for (l = _all_lines) if (has_invalid_chars(l)) 1]) > 0;
     _too_long = content_max_len > active_grid_columns;
     _too_many = content_rows > active_grid_rows;
     if (warnings_on && _invalid) warning_slot(0, "INVALID CHARACTERS");
@@ -629,6 +686,13 @@ echo(str("Content: ", content_rows, " lines, longest ", content_max_len, " cells
 echo(str("Card face (effective): ", effective_card_face_width_mm, " x ",
          effective_card_face_height_mm, " mm",
          auto_size_on ? " [auto-sized - manual sliders ignored]" : " [manual]"));
+
+// Print-bed sanity check (many consumer printers have ~220-256 mm beds)
+if (effective_card_face_width_mm > 250 || effective_card_face_height_mm > 250)
+    echo(str("WARNING: effective card face (", effective_card_face_width_mm, " x ",
+             effective_card_face_height_mm,
+             " mm) may exceed common print beds. Shorten lines, reduce the",
+             " margin, or split the text across multiple cards."));
 
 // Per-line invalid characters (actionable: where to re-translate)
 for (i = [0:len(_all_lines)-1])
