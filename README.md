@@ -20,6 +20,7 @@ The following repositories were extracted from earlier iterations of this projec
 
 | Repo | Description |
 |------|-------------|
+| [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad) | Directly readable 3D-printed braille cards, printed leaning at 75° (CHI 2024 optimal angle) with break-away support fins. Incubated here as `experimental/braille-business-card/`. |
 | [plug-puller-openscad](https://github.com/BrennenJohnston/plug-puller-openscad) | Parametric SCAD + CAD data for the Plug Puller experiments (v1.0–v4.0). |
 | [cad-to-openscad-pipeline](https://github.com/BrennenJohnston/cad-to-openscad-pipeline) | Reusable methodology and tooling for converting CAD models into clean parametric OpenSCAD, including the `dxf_to_openscad_polygon` tool. |
 

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **Braille wedge card generator split into its own repository.** The
+  experimental leaning-card generator
+  (`experimental/braille-business-card/`) was refactored into a pure
+  directly-readable braille card (embossing-era plate/counter/indicator
+  concepts removed, 20 text rows, print-tested Try_4 defaults, its own
+  tests/docs/CI) and extracted with history via `git subtree split` to
+  [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad)
+  (v1.0.0). The folder is deleted here; a "Spin-off Projects" row in
+  `README.md` links to the new repo. Cylinder generator code, tests, and
+  fixtures are untouched.
+
 ### Fixed
 - **False-positive `TEXT TOO LONG` warning with indicators On.** The warning
   threshold subtracted 2 cells when indicators were enabled
