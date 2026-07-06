@@ -154,28 +154,28 @@ support_fins = "On";         // [On, Off]
 // are always added on top of this interval (per masukomi's "side fins" lesson).
 // At the max interval only the two edge fins remain (2 minimum); at the min a
 // fin lands every millimetre (hundreds across a wide card).
-fin_interval_mm = 10;        // [1:0.5:200]
+fin_interval_mm = 25;        // [1:0.5:200]
 // Horizontal gap between the card's back face and the fin (mm) — the break-away
 // gap that the bridges span. ~1 mm per masukomi.
-fin_offset_mm = 1.5;         // [0.2:0.05:10]
+fin_offset_mm = 1.0;         // [0.2:0.05:10]
 // Fin prism thickness along X (mm). Keep a multiple of nozzle width (e.g. 0.4/0.8).
-fin_thickness_mm = 0.8;      // [0.2:0.05:10]
+fin_thickness_mm = 1.2;      // [0.2:0.05:10]
 // Fin height as a fraction of the card height (1.0 = full height; auto-matches
 // the card height/angle).
 fin_height_frac = 1.0;       // [0.05:0.01:1]
 // Number of break-away bridges up each fin (the "contact points" dial).
-bridge_count = 4;            // [1:1:60]
+bridge_count = 6;            // [1:1:60]
 // Bridge size along X (mm).
-bridge_width_mm = 1.5;       // [0.2:0.05:8]
+bridge_width_mm = 0.5;       // [0.2:0.05:8]
 // Bridge size along Z (mm).
-bridge_height_mm = 1.5;      // [0.2:0.05:8]
+bridge_height_mm = 0.5;      // [0.2:0.05:8]
 // How far each bridge actually merges into the card face (mm) — the true
 // break-off contact. Research says 0.3-0.4 mm: connects during print, snaps off clean.
-bridge_contact_mm = 0.4;     // [0.1:0.05:3]
+bridge_contact_mm = 0.3;     // [0.1:0.05:3]
 // Built-in brim flange width around each fin base (mm; 0 = no brim).
-brim_width_mm = 3;           // [0:0.25:25]
+brim_width_mm = 2.0;         // [0:0.25:25]
 // Brim layer thickness (mm, ~1-2 layers).
-brim_thickness_mm = 0.3;     // [0.1:0.05:3]
+brim_thickness_mm = 0.2;     // [0.1:0.05:3]
 
 /* [Expert Mode - Shape Selection] */
 // Shape of the raised braille dots
@@ -187,15 +187,15 @@ dot_shape = "Rounded"; // [Rounded, Cone]
 face_angle_deg = 75;         // [60:1:90]
 // Flat card thickness (mm). 1.5-2 mm prints rigid; thinner saves filament but
 // is whippier during the print.
-card_thickness_mm = 2.0;     // [1:0.1:5]
+card_thickness_mm = 1.5;     // [1:0.1:5]
 
 /* [Expert Mode - Braille Spacing] */
 // Text capacity in braille cells per row (ignored when auto_size_card = On)
 grid_columns = 11;           // [1:1:30]
 // Number of lines of braille (ignored when auto_size_card = On)
-grid_rows = 3;               // [1:1:20]
+grid_rows = 5;               // [1:1:20]
 // Horizontal spacing between cells (mm)
-cell_spacing = 6.5;          // [2:0.01:15]
+cell_spacing = 7.0;          // [2:0.01:15]
 // Vertical spacing between lines (mm)
 line_spacing = 10.0;         // [5:0.01:25]
 // Spacing between dots within a cell (mm)
@@ -211,13 +211,13 @@ braille_y_adjust = 0.0;      // [-20:0.01:20]
 /* [Braille Dot Shape - Rounded] */
 // Defaults chosen to stay ADA-legal: base_height + dome_height <= 0.9 mm.
 // Rounded dot base diameter / cone base (mm)
-rounded_dot_base_diameter = 1.5; // [0.5:0.01:3]
+rounded_dot_base_diameter = 1.6; // [0.5:0.01:3]
 // Rounded dot base height / cone height (mm)
-rounded_dot_base_height   = 0.4; // [0:0.01:2]
+rounded_dot_base_height   = 0.35; // [0:0.01:2]
 // Rounded dome diameter, linked to cone flat top (mm)
-rounded_dot_dome_diameter = 1.0; // [0.5:0.01:3]
+rounded_dot_dome_diameter = 1.4; // [0.5:0.01:3]
 // Rounded dot dome height (mm)
-rounded_dot_dome_height   = 0.5; // [0.1:0.01:2]
+rounded_dot_dome_height   = 0.35; // [0.1:0.01:2]
 
 /* [Braille Dot Shape - Cone] */
 // Cone dot base diameter (mm)
@@ -229,9 +229,9 @@ cone_dot_flat_hat      = 0.4; // [0.1:0.01:2]
 
 /* [Rendering Quality] */
 // Sphere quality for rounded shapes
-render_quality = "Medium"; // [Low, Medium, High]
+render_quality = "High"; // [Low, Medium, High]
 // Number of segments for cone shapes (8-32 recommended)
-cone_segments = 16; // [8:1:64]
+cone_segments = 40; // [8:1:64]
 
 /* [Hidden] */
 $fn = 32;
@@ -395,11 +395,17 @@ module braille_dot_centered() {
         _dome_r = rounded_dot_dome_diameter / 2;
         _R_sphere = (_dome_r * _dome_r + rounded_dot_dome_height * rounded_dot_dome_height) / (2 * rounded_dot_dome_height);
         _center_z = rounded_dot_base_height + rounded_dot_dome_height - _R_sphere;
+        // The base cylinder is extended a hair up INTO the dome. The dome's
+        // bottom plane coincides exactly with the base top; with zero overlap
+        // the two tessellations only touch and can export as two separate
+        // shells. The overlap makes the union genuinely fuse; the resulting
+        // silhouette change is a few microns.
+        _fuse = 0.02;
         translate([0, 0, -_total_height / 2]) {
             union() {
-                translate([0, 0, rounded_dot_base_height / 2])
+                translate([0, 0, (rounded_dot_base_height + _fuse) / 2])
                 cylinder(
-                    h  = rounded_dot_base_height,
+                    h  = rounded_dot_base_height + _fuse,
                     r1 = rounded_dot_base_diameter / 2,
                     r2 = rounded_dot_dome_diameter / 2,
                     center = true,
