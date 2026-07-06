@@ -125,9 +125,9 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 ### 2. **Indicator Shapes (cylinder-only)**
 - `indicator_on` (Customizer toggle, On/Off) controls whether start
   alignment markers are rendered.
-- When **On**, two cells per row are reserved at the leading edge of the
-  cylinder, so usable text capacity drops from `grid_columns` to
-  `grid_columns - 2`:
+- When **On**, the grid is widened by two cells at the leading edge of
+  the cylinder for the alignment markers, so the text capacity stays at
+  `grid_columns` (text is shifted right by two cells):
   - **Column 0:** Triangle (orientation marker)
   - **Column 1:** Rectangle (alignment / "this side up" marker)
   - On the **counter plate**, the triangle is rotated 180° to mate with
@@ -159,7 +159,7 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
 - Cylinder: 30.8mm diameter × 52mm height
 - Grid: 11 text cells × 4 rows (with indicator shapes ON, 2 additional cells are reserved = 13 total)
 - Spacing matches BANA specifications
-- Default shape: Rounded (bowl recess for counter)
+- Default shape: Cone (the dropdown still offers Rounded)
 - Default preset: 0.4mm (optimized for thicker paper, larger dots)
 
 ## Workflow Comparison

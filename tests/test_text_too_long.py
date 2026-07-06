@@ -3,9 +3,11 @@
 
 Phase 6c added a second warning extrusion on the emboss plate, parallel to
 the existing "INVALID CHARACTERS" marker. It fires when any line's character
-count exceeds the cells available for text — i.e. ``active_grid_columns -
-(indicator_on ? 2 : 0)``. This test renders a deliberately oversized
-fixture and confirms the warning shows up above the cylinder.
+count exceeds the text capacity — i.e. ``active_grid_columns``. Text
+capacity is always ``grid_columns``; when indicators are On the grid is
+widened by 2 cells for the markers, so the text capacity is unchanged.
+This test renders a deliberately oversized fixture and confirms the
+warning shows up above the cylinder.
 
 The test depends on:
   - the canonical SCAD file ``Braille_Cylinder_STL_Generator.scad``
@@ -82,7 +84,8 @@ def _baseline_params():
     """
     Parameters used for both render passes. Mirror the rounded-emboss
     fixture so OpenSCAD path is well-trodden; lines stay short enough that
-    capacity (= 11 - 2 = 9 with indicators on) is never exceeded.
+    capacity (= grid_columns = 11, unchanged by indicators) is never
+    exceeded.
     """
     return {
         "Line_1": BRAILLE_FULL_CELL * 3,
@@ -185,17 +188,26 @@ def test_text_too_long_emits_warning_extrusion(
     Z-max bounding box is at least INVALID_TEXT_DEPTH (2 mm).
     """
     baseline_params = _baseline_params()
-    capacity = baseline_params["grid_columns"] - 2  # indicators on => -2
+    # Design A: text capacity is always grid_columns, unchanged by indicators.
+    capacity = baseline_params["grid_columns"]  # indicators on => still 11
 
-    # Oversized: well above capacity to be unambiguous (capacity 9 -> use 13).
+    # Oversized: well above capacity to be unambiguous (capacity 11 -> use 15).
     oversize_params = dict(baseline_params)
     oversize_params["Line_1"] = BRAILLE_FULL_CELL * (capacity + 4)
 
+    # Regression guard: a line of EXACTLY grid_columns chars with indicators
+    # On must NOT trigger the warning. This is the case that the old
+    # Design-B threshold (grid_columns - 2) wrongly flagged.
+    exact_params = dict(baseline_params)
+    exact_params["Line_1"] = BRAILLE_FULL_CELL * capacity
+
     baseline_stl = _render(warning_runner, tmp_path, baseline_params, "baseline")
     oversize_stl = _render(warning_runner, tmp_path, oversize_params, "oversize")
+    exact_stl = _render(warning_runner, tmp_path, exact_params, "exact")
 
     z_baseline = _z_max(_trimesh, baseline_stl)
     z_oversize = _z_max(_trimesh, oversize_stl)
+    z_exact = _z_max(_trimesh, exact_stl)
 
     cyl_top = baseline_params["cylinder_height_mm"]  # cylinder centered then translated up
     z_offset = warning_offsets["z_offset"]
@@ -211,6 +223,17 @@ def test_text_too_long_emits_warning_extrusion(
         f"Baseline render has unexpected geometry above the cylinder: "
         f"z_max={z_baseline:.3f}, cylinder_top={cyl_top:.3f}. The "
         f'"TEXT TOO LONG" warning should not fire for the baseline.'
+    )
+
+    # Exact capacity (grid_columns chars, indicators On): must NOT warn.
+    # Under the old Design-B threshold this falsely fired — this is the
+    # regression guard for that bug.
+    assert z_exact < cyl_top + 2.0, (
+        f"Exact-capacity render ({capacity} chars with indicators on) "
+        f"unexpectedly emitted geometry above the cylinder: "
+        f"z_max={z_exact:.3f}, cylinder_top={cyl_top:.3f}. Text capacity "
+        f'is grid_columns, so the "TEXT TOO LONG" warning must NOT fire '
+        f"at exactly grid_columns characters."
     )
 
     # Oversize: warning must clear the baseline by at least one warning depth.

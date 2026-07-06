@@ -3,11 +3,12 @@
   "title": "Cross-Platform Test Cases",
   "description": "Test case definitions for validating OpenSCAD STL output against web generator reference",
   "version": "1.0.0",
-  "fixture_version": "2.2.0",
+  "fixture_version": "2.3.0",
+  "fixture_version_note": "2.3.0 regenerates all reference STLs for the indicator triangle mirror fix: the counter plate now renders the shared place_row_indicators layout under mirror([0,1,0]) so the emboss/counter indicators form a true mirrored pair (identical triangle->rectangle spacing, opposite triangle direction). Indicator geometry changed on every indicators_on fixture.",
   "web_generator_commit": "localhost-dev-2026-01-10",
   "openscad_version": "2026.01.03",
   "openscad_backend": "Manifold",
-  "last_updated": "2026-05-30",
+  "last_updated": "2026-06-04",
   
   "test_cases": [
     {
@@ -472,7 +473,7 @@
       "expected_properties": {
         "is_watertight": true
       },
-      "note": "Exercises the multi-line render path; lines stay well under the 9-cell capacity so the TEXT TOO LONG warning never fires."
+      "note": "Exercises the multi-line render path; lines stay well under the 11-cell capacity so the TEXT TOO LONG warning never fires."
     },
     {
       "name": "cylinder_rounded_emboss_03mm",

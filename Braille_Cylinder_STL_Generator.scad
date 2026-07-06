@@ -99,7 +99,7 @@ paper_thickness_preset = "0.4mm"; // [0.4mm, 0.3mm, Custom]
 
 /* [Expert Mode - Shape Selection] */
 // Braille Dot Shape (Emboss and Counter) - affects both plate types
-dot_shape = "Rounded"; // [Rounded, Cone]
+dot_shape = "Cone"; // [Rounded, Cone]
 // Indicator Shapes (Emboss and Counter) - Row start/end markers
 indicators = "On"; // [On, Off]
 
@@ -112,7 +112,7 @@ seam_offset_degrees = 0.0; // [0:1:360] Seam offset (degrees) — Rotates starti
 
 /* [Expert Mode - Braille Spacing] */
 // --- Braille Dimensions ---
-grid_columns = 11; // [1:1:20] Number of braille cells per row available for text (2 cells reserved for indicators when On)
+grid_columns = 11; // [1:1:20] Text capacity in braille cells per row (when indicators are On, 2 extra cells are added for markers; text capacity is unchanged)
 grid_rows = 4; // [1:1:10] Number of lines of braille
 cell_spacing = 6.5; // [2:0.1:15] Horizontal spacing between cells (mm)
 line_spacing = 10.0; // [5:0.1:25] Vertical spacing between lines (mm)
@@ -257,7 +257,6 @@ _preset_seam_offset_degrees            = preset_value(paper_thickness_preset, "s
 active_emboss_height = use_rounded_dots ? (_preset_rounded_dot_base_height + _preset_rounded_dot_dome_height) : _preset_emboss_dot_height;
 
 // Active counter dot parameters (based on shape selection, using preset-routed values)
-active_counter_base_diameter = use_rounded_dots ? _preset_bowl_counter_dot_base_diameter : _preset_cone_counter_dot_base_diameter;
 active_counter_height = use_rounded_dots ? _preset_counter_dot_depth : _preset_cone_counter_dot_height;
 
 // Active spacing parameters (pass through from preset routing)
@@ -446,6 +445,20 @@ module place_cylinder_marker(theta_deg, y_pos, cyl_radius, depth, overcut = INDI
             children();
 }
 
+// One row's indicator markers in EMBOSS orientation (positive angles).
+// The counter plate renders these via mirror([0,1,0]) so it is an exact
+// mirror of the emboss plate: triangle->rectangle center spacing is identical
+// on both plates (mirrored pair) and the triangles point opposite ways.
+module place_row_indicators(y_pos, tri_depth, rect_depth) {
+    tri_theta_deg = start_angle * 180 / PI;                       // Col 0: triangle
+    place_cylinder_marker(tri_theta_deg, y_pos, radius, tri_depth)
+        indicator_triangle_prism_centered(tri_depth, rotate_180 = true);
+
+    rect_theta_deg = (start_angle + cell_spacing_angle) * 180 / PI; // Col 1: rectangle
+    place_cylinder_marker(rect_theta_deg, y_pos, radius, rect_depth)
+        indicator_rectangle_prism_centered(rect_depth);
+}
+
 // =============================================================================
 // DOT CREATION MODULES
 // =============================================================================
@@ -554,12 +567,13 @@ module cylinder_emboss_plate() {
                     text("INVALID CHARACTERS", size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
                 }
 
-                // Check whether any line exceeds the cells available for text.
-                // When indicators are on, the first two cells are reserved for
-                // alignment markers, so usable capacity drops by 2.
+                // Check whether any line exceeds the text capacity.
+                // Text capacity is always grid_columns; when indicators are on,
+                // the grid is widened by 2 cells (actual_grid_columns) to hold
+                // the alignment markers, so text capacity is unchanged.
                 text_too_long =
                     max([len(Line_1), len(Line_2), len(Line_3), len(Line_4)])
-                    > (active_grid_columns - (indicator_on ? 2 : 0));
+                    > active_grid_columns;
 
                 if (text_too_long) {
                     translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + INVALID_TEXT_STACK_GAP])
@@ -601,20 +615,14 @@ module cylinder_emboss_plate() {
                 }
             }
 
-            // Subtract indicator recesses if enabled
+            // Subtract indicator recesses if enabled.
+            // Emboss renders the shared row layout directly; the counter plate
+            // renders the same module under mirror([0,1,0]) for a true mirrored
+            // pair (see cylinder_counter_plate).
             if (indicator_on) {
                 for (row = [0 : active_grid_rows - 1]) {
                     y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
-
-                    // Column 0: Triangle marker (apex RIGHT)
-                    tri_theta_deg = start_angle * 180 / PI;
-                    place_cylinder_marker(tri_theta_deg, y_pos, radius, INDICATOR_TRIANGLE_DEPTH_EMBOSS)
-                        indicator_triangle_prism_centered(INDICATOR_TRIANGLE_DEPTH_EMBOSS, rotate_180 = false);
-
-                    // Column 1: Rectangle marker
-                    rect_theta_deg = (start_angle + cell_spacing_angle) * 180 / PI;
-                    place_cylinder_marker(rect_theta_deg, y_pos, radius, INDICATOR_RECT_DEPTH_EMBOSS)
-                        indicator_rectangle_prism_centered(INDICATOR_RECT_DEPTH_EMBOSS);
+                    place_row_indicators(y_pos, INDICATOR_TRIANGLE_DEPTH_EMBOSS, INDICATOR_RECT_DEPTH_EMBOSS);
                 }
             }
         }
@@ -630,20 +638,18 @@ module cylinder_counter_plate() {
         // Angular grid + dot-positioning constants are derived at top level;
         // see `radius`, `start_angle`, `dot_positions`, etc. above.
 
-        // Create indicator recesses if enabled
+        // Create indicator recesses if enabled.
+        // The counter plate is an exact mirror of the emboss plate: render the
+        // shared emboss-orientation row layout under mirror([0,1,0]) so the
+        // triangle->rectangle center spacing is identical on both plates and the
+        // triangles point the opposite way (a reflection). Braille dots are
+        // radially symmetric and already mirror via angle negation below, so they
+        // stay aligned with the mirrored indicators.
         if (indicator_on) {
             for (row = [0 : active_grid_rows - 1]) {
                 y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
-
-                // Column 0: Triangle marker (ROTATED 180° on counter plate)
-                tri_theta_deg = -(start_angle * 180 / PI);
-                place_cylinder_marker(tri_theta_deg, y_pos, radius, active_counter_height)
-                    indicator_triangle_prism_centered(active_counter_height, rotate_180 = true);
-
-                // Column 1: Rectangle placeholder (ALWAYS rectangle on counter plates)
-                rect_theta_deg = -((start_angle + cell_spacing_angle) * 180 / PI);
-                place_cylinder_marker(rect_theta_deg, y_pos, radius, active_counter_height)
-                    indicator_rectangle_prism_centered(active_counter_height);
+                mirror([0, 1, 0])   // counter = exact mirror image of emboss
+                    place_row_indicators(y_pos, active_counter_height, active_counter_height);
             }
         }
         

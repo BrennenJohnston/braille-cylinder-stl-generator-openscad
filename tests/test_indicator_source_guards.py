@@ -22,9 +22,20 @@ def test_indicator_shapes_not_cylinders_in_scad_source():
     assert "indicator_triangle_prism_centered" in scad
     assert "indicator_rectangle_prism_centered" in scad
 
-    # Counter plate triangle must be rotated 180° and column-1 must be rectangle-only
-    assert "indicator_triangle_prism_centered(active_counter_height, rotate_180 = true)" in scad
-    assert "indicator_rectangle_prism_centered(active_counter_height)" in scad
+    # The emboss/counter plates must share ONE per-row indicator module so the
+    # counter renders as an exact mirror of the emboss layout (true mirrored
+    # pair: identical triangle->rectangle spacing, opposite triangle direction).
+    assert "module place_row_indicators" in scad
+
+    # The shared module sets the global triangle direction via a single
+    # rotate_180 flag (emboss apex right / counter apex left, verified by render).
+    assert "indicator_triangle_prism_centered(tri_depth, rotate_180 = true)" in scad
+
+    # Emboss renders the shared layout directly; the counter renders the SAME
+    # module under mirror([0,1,0]) for the mirrored pair.
+    assert "place_row_indicators(y_pos, INDICATOR_TRIANGLE_DEPTH_EMBOSS, INDICATOR_RECT_DEPTH_EMBOSS)" in scad
+    assert "mirror([0, 1, 0])" in scad
+    assert "place_row_indicators(y_pos, active_counter_height, active_counter_height)" in scad
 
     # Old buggy implementation patterns (cylindrical markers) must not reappear
     assert "active_emboss_base_diameter / 3" not in scad

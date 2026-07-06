@@ -1,31 +1,8 @@
 # Reference Fixture Version Information
-# Version: 2.2.0
-# Generated: 2026-05-30T17:00:00.000000Z
+# Generated: 2026-06-04T15:42:22.903998Z
 # Method: OpenSCAD self-test mode
 # OpenSCAD: OpenSCAD version 2026.01.03
 # Total fixtures: 14
 # Failed: 0
-
-# Version 2.2.0 Changes:
-# - Metadata-only top-level version bump for the v2.2.0 release.
-# - The 11 original fixtures from v2.1.0 are UNCHANGED (same sha256).
-# - Phase 7b added 3 new fixtures (no other regeneration in Phase 8):
-#     * cylinder_rounded_emboss_multiline (Line_1/Line_2/Line_3, 0.4mm preset)
-#     * cylinder_rounded_emboss_03mm (0.3mm preset, rounded emboss)
-#     * cylinder_rounded_counter_03mm (0.3mm preset, rounded counter)
-# - v2.2.0 also ships aggressive customizer polish (file rename,
-#   preset routing extracted to presets.scad, named geometry
-#   constants, $fn policy doc) and expanded tests (preset /
-#   backward-compat / text-too-long suites, slider-range validator).
-
-# Version 2.1.0 Changes:
-# - Paper thickness preset system added (0.4mm / 0.3mm / Custom)
-# - Defaults updated to match web app 0.4mm preset
-# - All fixtures regenerated with new default values
-
-# Phase 7b additions (2026-05-30, total went 11 -> 14):
-# - cylinder_rounded_emboss_multiline: 3-line short text under the 0.4mm preset
-# - cylinder_rounded_emboss_03mm: 0.3mm preset on the rounded emboss path
-# - cylinder_rounded_counter_03mm: 0.3mm preset on the rounded counter path
 
 # See FIXTURES_VERSION.json for full metadata

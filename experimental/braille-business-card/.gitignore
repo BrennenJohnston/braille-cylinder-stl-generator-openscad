@@ -1,0 +1,19 @@
+# Personal Customizer presets (names / contact info in braille) stay local
+*.local.json
+
+# Render outputs
+*.stl
+*.png
+*.bak
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+test_results.log
+
+# IDEs / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -11,11 +11,11 @@
   ],
   "priority": "high",
   "reference_stl": "cross_platform/cylinder_indicator_recess_cone/reference.stl",
-  "stl_size_bytes": 8477384,
-  "stl_sha256": "8b93b0fef14f6804be6eeb4bd7cc83ecbebbb716fa9b182209ed37ab87147d09",
+  "stl_size_bytes": 8477387,
+  "stl_sha256": "2dfda459c0978670acfdabfdc8f824bbb878ea039aa0f619e268fc2f3cb94094",
   "mesh_properties": {
-    "volume_mm3": 10117.254250536209,
-    "surface_area_mm2": 10236.266920709357,
+    "volume_mm3": 10117.301093086719,
+    "surface_area_mm2": 10235.956759137272,
     "bounding_box_mm": [
       [
         -15.4,
@@ -32,8 +32,8 @@
     "vertex_count": 13536,
     "is_watertight": true,
     "centroid_mm": [
-      0.1077328093996009,
-      -0.007101301882371135,
+      0.10064558151743777,
+      -0.013208821223300554,
       25.99999999999976
     ]
   },
@@ -41,7 +41,7 @@
     "method": "openscad",
     "openscad_version": "OpenSCAD version 2026.01.03",
     "scad_file": "Braille_Cylinder_STL_Generator.scad",
-    "duration_seconds": 0.5048782825469971
+    "duration_seconds": 0.5117204189300537
   },
-  "generated_at": "2026-01-11T05:36:30.543765Z"
+  "generated_at": "2026-06-04T15:42:18.185450Z"
 }

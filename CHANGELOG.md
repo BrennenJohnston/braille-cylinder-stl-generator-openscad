@@ -7,6 +7,101 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **False-positive `TEXT TOO LONG` warning with indicators On.** The warning
+  threshold subtracted 2 cells when indicators were enabled
+  (`active_grid_columns - (indicator_on ? 2 : 0)`), implying a "Design B"
+  capacity of `grid_columns - 2`. This contradicted the actual geometry, which
+  widens the grid by 2 cells when indicators are on (`actual_grid_columns =
+  grid_columns + 2`) and leaves the text capacity unchanged ("Design A"). A
+  full-capacity line (e.g. 10–11 chars) with indicators On rendered correctly
+  yet was wrongly flagged. The threshold is now `> active_grid_columns` in both
+  `Braille_Cylinder_STL_Generator.scad` and the MakerWorld twin, and the
+  adjacent comment was rewritten to describe the Design-A model. No reference
+  fixtures changed (longest fixture line is 5 chars, so the warning never fired
+  before or after the fix — zero geometry delta).
+
+### Changed
+- **Capacity documentation reconciled to Design A.** Standardized the wording
+  across `README.md` (features list + "TEXT TOO LONG" troubleshooting),
+  `docs/PARAMETER_MAPPING.md` (the "Indicator Shapes" prose now matches Note 2
+  and the Default Values line), the `grid_columns` parameter description in both
+  SCAD headers, `tests/parameter_mapping.json`, and the
+  `cylinder_rounded_emboss_multiline` note in
+  `tests/fixtures/cross_platform/test_cases.json`: text capacity is always
+  `grid_columns`; enabling indicators adds 2 marker cells without reducing
+  capacity.
+- **Testing documentation corrected.** `README.md` now describes the suite as
+  OpenSCAD self/regression validation against committed OpenSCAD-generated
+  reference STLs (the web reference parity claim was stale; the web API is
+  retired). Stale fixture counts were updated from 11 to the authoritative 14
+  and the 3 missing cases (`cylinder_rounded_emboss_multiline`,
+  `cylinder_rounded_emboss_03mm`, `cylinder_rounded_counter_03mm`) were added to
+  the coverage matrices in `README.md`,
+  `tests/fixtures/cross_platform/README_FIXTURE_GENERATION.md`, and
+  `docs/QUICK_START_TESTING.md`.
+
+### Removed
+- **Dead variable `active_counter_base_diameter`.** Defined but never
+  referenced; removed from both `Braille_Cylinder_STL_Generator.scad` and the
+  MakerWorld twin (`active_counter_height`, which is used, is unaffected).
+
+### Tests
+- `tests/test_text_too_long.py` updated to the Design-A contract
+  (`capacity = grid_columns`) and now renders an exact-capacity line
+  (`grid_columns` chars with indicators On) asserting the warning does **not**
+  fire — the regression guard for the bug fixed above.
+
+## [2.3.0] - 2026-06-04
+
+### Added
+- **MakerWorld single-file build (alternative).** New
+  `makerworld/Braille_Cylinder_STL_Generator_MakerWorld.scad` — a flattened,
+  single-file copy of the generator for MakerWorld's Parametric Model Maker
+  (which accepts only one `.scad` file and rejects local `include <...>`). It
+  inlines `presets.scad` between `// ==== BEGIN/END inlined from presets.scad ====`
+  sentinels and defaults `dot_shape` to `"Cone"` (the dropdown still offers
+  `Rounded`). The dual-file desktop version remains the canonical source of
+  truth.
+- `makerworld/README.md` with upload steps, the Cone-default note, and the
+  maintainer re-flatten procedure.
+- `tests/test_makerworld_sync.py` guarding that the MakerWorld file's geometry
+  body (from the `BACKWARD COMPATIBILITY` marker to EOF) is byte-identical to
+  the canonical main file, that presets are inlined (no active `include`), and
+  that the Cone default + sentinels are present.
+
+### Fixed
+- **Indicator triangle mirror (emboss/counter now form a true mirrored pair).**
+  The counter plate previously built its indicators by negating angles while
+  reusing the emboss triangle orientation and the rectangle's `+dot_spacing/2`
+  local offset un-mirrored, so (1) the triangle pointed the wrong way relative
+  to the emboss plate and (2) the triangle→rectangle center spacing differed
+  between the two plates by ~`dot_spacing` (≈2.5 mm). The per-row indicator
+  layout is now factored into a single `place_row_indicators` module; the
+  emboss plate renders it directly and the counter plate renders the same
+  module under `mirror([0, 1, 0])`, producing an exact mirrored pair with
+  identical triangle→rectangle spacing and opposite triangle directions (emboss
+  apex right, counter apex left, verified by render). In
+  `Braille_Cylinder_STL_Generator.scad`.
+
+### Changed
+- **Default `dot_shape` is now `"Cone"`** (was `"Rounded"`) in
+  `Braille_Cylinder_STL_Generator.scad`, so the OpenSCAD Customizer loads with
+  Cone selected; the dropdown still offers `Rounded`. `paper_thickness_preset`
+  remains `"0.4mm"` by default. This matches the MakerWorld single-file build,
+  so both files now share the Cone default. Reference fixtures are unaffected
+  (the test matrix passes `combined_shape` explicitly). README "Default
+  Settings" updated accordingly.
+- `tests/test_indicator_source_guards.py` now asserts the new shared-module +
+  `mirror([0, 1, 0])` structure (`place_row_indicators`, the emboss/counter call
+  sites, and `rotate_180 = true` in the shared module) while keeping the old
+  anti-regression guards.
+- Regenerated all 14 cross-platform reference fixtures for the indicator
+  geometry change and bumped `fixture_version` `2.2.0` → `2.3.0` in
+  `tests/fixtures/cross_platform/test_cases.json` (with a note). Indicator
+  geometry changed on every `indicators_on` fixture; `verify_fixture_integrity`
+  and the full `cross_platform_validation` suite pass against the new fixtures.
+
 ## [2.2.1] - 2026-05-30
 
 ### Added

@@ -11,11 +11,11 @@
   ],
   "priority": "medium",
   "reference_stl": "cross_platform/cylinder_rounded_counter_03mm/reference.stl",
-  "stl_size_bytes": 20862860,
-  "stl_sha256": "c07d653b6db3a22062d01672a948392d5ab0bd66032feba02438d5dafc6fda6e",
+  "stl_size_bytes": 20862952,
+  "stl_sha256": "e4762408799e7d89250a62d4013cdd3f45cf88176d5223d399f72280f31b3ede",
   "mesh_properties": {
-    "volume_mm3": 10273.294690930326,
-    "surface_area_mm2": 10004.916696331207,
+    "volume_mm3": 10273.341533480832,
+    "surface_area_mm2": 10004.606534759123,
     "bounding_box_mm": [
       [
         -15.4,
@@ -32,16 +32,16 @@
     "vertex_count": 32448,
     "is_watertight": true,
     "centroid_mm": [
-      0.04211730268577335,
-      0.008102702696226824,
-      26.00000000000004
+      0.0380086077172173,
+      0.004214845041808837,
+      26.000000000000053
     ]
   },
   "generation": {
     "method": "openscad",
     "openscad_version": "OpenSCAD version 2026.01.03",
     "scad_file": "Braille_Cylinder_STL_Generator.scad",
-    "duration_seconds": 1.0102379322052002
+    "duration_seconds": 1.5064198970794678
   },
-  "generated_at": "2026-05-30T16:59:20.284827Z"
+  "generated_at": "2026-06-04T15:42:22.900259Z"
 }

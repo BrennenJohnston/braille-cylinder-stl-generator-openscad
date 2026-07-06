@@ -31,6 +31,11 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
+# Local research material (never commit: third-party binaries, papers, video transcripts)
+New Research/
+experimental/Leaning Braille Research Folder/*transcript*.txt
+experimental/Leaning Braille Research Folder/*Transcript*.txt
+
 # AI Coding Assistants (tool-agnostic)
 .cursor/
 .cursorrules

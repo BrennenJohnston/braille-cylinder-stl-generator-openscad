@@ -30,6 +30,5 @@
     "hemisphere_quality": "medium",
     "cone_segments": 16
   },
-  "generated_with": "openscad",
-  "notes": "Exercises the 0.3mm paper-thickness preset on the rounded emboss path. The preset overrides every slider above with PRESET_03 values; the explicit slider mirror is for documentation only."
+  "generated_with": "openscad"
 }

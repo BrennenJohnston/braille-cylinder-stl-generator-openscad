@@ -30,6 +30,5 @@
     "hemisphere_quality": "medium",
     "cone_segments": 16
   },
-  "generated_with": "openscad",
-  "notes": "Multi-line text exercise (Line_1+Line_2+Line_3) under the 0.4mm preset. Each line is 5 braille cells, well below the 9-cell capacity (grid_columns 11 minus 2 indicator columns), so the TEXT TOO LONG warning never fires."
+  "generated_with": "openscad"
 }

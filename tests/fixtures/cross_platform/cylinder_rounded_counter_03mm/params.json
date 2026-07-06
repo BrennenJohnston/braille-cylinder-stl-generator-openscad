@@ -30,6 +30,5 @@
     "hemisphere_quality": "low",
     "cone_segments": 24
   },
-  "generated_with": "openscad",
-  "notes": "Exercises the 0.3mm paper-thickness preset on the rounded counter path. Uses low hemisphere_quality + 24 cone segments to mirror the existing counter fixtures' fast-render budget (~1.5s)."
+  "generated_with": "openscad"
 }
