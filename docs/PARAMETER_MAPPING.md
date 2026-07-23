@@ -44,8 +44,8 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 ### Expert Mode - Shape Selection
 | OpenSCAD Parameter | Web App Equivalent | Values |
 |--------------------|-------------------|--------|
-| `dot_shape` | Braille Dot Shape | `"Rounded"`, `"Cone"` |
-| `indicators` | Indicator Shapes | `"On"`, `"Off"` |
+| `dot_shape` | Braille Dot Shape | `"Rounded"` (default), `"Cone"` |
+| `indicators` | Indicator Letters (Emboss and Counter) | `"On"` (default), `"Off"` — gates only the square marker; the triangle alignment indicator is always generated |
 
 ### Expert Mode - Cylinder Dimensions
 | OpenSCAD Parameter | Web App Equivalent | Default | Range |
@@ -123,18 +123,23 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 > lives in the `[Hidden]` block of the SCAD file and is normalized into
 > `dot_shape` at load time. New code should always use `dot_shape`.
 
-### 2. **Indicator Shapes (cylinder-only)**
-- `indicator_on` (Customizer toggle, On/Off) controls whether start
-  alignment markers are rendered.
-- When **On**, the grid is widened by two cells at the leading edge of
-  the cylinder for the alignment markers, so the text capacity stays at
-  `grid_columns` (text is shifted right by two cells):
-  - **Column 0:** Triangle (orientation marker)
-  - **Column 1:** Rectangle (alignment / "this side up" marker)
+### 2. **Indicator Letters (cylinder-only)**
+- The **triangle alignment indicator at column 0 is always generated** —
+  it is critical to the mechanical device the cylinder mounts into and
+  has no user-facing toggle.
+- `indicator_on` (Customizer toggle "Indicator Letters", On/Off) gates
+  only the square/rectangle marker next to the triangle.
+- Text capacity always stays at `grid_columns`; the grid is widened at
+  the leading edge of the cylinder by the marker cells:
+  - When **On** (default), 2 marker cells are added (text shifted right
+    by two cells):
+    - **Column 0:** Triangle (orientation marker, always present)
+    - **Column 1:** Rectangle (alignment / "this side up" marker)
+  - When **Off**, 1 marker cell is added (text shifted right by one
+    cell): only the triangle at column 0. This frees 1 cell of physical
+    space per row for braille text on the same cylinder.
   - On the **counter plate**, the triangle is rotated 180° to mate with
     the emboss plate; the rectangle is rendered identically.
-- When **Off**, all `grid_columns` cells are available for braille text
-  and no indicator geometry is generated.
 
 > Card indicators (rectangle at column 0, triangle at column N-1) were
 > removed when card support was retired in v2.0. Only the cylinder
@@ -158,9 +163,9 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 
 All default values match the web-based generator's defaults (0.4mm paper preset applied on load):
 - Cylinder: 30.8mm diameter × 52mm height
-- Grid: 13 text cells × 4 rows (with indicator shapes ON, 2 additional cells are reserved = 15 total; with indicators OFF, up to 15 text cells fit the default cylinder)
+- Grid: 13 text cells × 4 rows (with Indicator Letters ON, 2 additional cells are reserved = 15 total; with Indicator Letters OFF only the triangle cell is reserved, so up to 14 text cells fit the default cylinder)
 - Spacing matches BANA specifications
-- Default shape: Cone (the dropdown still offers Rounded)
+- Default shape: Rounded (the dropdown still offers Cone)
 - Default preset: 0.4mm (optimized for thicker paper, larger dots)
 
 ## Workflow Comparison
@@ -209,13 +214,15 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
    - The preset controls: spacing (4 params: cell/line/dot spacing + Y adjust), emboss rounded (4 params), emboss cone (3 params), counter bowl (2 params), counter cone (3 params), and cylinder dimensions (5 params)
    - Text, plate type, shape selection, rendering quality, and grid layout (`grid_columns`/`grid_rows`) remain user-controlled
 
-2. **Indicator Shapes**: When enabled (`indicator_on = true` in the
-   Customizer; `indicator_shapes = "on"` is the legacy backward-compat
-   alias), the cylinder reserves the **first two cells** (col 0 = triangle,
-   col 1 = rectangle) at the leading edge for alignment markers. The
-   `grid_columns` parameter represents the number of cells *available for
-   text*, not including indicators - the code internally adds 2 cells when
-   indicators are on.
+2. **Indicator Letters**: The triangle alignment indicator at column 0 is
+   **always generated** (no user-facing toggle). When Indicator Letters is
+   enabled (`indicator_on = true` in the Customizer; `indicator_shapes =
+   "on"` is the legacy backward-compat alias), the cylinder reserves the
+   **first two cells** (col 0 = triangle, col 1 = rectangle) at the leading
+   edge for alignment markers; when disabled, only the triangle cell is
+   reserved. The `grid_columns` parameter represents the number of cells
+   *available for text*, not including markers — the code internally adds
+   2 cells when Indicator Letters is On and 1 cell when Off.
 
 3. **Rounded vs. Cone**: The web app calls these "Rounded" and "Cone" - both terms refer to the combined emboss+counter shape pair.
 

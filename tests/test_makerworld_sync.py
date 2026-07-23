@@ -5,7 +5,7 @@ dual-file desktop generator.
 MakerWorld's Parametric Model Maker accepts only one .scad file and does not
 support `include <...>`, so `makerworld/Braille_Cylinder_STL_Generator_MakerWorld.scad`
 is a flattened copy of the canonical main file with presets.scad inlined and
-`dot_shape` defaulting to "Cone".
+`dot_shape` defaulting to "Rounded".
 
 These tests prevent geometry drift between the two files: the geometry body (from
 the BACKWARD COMPATIBILITY marker to EOF) must be byte-identical to the canonical
@@ -77,9 +77,11 @@ def test_presets_are_inlined_with_sentinels():
     assert "function preset_value(" in makerworld
 
 
-def test_dot_shape_defaults_to_cone():
-    """Both builds ship with the Cone default (dropdown still offers Rounded)."""
+def test_dot_shape_defaults_to_rounded():
+    """Both builds ship with the Rounded default (dropdown still offers Cone).
+
+    Rounded is the default braille dot shape for the 0.4mm and 0.3mm presets."""
     makerworld = MAKERWORLD.read_text(encoding="utf-8")
     canonical = CANONICAL.read_text(encoding="utf-8")
-    assert 'dot_shape = "Cone"; // [Rounded, Cone]' in makerworld
-    assert 'dot_shape = "Cone"; // [Rounded, Cone]' in canonical
+    assert 'dot_shape = "Rounded"; // [Rounded, Cone]' in makerworld
+    assert 'dot_shape = "Rounded"; // [Rounded, Cone]' in canonical

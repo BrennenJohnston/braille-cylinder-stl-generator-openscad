@@ -36,7 +36,7 @@ Want to run this in MakerWorld's **Parametric Model Maker** instead of the
 desktop app? A flattened, single-file build lives in
 [`makerworld/`](makerworld/):
 
-- [`makerworld/Braille_Cylinder_STL_Generator_MakerWorld.scad`](makerworld/Braille_Cylinder_STL_Generator_MakerWorld.scad) — one `.scad` file (presets inlined, no `include`), ready to upload. Defaults to the `Cone` dot shape.
+- [`makerworld/Braille_Cylinder_STL_Generator_MakerWorld.scad`](makerworld/Braille_Cylinder_STL_Generator_MakerWorld.scad) — one `.scad` file (presets inlined, no `include`), ready to upload. Defaults to the `Rounded` dot shape.
 - See [`makerworld/README.md`](makerworld/README.md) for upload steps and the maintainer re-flatten procedure.
 - New to the workflow? Start with the [MakerWorld Quick Start Guide](docs/MAKERWORLD_QUICK_START.md) (also as a printable [PDF](docs/MakerWorld_Quick_Start_Guide.pdf)).
 
@@ -81,10 +81,15 @@ it by `tests/test_makerworld_sync.py`.
 - **Rounded**: Dome-shaped dots with spherical bowl recesses
 - **Cone**: Traditional frustum cone dots with matching cone recesses
 
-### Indicator Shapes
-- Optional start/end markers for each row (triangle and rectangle)
-- Helps with plate alignment during embossing
-- Adds 2 cells per row when enabled (text capacity stays at `grid_columns`)
+### Indicator Letters
+- The triangle alignment indicator at the start of each row is **always
+  generated** — it is critical to the mechanical device the cylinder mounts
+  into and has no user-facing toggle
+- The `indicators` toggle ("Indicator Letters") controls only the square
+  marker next to the triangle
+- On: 2 marker cells per row (triangle + square); Off: 1 marker cell
+  (triangle only), freeing 1 cell of physical space per row
+- Text capacity always stays at `grid_columns`
 
 ### Paper Thickness Presets
 - **0.4mm Preset** (default): Optimized for thicker paper, larger dots
@@ -106,8 +111,8 @@ All parameters match the web-based generator UI:
 ## 📐 Default Settings
 
 Spacing and dimension defaults match the web app's **0.4mm Paper Thickness
-Preset** (applied on load). The default **dot shape is `Cone`** (the dropdown
-still offers `Rounded`):
+Preset** (applied on load). The default **dot shape is `Rounded`** (the
+dropdown still offers `Cone`):
 
 ### Cylinder Settings
 - Diameter: 30.8mm
@@ -116,31 +121,31 @@ still offers `Rounded`):
 - Seam Offset: 0°
 
 ### Braille Grid
-- Cells per row: 13 (available for text; 2 additional cells reserved when indicators are on — matches the web app default; with indicators off, up to 15 cells fit the default cylinder)
+- Cells per row: 13 (available for text; 2 additional cells reserved when Indicator Letters is On — matches the web app default; with Indicator Letters Off only the triangle cell is reserved, so up to 14 text cells fit the default cylinder)
 - Number of rows: 4
 - Cell spacing: 6.5mm
 - Line spacing: 10.0mm
 - Dot spacing: 2.5mm
 
-### Dot Dimensions (Cone - 0.4mm Preset, default shape)
-- Base diameter: 1.5mm
-- Height: 0.8mm
-- Flat hat diameter: 0.4mm
-
-### Counter Plate (Cone recess - 0.4mm Preset, default shape)
-- Base diameter: 1.9mm
-- Height: 0.7mm
-- Flat hat diameter: 1.0mm
-
-### Dot Dimensions (Rounded - 0.4mm Preset, alternative shape)
+### Dot Dimensions (Rounded - 0.4mm Preset, default shape)
 - Base diameter: 1.5mm
 - Base height: 0.5mm
 - Dome diameter: 1.0mm
 - Dome height: 0.5mm
 
-### Counter Plate (Bowl - 0.4mm Preset, alternative shape)
+### Counter Plate (Bowl - 0.4mm Preset, default shape)
 - Base diameter: 1.8mm
 - Depth: 0.8mm
+
+### Dot Dimensions (Cone - 0.4mm Preset, alternative shape)
+- Base diameter: 1.5mm
+- Height: 0.8mm
+- Flat hat diameter: 0.4mm
+
+### Counter Plate (Cone recess - 0.4mm Preset, alternative shape)
+- Base diameter: 1.9mm
+- Height: 0.7mm
+- Flat hat diameter: 1.0mm
 
 ---
 
@@ -225,9 +230,10 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
 
 ### "TEXT TOO LONG" Warning
 - Any of `Line_1`–`Line_4` is longer than the text capacity
-- Capacity = `grid_columns` (default 13), whether indicators are on or off.
-  When indicators are on, the grid is widened by 2 cells for the alignment
-  markers, so the text capacity is unchanged
+- Capacity = `grid_columns` (default 13), whether Indicator Letters is On or
+  Off. The grid is widened by 2 cells when Indicator Letters is On (triangle +
+  square) or by 1 cell when Off (triangle only), so the text capacity is
+  unchanged
 - A red `TEXT TOO LONG: <longest line>/<capacity>` extrusion (e.g.
   `TEXT TOO LONG: 16/13`) is rendered above the cylinder whenever the limit
   is exceeded, and the console prints a per-line `echo()` warning such as
@@ -251,7 +257,7 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
 ### Plates Don't Fit Together
 - Verify both plates use same `dot_shape` setting
 - Check that counter plate dimensions match emboss dimensions
-- Ensure `indicators` setting is same for both plates
+- Ensure the `indicators` (Indicator Letters) setting is the same for both plates
 
 ---
 

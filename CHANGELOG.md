@@ -27,6 +27,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the counter-plate pairing tip. Linked from `makerworld/README.md`.
 
 ### Changed
+- **Default `dot_shape` is now `"Rounded"`** (was `"Cone"`) in both
+  `Braille_Cylinder_STL_Generator.scad` and the MakerWorld single-file build,
+  matching the web app where the 0.4mm/0.3mm presets default to the Rounded
+  dot shape. The dropdown still offers `Cone`. Preset dot/spacing dimensions
+  are unchanged. `tests/test_makerworld_sync.py` now asserts the Rounded
+  default in both files.
+- **Indicator Letters toggle no longer removes the triangle.** The triangle
+  alignment indicator at column 0 is now always generated on both plates — it
+  is critical to the mechanical device the cylinder mounts into and has no
+  user-facing toggle. The `indicators` toggle (relabeled "Indicator Letters")
+  gates only the square/rectangle marker at column 1. Grid widening is now
+  `+2` cells when On (triangle + square) and `+1` when Off (triangle only),
+  so turning Indicator Letters Off frees 1 cell of physical space per row (up
+  to 14 text cells fit the default cylinder, up from 13). Text capacity
+  remains `grid_columns` in both states. Applied to `place_row_indicators`,
+  `actual_grid_columns`, and the emboss/counter dot-placement offsets in both
+  SCAD files; docs (`README.md`, `docs/PARAMETER_MAPPING.md`,
+  `docs/MAKERWORLD_QUICK_START.md`, `makerworld/README.md`) updated to match.
+- **Regenerated the 14 cross-platform reference fixtures** (OpenSCAD self-test
+  mode). Geometry changed only for the four `indicators_off` core-matrix cases
+  (the always-present triangle) and the two indicator-isolation fixtures; the
+  `indicators_on` core-matrix STLs are byte-identical, confirming indicators-on
+  geometry is unchanged. This also refreshed the stale
+  `cylinder_indicator_recess_rounded` reference, which had drifted from the
+  current code (pre-existing ~2.75% volume mismatch) before these changes.
 - **`grid_columns` default raised from 11 to 13.** Matches the web app's
   13-cell default row capacity, so a BANA-formatted 10-digit phone number
   (e.g. `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓`, 13 cells) fits on one row out of the box. Applied

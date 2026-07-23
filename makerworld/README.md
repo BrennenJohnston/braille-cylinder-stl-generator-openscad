@@ -39,7 +39,7 @@ marker:
   // ==== END inlined from presets.scad ====
   ```
 
-Both this file and the canonical desktop file default `dot_shape` to `"Cone"`
+Both this file and the canonical desktop file default `dot_shape` to `"Rounded"`
 and `paper_thickness_preset` to `"0.4mm"` (the dropdowns still offer the other
 options).
 
@@ -56,7 +56,7 @@ options).
    - Paste braille into `Line_1`, `Line_2`, … (do **not** type plain English).
    - Choose `plate_type`: *Embossing Plate* or *Counter Plate*.
    - Choose `paper_thickness_preset`: `0.4mm`, `0.3mm`, or `Custom`.
-   - `dot_shape` is already set to `Cone`; switch to `Rounded` if preferred.
+   - `dot_shape` is already set to `Rounded`; switch to `Cone` if preferred.
 5. Generate / render and download the STL.
 
 > Tip: generate the **Embossing Plate** and the **Counter Plate** separately
@@ -66,9 +66,10 @@ options).
 ## Text capacity and the TEXT TOO LONG warning
 
 - Each row holds **13 braille cells of text** by default (`grid_columns = 13`,
-  matching the web app). When `indicators` is On, 2 extra marker cells are
-  added automatically — text capacity is unchanged. With indicators Off, up to
-  15 cells fit the default 30.8 mm cylinder.
+  matching the web app). When `indicators` (Indicator Letters) is On, 2 extra
+  marker cells (triangle + square) are added automatically — text capacity is
+  unchanged. When Off, only the always-present triangle cell is added, so up to
+  14 text cells fit the default 30.8 mm cylinder.
 - The `grid_columns` / `grid_rows` sliders always govern capacity; the paper
   thickness presets deliberately do **not** override them.
 - If any line exceeds the capacity, red 3D text appears above the cylinder
@@ -107,8 +108,8 @@ change. Do it manually (no codegen step is committed) and let
 2. **Re-sync the Customizer parameters** (the section above the
    `BACKWARD COMPATIBILITY` marker) if any parameter names, defaults, ranges, or
    section headings changed upstream. Both files currently default `dot_shape`
-   to `"Cone"`; if the upstream default ever diverges, decide deliberately which
-   default this single-file build should ship.
+   to `"Rounded"`; if the upstream default ever diverges, decide deliberately
+   which default this single-file build should ship.
 
 3. **Re-inline presets if `../presets.scad` changed.** Replace everything between
 
@@ -134,5 +135,5 @@ change. Do it manually (no codegen step is committed) and let
    ```
 
    The sync test confirms the geometry body matches the canonical file and that
-   the sentinels + Cone default are present; the render confirms the file is a
+   the sentinels + Rounded default are present; the render confirms the file is a
    valid standalone single-file build.

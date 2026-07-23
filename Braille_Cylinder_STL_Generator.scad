@@ -100,9 +100,9 @@ plate_type = "Embossing Plate"; // [Embossing Plate, Counter Plate]
 paper_thickness_preset = "0.4mm"; // [0.4mm, 0.3mm, Custom]
 
 /* [Expert Mode - Shape Selection] */
-// Braille Dot Shape (Emboss and Counter) - affects both plate types
-dot_shape = "Cone"; // [Rounded, Cone]
-// Indicator Shapes (Emboss and Counter) - Row start/end markers
+// Braille Dot Shape (Emboss and Counter) - affects both plate types (Rounded is the default for the 0.4mm and 0.3mm presets)
+dot_shape = "Rounded"; // [Rounded, Cone]
+// Indicator Letters (Emboss and Counter) - square marker cutout next to the alignment triangle. Off frees 1 cell per row for braille text; the triangle alignment indicators are always included (they are critical to the mechanical device the cylinder mounts into).
 indicators = "On"; // [On, Off]
 
 /* [Expert Mode - Cylinder Dimensions] */
@@ -114,7 +114,7 @@ seam_offset_degrees = 0.0; // [0:1:360] Seam offset (degrees) — Rotates starti
 
 /* [Expert Mode - Braille Spacing] */
 // --- Braille Dimensions ---
-grid_columns = 13; // [1:1:20] Text capacity in braille cells per row (matches the web app default of 13 text cells; when indicators are On, 2 extra marker cells are added; with indicators Off, up to 15 cells fit the default cylinder)
+grid_columns = 13; // [1:1:20] Text capacity in braille cells per row (matches the web app default of 13 text cells; when Indicator Letters are On, 2 extra marker cells are added; when Off, 1 extra cell for the always-present alignment triangle — up to 14 text cells fit the default cylinder with Indicator Letters Off)
 grid_rows = 4; // [1:1:10] Number of lines of braille
 cell_spacing = 6.5; // [2:0.1:15] Horizontal spacing between cells (mm)
 line_spacing = 10.0; // [5:0.1:25] Vertical spacing between lines (mm)
@@ -276,15 +276,17 @@ active_polygon_cutout_radius_mm = _preset_polygon_cutout_radius_mm;
 active_polygon_cutout_points = _preset_polygon_cutout_points;
 active_seam_offset_degrees = _preset_seam_offset_degrees;
 
-// Grid dimensions (accounting for indicator shapes if enabled)
-actual_grid_columns = indicator_on ? (active_grid_columns + 2) : active_grid_columns;
+// Grid dimensions. The triangle alignment marker column is ALWAYS present (it has
+// no user-facing toggle); the indicator letter/square column is added only when
+// Indicator Letters are On.
+actual_grid_columns = indicator_on ? (active_grid_columns + 2) : (active_grid_columns + 1);
 grid_width = (actual_grid_columns - 1) * active_cell_spacing;
 
-// Text-capacity check. Text capacity is always active_grid_columns; when
-// indicators are on the grid is widened by 2 marker cells, so text capacity
-// is unchanged. The check (and row clipping) can be bypassed with
-// text_limit_check = "Off", which renders every pasted cell — rows may then
-// crowd the seam.
+// Text-capacity check. Text capacity is always active_grid_columns; the grid is
+// widened by 2 marker cells when Indicator Letters are On, or by 1 (the alignment
+// triangle) when Off, so text capacity is unchanged. The check (and row clipping)
+// can be bypassed with text_limit_check = "Off", which renders every pasted cell —
+// rows may then crowd the seam.
 max_line_len = max([len(Line_1), len(Line_2), len(Line_3), len(Line_4)]);
 text_too_long = (text_limit_check == "On") && (max_line_len > active_grid_columns);
 
@@ -397,9 +399,11 @@ function get_dot_pattern(char) =
 //
 // CRITICAL SEMANTICS:
 // - Indicators are ALWAYS RECESSED (subtracted) for BOTH emboss and counter plates.
-// - Cylinder layout (when indicators ON):
-//     Column 0: Triangle marker (counter plate triangle rotated 180°)
-//     Column 1: Rectangle placeholder (counter ALWAYS rectangle; emboss uses rect for braille input)
+// - Cylinder layout:
+//     Column 0: Triangle alignment marker — ALWAYS present, no user-facing toggle
+//               (counter plate triangle rotated 180°)
+//     Column 1: Rectangle (square) placeholder — only when Indicator Letters are On
+//               (counter ALWAYS rectangle; emboss uses rect for braille input)
 //
 INDICATOR_TRIANGLE_DEPTH_EMBOSS = 0.6;
 INDICATOR_RECT_DEPTH_EMBOSS     = 0.5;
@@ -473,13 +477,18 @@ module place_cylinder_marker(theta_deg, y_pos, cyl_radius, depth, overcut = INDI
 // mirror of the emboss plate: triangle->rectangle center spacing is identical
 // on both plates (mirrored pair) and the triangles point opposite ways.
 module place_row_indicators(y_pos, tri_depth, rect_depth) {
-    tri_theta_deg = start_angle * 180 / PI;                       // Col 0: triangle
+    // Col 0: triangle alignment marker — ALWAYS placed (no user-facing toggle;
+    // the triangles are critical to the mechanical device the cylinder mounts into).
+    tri_theta_deg = start_angle * 180 / PI;
     place_cylinder_marker(tri_theta_deg, y_pos, radius, tri_depth)
         indicator_triangle_prism_centered(tri_depth, rotate_180 = true);
 
-    rect_theta_deg = (start_angle + cell_spacing_angle) * 180 / PI; // Col 1: rectangle
-    place_cylinder_marker(rect_theta_deg, y_pos, radius, rect_depth)
-        indicator_rectangle_prism_centered(rect_depth);
+    // Col 1: rectangle (square) placeholder — only when Indicator Letters are On.
+    if (indicator_on) {
+        rect_theta_deg = (start_angle + cell_spacing_angle) * 180 / PI;
+        place_cylinder_marker(rect_theta_deg, y_pos, radius, rect_depth)
+            indicator_rectangle_prism_centered(rect_depth);
+    }
 }
 
 // =============================================================================
@@ -614,7 +623,9 @@ module cylinder_emboss_plate() {
                             ? len(lines[row]) - 1
                             : min(active_grid_columns - 1, len(lines[row]) - 1);
                         for (col = [0 : row_last_col]) {
-                            actual_col = indicator_on ? (col + 2) : col;
+                            // Shift past the marker columns: triangle (always) at col 0,
+                            // plus the indicator letter square at col 1 when On.
+                            actual_col = indicator_on ? (col + 2) : (col + 1);
                             angle_rad = start_angle + (actual_col * cell_spacing_angle);
                             angle_deg = angle_rad * 180 / PI;
                             dots = get_dot_pattern(lines[row][col]);
@@ -639,15 +650,14 @@ module cylinder_emboss_plate() {
                 }
             }
 
-            // Subtract indicator recesses if enabled.
-            // Emboss renders the shared row layout directly; the counter plate
-            // renders the same module under mirror([0,1,0]) for a true mirrored
-            // pair (see cylinder_counter_plate).
-            if (indicator_on) {
-                for (row = [0 : active_grid_rows - 1]) {
-                    y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
-                    place_row_indicators(y_pos, INDICATOR_TRIANGLE_DEPTH_EMBOSS, INDICATOR_RECT_DEPTH_EMBOSS);
-                }
+            // Subtract indicator recesses. The triangle alignment marker is always
+            // recessed; place_row_indicators adds the square only when Indicator
+            // Letters are On. Emboss renders the shared row layout directly; the
+            // counter plate renders the same module under mirror([0,1,0]) for a
+            // true mirrored pair (see cylinder_counter_plate).
+            for (row = [0 : active_grid_rows - 1]) {
+                y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
+                place_row_indicators(y_pos, INDICATOR_TRIANGLE_DEPTH_EMBOSS, INDICATOR_RECT_DEPTH_EMBOSS);
             }
         }
     }
@@ -662,19 +672,18 @@ module cylinder_counter_plate() {
         // Angular grid + dot-positioning constants are derived at top level;
         // see `radius`, `start_angle`, `dot_positions`, etc. above.
 
-        // Create indicator recesses if enabled.
-        // The counter plate is an exact mirror of the emboss plate: render the
-        // shared emboss-orientation row layout under mirror([0,1,0]) so the
-        // triangle->rectangle center spacing is identical on both plates and the
-        // triangles point the opposite way (a reflection). Braille dots are
-        // radially symmetric and already mirror via angle negation below, so they
-        // stay aligned with the mirrored indicators.
-        if (indicator_on) {
-            for (row = [0 : active_grid_rows - 1]) {
-                y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
-                mirror([0, 1, 0])   // counter = exact mirror image of emboss
-                    place_row_indicators(y_pos, active_counter_height, active_counter_height);
-            }
+        // Create indicator recesses. The triangle alignment marker is always
+        // recessed; place_row_indicators adds the square only when Indicator
+        // Letters are On. The counter plate is an exact mirror of the emboss
+        // plate: render the shared emboss-orientation row layout under
+        // mirror([0,1,0]) so the triangle->rectangle center spacing is identical
+        // on both plates and the triangles point the opposite way (a reflection).
+        // Braille dots are radially symmetric and already mirror via angle
+        // negation below, so they stay aligned with the mirrored indicators.
+        for (row = [0 : active_grid_rows - 1]) {
+            y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
+            mirror([0, 1, 0])   // counter = exact mirror image of emboss
+                place_row_indicators(y_pos, active_counter_height, active_counter_height);
         }
         
         // Create recesses for ALL possible dot positions. When the text limit
@@ -687,7 +696,9 @@ module cylinder_counter_plate() {
             y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
             
             for (col = [0 : counter_last_col]) {
-                actual_col = indicator_on ? (col + 2) : col;
+                // Shift past the marker columns: triangle (always) at col 0,
+                // plus the indicator letter square at col 1 when On.
+                actual_col = indicator_on ? (col + 2) : (col + 1);
                 angle_rad = start_angle + (actual_col * cell_spacing_angle);
                 angle_deg = -(angle_rad * 180 / PI);
                 

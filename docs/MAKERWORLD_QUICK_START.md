@@ -90,10 +90,12 @@ end of the first line is preferred; omit it only as a last resort. Tip: omit
      `0.3mm` for thinner paper, or `Custom` to use your own slider values.
      Presets control dot and spacing dimensions; they never change the
      `grid_columns` / `grid_rows` capacity sliders.
-   - `dot_shape`: `Cone` (default) or `Rounded`.
-   - `indicators`: `On` adds a triangle/rectangle marker at each row's start
-     and end for plate alignment. This widens the grid by 2 marker cells —
-     your 13-cell text capacity is unchanged.
+   - `dot_shape`: `Rounded` (default) or `Cone`.
+   - `indicators` (Indicator Letters): `On` adds a square marker next to the
+     triangle alignment indicator at each row's start. The triangle is always
+     present — it is critical to the mechanical device the cylinder mounts
+     into. On widens the grid by 2 marker cells, Off by 1 (triangle only) —
+     your 13-cell text capacity is unchanged either way.
 3. Generate the **Embossing Plate** (`plate_type = Embossing Plate`),
    render, and download the STL.
 4. Switch `plate_type` to **Counter Plate** — change nothing else — and
@@ -113,7 +115,8 @@ end of the first line is preferred; omit it only as a last resort. Tip: omit
   cylinder (~96.8 mm circumference) fits that with room left for the seam
   gap. A larger diameter adds margin around the seam rather than more cells —
   raise `grid_columns` yourself if you want longer rows on a bigger cylinder.
-  With indicators Off, up to 15 text cells fit the default cylinder.
+  With Indicator Letters Off (triangle cell only), up to 14 text cells fit the
+  default cylinder.
 - Print cylinders standing upright for the best dot quality, and use
   `seam_offset_degrees` to rotate the seam away from your text.
 
