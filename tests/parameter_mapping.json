@@ -60,6 +60,17 @@
       "description": "Fourth line of braille text"
     },
     {
+      "openscad_name": "text_limit_check",
+      "web_api_name": null,
+      "web_ui_label": "Text Limit Check",
+      "type": "enum",
+      "default": "On",
+      "values": ["On", "Off"],
+      "section": "Text Input - Pre-Translated Braille",
+      "description": "Show TEXT TOO LONG warning and clip rows to the cell capacity. Off = render every pasted character (rows may crowd the seam).",
+      "note": "OpenSCAD-only toggle; the web app validates cell counts before generation instead"
+    },
+    {
       "openscad_name": "plate_type",
       "web_api_name": "plate_type",
       "web_ui_label": "Select Plate to Generate",
@@ -182,10 +193,10 @@
       "web_api_name": "grid_columns",
       "web_ui_label": "Number of Braille Cells",
       "type": "integer",
-      "default": 11,
+      "default": 13,
       "range": [1, 20],
       "section": "Expert Mode - Braille Spacing",
-      "description": "Text capacity in braille cells per row (when indicators are On, 2 extra cells are added for markers; text capacity is unchanged)"
+      "description": "Text capacity in braille cells per row (matches the web app default of 13 text cells; when indicators are On, 2 extra marker cells are added; with indicators Off, up to 15 cells fit the default cylinder)"
     },
     {
       "openscad_name": "grid_rows",

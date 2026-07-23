@@ -88,6 +88,8 @@ Line_1 = "⠓⠑⠇⠇⠕"; // First line of braille text
 Line_2 = "⠺⠕⠗⠇⠙"; // Second line of braille text
 Line_3 = ""; // Third line of braille text
 Line_4 = ""; // Fourth line of braille text
+// Show TEXT TOO LONG warning and clip rows to the cell capacity. Off = render every pasted character (rows may crowd the seam).
+text_limit_check = "On"; // [On, Off]
 
 /* [Plate Selection] */
 // Choose which plate to generate
@@ -112,7 +114,7 @@ seam_offset_degrees = 0.0; // [0:1:360] Seam offset (degrees) — Rotates starti
 
 /* [Expert Mode - Braille Spacing] */
 // --- Braille Dimensions ---
-grid_columns = 11; // [1:1:20] Text capacity in braille cells per row (when indicators are On, 2 extra cells are added for markers; text capacity is unchanged)
+grid_columns = 13; // [1:1:20] Text capacity in braille cells per row (matches the web app default of 13 text cells; when indicators are On, 2 extra marker cells are added; with indicators Off, up to 15 cells fit the default cylinder)
 grid_rows = 4; // [1:1:10] Number of lines of braille
 cell_spacing = 6.5; // [2:0.1:15] Horizontal spacing between cells (mm)
 line_spacing = 10.0; // [5:0.1:25] Vertical spacing between lines (mm)
@@ -277,6 +279,27 @@ active_seam_offset_degrees = _preset_seam_offset_degrees;
 // Grid dimensions (accounting for indicator shapes if enabled)
 actual_grid_columns = indicator_on ? (active_grid_columns + 2) : active_grid_columns;
 grid_width = (actual_grid_columns - 1) * active_cell_spacing;
+
+// Text-capacity check. Text capacity is always active_grid_columns; when
+// indicators are on the grid is widened by 2 marker cells, so text capacity
+// is unchanged. The check (and row clipping) can be bypassed with
+// text_limit_check = "Off", which renders every pasted cell — rows may then
+// crowd the seam.
+max_line_len = max([len(Line_1), len(Line_2), len(Line_3), len(Line_4)]);
+text_too_long = (text_limit_check == "On") && (max_line_len > active_grid_columns);
+
+// Console diagnostics for desktop users (the MakerWorld customizer preview
+// cannot show console output — it relies on the extruded 3D warning text).
+if (text_limit_check == "On") {
+    if (len(Line_1) > active_grid_columns)
+        echo(str("WARNING: Line_1 uses ", len(Line_1), " cells; capacity is ", active_grid_columns, ". Raise grid_columns, split across rows, or set text_limit_check = Off."));
+    if (len(Line_2) > active_grid_columns)
+        echo(str("WARNING: Line_2 uses ", len(Line_2), " cells; capacity is ", active_grid_columns, ". Raise grid_columns, split across rows, or set text_limit_check = Off."));
+    if (len(Line_3) > active_grid_columns)
+        echo(str("WARNING: Line_3 uses ", len(Line_3), " cells; capacity is ", active_grid_columns, ". Raise grid_columns, split across rows, or set text_limit_check = Off."));
+    if (len(Line_4) > active_grid_columns)
+        echo(str("WARNING: Line_4 uses ", len(Line_4), " cells; capacity is ", active_grid_columns, ". Raise grid_columns, split across rows, or set text_limit_check = Off."));
+}
 grid_height = (active_grid_rows - 1) * active_line_spacing;
 top_margin = (active_cylinder_height_mm - grid_height) / 2;
 
@@ -567,19 +590,15 @@ module cylinder_emboss_plate() {
                     text("INVALID CHARACTERS", size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
                 }
 
-                // Check whether any line exceeds the text capacity.
-                // Text capacity is always grid_columns; when indicators are on,
-                // the grid is widened by 2 cells (actual_grid_columns) to hold
-                // the alignment markers, so text capacity is unchanged.
-                text_too_long =
-                    max([len(Line_1), len(Line_2), len(Line_3), len(Line_4)])
-                    > active_grid_columns;
-
+                // TEXT TOO LONG warning (see top-level max_line_len /
+                // text_too_long; bypass with text_limit_check = "Off").
+                // The counts render in the MakerWorld customizer preview,
+                // which cannot show console output.
                 if (text_too_long) {
                     translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + INVALID_TEXT_STACK_GAP])
                     color("red")
                     linear_extrude(height = INVALID_TEXT_DEPTH)
-                    text("TEXT TOO LONG", size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
+                    text(str("TEXT TOO LONG: ", max_line_len, "/", active_grid_columns), size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
                 }
         
                 // Create braille dots on cylinder surface
@@ -589,7 +608,12 @@ module cylinder_emboss_plate() {
                     if (len(lines[row]) > 0) {
                         y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
                         
-                        for (col = [0 : min(active_grid_columns - 1, len(lines[row]) - 1)]) {
+                        // Clip each row to the cell capacity unless the user
+                        // bypassed the limit (then render every pasted cell).
+                        row_last_col = (text_limit_check == "Off")
+                            ? len(lines[row]) - 1
+                            : min(active_grid_columns - 1, len(lines[row]) - 1);
+                        for (col = [0 : row_last_col]) {
                             actual_col = indicator_on ? (col + 2) : col;
                             angle_rad = start_angle + (actual_col * cell_spacing_angle);
                             angle_deg = angle_rad * 180 / PI;
@@ -653,11 +677,16 @@ module cylinder_counter_plate() {
             }
         }
         
-        // Create recesses for ALL possible dot positions
+        // Create recesses for ALL possible dot positions. When the text limit
+        // is bypassed, also cover any extra columns the emboss plate renders
+        // so both plates stay in lockstep.
+        counter_last_col = (text_limit_check == "Off")
+            ? max(active_grid_columns, max_line_len) - 1
+            : active_grid_columns - 1;
         for (row = [0 : active_grid_rows - 1]) {
             y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
             
-            for (col = [0 : active_grid_columns - 1]) {
+            for (col = [0 : counter_last_col]) {
                 actual_col = indicator_on ? (col + 2) : col;
                 angle_rad = start_angle + (actual_col * cell_spacing_angle);
                 angle_deg = -(angle_rad * 180 / PI);

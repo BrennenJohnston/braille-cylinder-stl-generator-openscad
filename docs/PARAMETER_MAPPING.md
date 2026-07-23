@@ -27,6 +27,7 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 | `Line_2` | Line 2 text input | Must be pre-translated Unicode braille |
 | `Line_3` | Line 3 text input | Must be pre-translated Unicode braille |
 | `Line_4` | Line 4 text input | Must be pre-translated Unicode braille |
+| `text_limit_check` | *(OpenSCAD-only)* | `"On"` (default) shows the `TEXT TOO LONG` warning and clips rows to the cell capacity; `"Off"` renders every pasted cell (rows may crowd the seam). The web app validates cell counts before generation instead. |
 
 ### Plate Selection
 | OpenSCAD Parameter | Web App Equivalent | Values |
@@ -38,7 +39,7 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 |--------------------|-------------------|---------|--------|
 | `paper_thickness_preset` | Card Thickness | `"0.4mm"` | `"0.4mm"`, `"0.3mm"`, `"Custom"` |
 
-**Note:** The web UI label is "Card Thickness" but this is NOT the removed card-geometry feature. This is a parametric memory system that automatically sets 23 parameters (spacing, dot dimensions, and cylinder settings) to known-good values optimized for different paper thicknesses. Selecting "0.4mm" or "0.3mm" forces all preset-controlled parameters to specific values. "Custom" indicates that values deviate from presets.
+**Note:** The web UI label is "Card Thickness" but this is NOT the removed card-geometry feature. This is a parametric memory system that automatically sets 21 parameters (spacing, dot dimensions, and cylinder settings) to known-good values optimized for different paper thicknesses. Selecting "0.4mm" or "0.3mm" forces all preset-controlled parameters to specific values. "Custom" indicates that values deviate from presets. `grid_columns` and `grid_rows` are deliberately not preset-driven: the sliders always govern text capacity, matching the web app, where presets never override the columns/rows dials.
 
 ### Expert Mode - Shape Selection
 | OpenSCAD Parameter | Web App Equivalent | Values |
@@ -58,7 +59,7 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 ### Expert Mode - Braille Spacing
 | OpenSCAD Parameter | Web App Equivalent | Default | Range |
 |--------------------|-------------------|---------|-------|
-| `grid_columns` | Number of Braille Cells | 11 | 1-20 |
+| `grid_columns` | Number of Braille Cells | 13 | 1-20 |
 | `grid_rows` | Number of Braille Lines | 4 | 1-10 |
 | `cell_spacing` | Braille Cell Spacing | 6.5 mm | 2-15 mm |
 | `line_spacing` | Braille Line Spacing | 10.0 mm | 5-25 mm |
@@ -157,7 +158,7 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 
 All default values match the web-based generator's defaults (0.4mm paper preset applied on load):
 - Cylinder: 30.8mm diameter × 52mm height
-- Grid: 11 text cells × 4 rows (with indicator shapes ON, 2 additional cells are reserved = 13 total)
+- Grid: 13 text cells × 4 rows (with indicator shapes ON, 2 additional cells are reserved = 15 total; with indicators OFF, up to 15 text cells fit the default cylinder)
 - Spacing matches BANA specifications
 - Default shape: Cone (the dropdown still offers Rounded)
 - Default preset: 0.4mm (optimized for thicker paper, larger dots)
@@ -201,12 +202,12 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
 
 ## Notes
 
-1. **Paper Thickness Preset System**: This is a convenience system that sets 23 parameters to known-good values:
+1. **Paper Thickness Preset System**: This is a convenience system that sets 21 parameters to known-good values:
    - **0.4mm preset** (thicker paper, larger dots): Default setting that matches web app on-load behavior
    - **0.3mm preset** (thinner paper, smaller dots): Alternative optimized for thinner materials
    - **Custom**: Indicator state when values deviate from presets
-   - The preset controls: spacing (7 params), emboss rounded (4 params), emboss cone (3 params), counter bowl (2 params), counter cone (3 params), and cylinder dimensions (5 params)
-   - Text, plate type, shape selection, and rendering quality remain user-controlled
+   - The preset controls: spacing (4 params: cell/line/dot spacing + Y adjust), emboss rounded (4 params), emboss cone (3 params), counter bowl (2 params), counter cone (3 params), and cylinder dimensions (5 params)
+   - Text, plate type, shape selection, rendering quality, and grid layout (`grid_columns`/`grid_rows`) remain user-controlled
 
 2. **Indicator Shapes**: When enabled (`indicator_on = true` in the
    Customizer; `indicator_shapes = "on"` is the legacy backward-compat

@@ -63,6 +63,30 @@ options).
 > (same settings, only `plate_type` changes) so the two plates form a matching
 > pair.
 
+## Text capacity and the TEXT TOO LONG warning
+
+- Each row holds **13 braille cells of text** by default (`grid_columns = 13`,
+  matching the web app). When `indicators` is On, 2 extra marker cells are
+  added automatically — text capacity is unchanged. With indicators Off, up to
+  15 cells fit the default 30.8 mm cylinder.
+- The `grid_columns` / `grid_rows` sliders always govern capacity; the paper
+  thickness presets deliberately do **not** override them.
+- If any line exceeds the capacity, red 3D text appears above the cylinder
+  with counts, e.g. `TEXT TOO LONG: 16/13` (longest line / capacity). The
+  MakerWorld preview cannot show console output, so the counts are rendered
+  into the warning itself.
+- Fixes: shorten or split the line across rows, raise `grid_columns`, or set
+  `text_limit_check` to `Off` to bypass the check — every pasted cell then
+  renders, but overlong rows may crowd the seam gap.
+- **Phone numbers:** formatted per BANA guidance (periods, no parentheses),
+  a 10-digit number such as `206.616.7678` is exactly 13 cells
+  (`⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓`) and fits one row. For longer numbers, split after a
+  period and start the next row with a fresh number sign: `⠼⠃⠚⠋⠲⠋⠁⠋⠲` then
+  `⠼⠛⠋⠛⠓`.
+
+See also: [MakerWorld Quick Start Guide](../docs/MAKERWORLD_QUICK_START.md)
+([PDF](../docs/MakerWorld_Quick_Start_Guide.pdf)).
+
 ## Maintainer: re-flatten procedure
 
 The MakerWorld file must be re-flattened whenever the canonical desktop files

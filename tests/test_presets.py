@@ -9,8 +9,11 @@ SCAD file consumes them with one ``_preset_<name>`` per parameter.
 The contract under test:
 
 1. ``PRESET_04`` and ``PRESET_03`` each contain the same set of
-   `[key, value]` rows (23 rows as of this commit) and cover every
+   `[key, value]` rows (21 rows as of this commit) and cover every
    preset-driven parameter consumed by the main file.
+   ``grid_columns`` and ``grid_rows`` are deliberately absent: the
+   sliders always govern text capacity (matching the web app, where
+   thickness presets never override the columns/rows dials).
 2. Known numeric values match the documented preset table (mirrors the web
    app's ``THICKNESS_PRESETS`` block in ``public/index.html``).
 3. ``preset_value("0.4mm", k, fallback)`` returns the PRESET_04 value;
@@ -37,10 +40,10 @@ PRESETS_FILE = PROJECT_ROOT / "presets.scad"
 
 # Mirrors PRESET_04 in presets.scad. Order doesn't matter for the equality
 # check; values are the source of truth for the customizer behaviour.
+# grid_columns/grid_rows are intentionally NOT preset-driven (sliders govern
+# text capacity), so they must not appear here or in the tables.
 EXPECTED_PRESET_04 = {
     # Spacing
-    "grid_columns": 11,
-    "grid_rows": 4,
     "cell_spacing": 6.5,
     "line_spacing": 10.0,
     "dot_spacing": 2.5,
@@ -73,8 +76,6 @@ EXPECTED_PRESET_04 = {
 # and spacing rows are identical to PRESET_04 by design.
 EXPECTED_PRESET_03 = {
     # Spacing (same as 0.4mm)
-    "grid_columns": 11,
-    "grid_rows": 4,
     "cell_spacing": 6.5,
     "line_spacing": 10.0,
     "dot_spacing": 2.5,
@@ -206,8 +207,8 @@ class TestPresetTables:
             f"  {k}: expected {e!r}, got {a!r}" for k, e, a in mismatches
         )
 
-    def test_preset_tables_share_23_parameters(self, preset_04, preset_03):
-        """Both tables cover the same 23 parameters (just at different sizes)."""
+    def test_preset_tables_share_same_parameters(self, preset_04, preset_03):
+        """Both tables cover the same 21 parameters (just at different sizes)."""
         assert set(preset_04) == set(preset_03), (
             "PRESET_04 and PRESET_03 must cover the same parameters; the "
             "main SCAD looks up the same keys in both."

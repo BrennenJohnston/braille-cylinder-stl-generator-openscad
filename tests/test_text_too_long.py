@@ -262,7 +262,18 @@ def test_warning_source_constants_present():
     positioning constants this test depends on.
     """
     src = SCAD_FILE.read_text(encoding="utf-8")
-    assert '"TEXT TOO LONG"' in src, "Expected literal `\"TEXT TOO LONG\"` in SCAD source"
+    # The warning now includes counts: str("TEXT TOO LONG: ", max_line_len, "/", active_grid_columns)
+    assert '"TEXT TOO LONG: "' in src, (
+        'Expected literal `"TEXT TOO LONG: "` (with counts) in SCAD source'
+    )
+    assert 'text_limit_check == "On"' in src, (
+        "Expected the text_too_long condition to respect the "
+        "text_limit_check On/Off bypass toggle."
+    )
+    assert 'text_limit_check = "On"; // [On, Off]' in src, (
+        "Expected the text_limit_check customizer parameter (default On) "
+        "in the Text Input section."
+    )
     assert "INVALID_TEXT_Z_OFFSET + INVALID_TEXT_STACK_GAP" in src, (
         "Expected the TEXT TOO LONG warning to be stacked at "
         "INVALID_TEXT_Z_OFFSET + INVALID_TEXT_STACK_GAP (above the "

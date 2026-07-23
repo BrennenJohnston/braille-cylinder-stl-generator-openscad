@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`text_limit_check` On/Off parameter (Text Input section).** `On` (default)
+  keeps the existing behavior: rows are clipped to the cell capacity and the
+  red warning renders when a line is too long. `Off` bypasses the check —
+  every pasted cell renders (embossing dots and counter-plate recesses alike)
+  and no warning appears, at the cost of overlong rows possibly crowding the
+  seam gap. Added to both SCAD files, `tests/parameter_mapping.json`,
+  `docs/PARAMETER_MAPPING.md`, and the README troubleshooting section.
+- **Counts in the `TEXT TOO LONG` warning.** The red extrusion now reads
+  `TEXT TOO LONG: <longest line>/<capacity>` (e.g. `TEXT TOO LONG: 16/13`) so
+  MakerWorld users — who cannot see the console — know how far over the limit
+  they are. Desktop users additionally get a per-line `echo()` warning naming
+  the offending `Line_N`, its cell count, the capacity, and the available
+  fixes.
+- **MakerWorld Quick Start Guide.** New `docs/MAKERWORLD_QUICK_START.md` plus
+  a generated PDF (`docs/MakerWorld_Quick_Start_Guide.pdf`) covering the
+  upload flow, braille translation, capacity rules, phone-number formatting,
+  and the counter-plate pairing tip. Linked from `makerworld/README.md`.
+
+### Changed
+- **`grid_columns` default raised from 11 to 13.** Matches the web app's
+  13-cell default row capacity, so a BANA-formatted 10-digit phone number
+  (e.g. `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓`, 13 cells) fits on one row out of the box. Applied
+  to both SCAD files, `tests/parameter_mapping.json`, and docs.
+- **`grid_columns` / `grid_rows` removed from the paper-thickness presets.**
+  `PRESET_04` and `PRESET_03` now control 21 parameters (down from 23); the
+  capacity sliders always govern the grid, matching the web app where the
+  Card Thickness dropdown never touches columns/rows. Updated `presets.scad`,
+  the inlined MakerWorld copy, `tests/test_presets.py`, and docs.
+
 ### Removed
 - **Braille wedge card generator split into its own repository.** The
   experimental leaning-card generator

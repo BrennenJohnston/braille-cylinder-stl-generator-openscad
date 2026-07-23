@@ -38,10 +38,12 @@
 /* [Hidden] */
 
 // --------- 0.4mm Preset (Thicker Paper, Larger Dots) ---------
+// NOTE: grid_columns and grid_rows are deliberately ABSENT from the preset
+// tables. preset_value() falls back to the user's slider when a key is
+// missing, so the sliders always govern text capacity — matching the web
+// app, where thickness presets never override the columns/rows dials.
 PRESET_04 = [
     // Spacing
-    ["grid_columns",                    11],
-    ["grid_rows",                       4],
     ["cell_spacing",                    6.5],
     ["line_spacing",                    10.0],
     ["dot_spacing",                     2.5],
@@ -77,9 +79,8 @@ PRESET_04 = [
 
 // --------- 0.3mm Preset (Thinner Paper, Smaller Dots) ---------
 PRESET_03 = [
-    // Spacing (same as 0.4mm)
-    ["grid_columns",                    11],
-    ["grid_rows",                       4],
+    // Spacing (same as 0.4mm; grid_columns/grid_rows intentionally absent —
+    // the sliders always govern text capacity)
     ["cell_spacing",                    6.5],
     ["line_spacing",                    10.0],
     ["dot_spacing",                     2.5],

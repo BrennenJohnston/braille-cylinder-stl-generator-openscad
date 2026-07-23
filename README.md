@@ -38,6 +38,7 @@ desktop app? A flattened, single-file build lives in
 
 - [`makerworld/Braille_Cylinder_STL_Generator_MakerWorld.scad`](makerworld/Braille_Cylinder_STL_Generator_MakerWorld.scad) — one `.scad` file (presets inlined, no `include`), ready to upload. Defaults to the `Cone` dot shape.
 - See [`makerworld/README.md`](makerworld/README.md) for upload steps and the maintainer re-flatten procedure.
+- New to the workflow? Start with the [MakerWorld Quick Start Guide](docs/MAKERWORLD_QUICK_START.md) (also as a printable [PDF](docs/MakerWorld_Quick_Start_Guide.pdf)).
 
 The dual-file desktop version in the repository root remains the canonical
 source of truth; the MakerWorld file's geometry body is kept byte-identical to
@@ -90,7 +91,7 @@ it by `tests/test_makerworld_sync.py`.
 - **0.3mm Preset**: Optimized for thinner paper, smaller dots
 - **Custom**: Use manually-entered parameter values
 
-The preset system controls 23 parameters at once (spacing, dot dimensions, cylinder settings) matching the web app's "Card Thickness" dropdown.
+The preset system controls 21 parameters at once (spacing, dot dimensions, cylinder settings) matching the web app's "Card Thickness" dropdown. `grid_columns` and `grid_rows` are deliberately **not** preset-driven: the sliders always govern text capacity, just like the web app's columns/rows dials.
 
 ### Parametric Control
 All parameters match the web-based generator UI:
@@ -115,7 +116,7 @@ still offers `Rounded`):
 - Seam Offset: 0°
 
 ### Braille Grid
-- Cells per row: 11 (available for text; 2 additional cells reserved when indicators are on)
+- Cells per row: 13 (available for text; 2 additional cells reserved when indicators are on — matches the web app default; with indicators off, up to 15 cells fit the default cylinder)
 - Number of rows: 4
 - Cell spacing: 6.5mm
 - Line spacing: 10.0mm
@@ -158,6 +159,7 @@ still offers `Rounded`):
 
 | Document | Description |
 |----------|-------------|
+| [docs/MAKERWORLD_QUICK_START.md](docs/MAKERWORLD_QUICK_START.md) | MakerWorld quick start guide (also as a [PDF](docs/MakerWorld_Quick_Start_Guide.pdf); regenerate with `scripts/generate_quick_start_pdf.py`) |
 | [docs/WEB_TO_OPENSCAD_PORTING_GUIDE.md](docs/WEB_TO_OPENSCAD_PORTING_GUIDE.md) | Comprehensive guide for porting web generators to OpenSCAD |
 | [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) | Quick start guide for the test framework |
 | [docs/PARAMETER_MAPPING.md](docs/PARAMETER_MAPPING.md) | Parameter mapping between OpenSCAD and web UI |
@@ -223,12 +225,24 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
 
 ### "TEXT TOO LONG" Warning
 - Any of `Line_1`–`Line_4` is longer than the text capacity
-- Capacity = `grid_columns`, whether indicators are on or off. When
-  indicators are on, the grid is widened by 2 cells for the alignment
+- Capacity = `grid_columns` (default 13), whether indicators are on or off.
+  When indicators are on, the grid is widened by 2 cells for the alignment
   markers, so the text capacity is unchanged
-- A red `TEXT TOO LONG` extrusion is rendered above the cylinder
-  whenever the limit is exceeded
-- Solution: shorten the line or increase `grid_columns`
+- A red `TEXT TOO LONG: <longest line>/<capacity>` extrusion (e.g.
+  `TEXT TOO LONG: 16/13`) is rendered above the cylinder whenever the limit
+  is exceeded, and the console prints a per-line `echo()` warning such as
+  `WARNING: Line_1 uses 16 cells; capacity is 13. Raise grid_columns, split
+  across rows, or set text_limit_check = Off.`
+- Solutions:
+  - Shorten the line, split it across rows, or increase `grid_columns`
+  - **Phone numbers:** a 10-digit number formatted per BANA guidance
+    (`⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓` for `206.616.7678`) is exactly 13 cells and fits the
+    default row. If a longer number will not fit, split it after a period
+    and start the next row with a fresh number sign — e.g. `⠼⠃⠚⠋⠲⠋⠁⠋⠲` on
+    one row and `⠼⠛⠋⠛⠓` on the next
+  - Set `text_limit_check = "Off"` (Text Input section) to bypass the check
+    entirely: every pasted cell renders and no warning appears, but rows
+    longer than the capacity may crowd the seam gap
 
 ### Dots Don't Align
 - Check `braille_y_adjust` for vertical offset, or `seam_offset_degrees` for angular offset around the cylinder

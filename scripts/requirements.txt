@@ -1,0 +1,6 @@
+# Dependencies for the documentation/utility scripts in this folder.
+#
+# Installation: pip install -r scripts/requirements.txt
+
+# PDF generation (scripts/generate_quick_start_pdf.py)
+fpdf2==2.8.7
