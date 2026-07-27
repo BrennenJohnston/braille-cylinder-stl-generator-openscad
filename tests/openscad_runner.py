@@ -13,10 +13,9 @@ import logging
 import platform
 import shutil
 import subprocess
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -125,9 +124,9 @@ class OpenSCADRunner:
                 return path
 
         raise OpenSCADNotFoundError(
-            f"OpenSCAD executable not found. Searched PATH and default locations.\n"
-            f"Please install OpenSCAD or set OPENSCAD_PATH environment variable.\n"
-            f"See tests/tool_versions.yml for installation instructions."
+            "OpenSCAD executable not found. Searched PATH and default locations.\n"
+            "Please install OpenSCAD or set OPENSCAD_PATH environment variable.\n"
+            "See tests/tool_versions.yml for installation instructions."
         )
 
     def _verify_openscad(self) -> None:

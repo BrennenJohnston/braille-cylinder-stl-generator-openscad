@@ -75,8 +75,11 @@ jobs:
       
       - name: Run Python linting (ruff)
         run: |
-          pip install ruff
-          ruff check tests/ scripts/ --ignore E501
+          # Pinned: ruff's default rule set grows with each release, so an
+          # unpinned install makes CI fail on an unchanged tree whenever ruff
+          # ships new rules. Rule selection lives in ruff.toml.
+          pip install ruff==0.16.0
+          ruff check tests/ scripts/
         continue-on-error: true
       
       - name: Validate parameter schema

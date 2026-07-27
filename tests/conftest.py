@@ -19,12 +19,13 @@ from typing import Any, Dict
 import pytest
 import yaml
 
-# Add project root to path
+# Add project root to path. These imports must come after the sys.path insert,
+# so E402 is expected here.
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from tests.mesh_comparison import MeshComparator
-from tests.openscad_runner import OpenSCADRunner
+from tests.mesh_comparison import MeshComparator  # noqa: E402
+from tests.openscad_runner import OpenSCADRunner  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -282,9 +283,9 @@ def check_environment(openscad_runner, mesh_comparator):
         )
 
     # Check Python packages
-    import trimesh
     import numpy
     import scipy
+    import trimesh
 
     logger.info(f"✓ trimesh: {trimesh.__version__}")
     logger.info(f"✓ numpy: {numpy.__version__}")

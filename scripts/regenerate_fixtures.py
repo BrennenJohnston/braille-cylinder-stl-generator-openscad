@@ -32,15 +32,16 @@ import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-# Add project root to path BEFORE importing project modules
+# Add project root to path BEFORE importing project modules, so E402 is
+# expected on the imports below.
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-import trimesh
+import trimesh  # noqa: E402
 
-from tests.openscad_runner import OpenSCADRunner, OpenSCADNotFoundError
+from tests.openscad_runner import OpenSCADNotFoundError, OpenSCADRunner  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -210,7 +211,7 @@ class OpenSCADFixtureGenerator:
         with open(version_txt_path, "w") as f:
             f.write("# Reference Fixture Version Information\n")
             f.write(f"# Generated: {version_info['generated_at']}\n")
-            f.write(f"# Method: OpenSCAD self-test mode\n")
+            f.write("# Method: OpenSCAD self-test mode\n")
             f.write(f"# OpenSCAD: {version_info['openscad_version']}\n")
             f.write(f"# Total fixtures: {version_info['total_fixtures']}\n")
             f.write(f"# Failed: {version_info['failed_fixtures']}\n")
@@ -461,7 +462,7 @@ Examples:
             print("=" * 70)
             print(f"  Generated: {version_info['total_fixtures']}")
             print(f"  Failed: {version_info['failed_fixtures']}")
-            print(f"  Method: OpenSCAD self-test")
+            print("  Method: OpenSCAD self-test")
             print(f"  OpenSCAD: {version_info['openscad_version']}")
             print(f"  Output: {args.output_dir}")
             print("=" * 70)

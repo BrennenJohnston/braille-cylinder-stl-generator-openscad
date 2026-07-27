@@ -14,8 +14,9 @@ License: PolyForm Noncommercial 1.0.0
 """
 
 import re
-import pytest
 from pathlib import Path
+
+import pytest
 
 PROJECT_ROOT = Path(__file__).parent.parent
 SCAD_FILE = PROJECT_ROOT / "Braille_Cylinder_STL_Generator.scad"
@@ -69,11 +70,11 @@ class TestOpenSCADCustomizer:
         
         if dropdown_lines_with_colon:
             pytest.fail(
-                f"Found dropdown definitions using problematic 'value:Label' format.\n"
-                f"This format can cause duplicate entries in OpenSCAD Customizer.\n"
-                f"Problematic lines:\n" +
+                "Found dropdown definitions using problematic 'value:Label' format.\n"
+                "This format can cause duplicate entries in OpenSCAD Customizer.\n"
+                "Problematic lines:\n" +
                 "\n".join(f"  - {line}" for line in dropdown_lines_with_colon) +
-                f"\n\nRecommended format: param = \"DefaultLabel\"; // [Label1, Label2]"
+                "\n\nRecommended format: param = \"DefaultLabel\"; // [Label1, Label2]"
             )
 
     def test_dropdown_default_matches_option(self, scad_content):
@@ -214,7 +215,7 @@ class TestBackwardCompatibility:
         
         if missing_patterns:
             pytest.fail(
-                f"Normalization code missing handling for patterns:\n" +
+                "Normalization code missing handling for patterns:\n" +
                 "\n".join(f"  - {p}" for p in missing_patterns) +
                 "\n\nBoth UI labels and test system values must be normalized."
             )

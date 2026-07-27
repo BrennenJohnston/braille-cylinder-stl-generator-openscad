@@ -219,7 +219,7 @@ def check_fixtures():
     # Check version file
     version_file = fixtures_dir / "FIXTURES_VERSION.txt"
     if version_file.exists():
-        print(f"  ✓ Version file exists")
+        print("  ✓ Version file exists")
         with open(version_file) as f:
             first_line = f.readline().strip()
             print(f"    {first_line}")

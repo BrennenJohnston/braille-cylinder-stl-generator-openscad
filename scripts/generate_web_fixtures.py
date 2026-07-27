@@ -33,10 +33,9 @@ import hashlib
 import json
 import logging
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -57,8 +56,9 @@ class WebFixtureGenerator:
             download_dir: Directory for downloaded STL files
             headless: Run browser in headless mode
         """
+        # Import purely to probe availability, hence unused (F401).
         try:
-            from playwright.sync_api import sync_playwright
+            from playwright.sync_api import sync_playwright  # noqa: F401
         except ImportError:
             raise ImportError(
                 "Playwright is required for web fixture generation.\n"
@@ -525,9 +525,9 @@ Setup:
     )
 
     try:
-        # Check Playwright installation
+        # Check Playwright installation. Imported only to probe availability.
         try:
-            from playwright.sync_api import sync_playwright
+            from playwright.sync_api import sync_playwright  # noqa: F401
         except ImportError:
             logger.error("Playwright is not installed.")
             logger.info("Install with: pip install playwright")
@@ -613,7 +613,7 @@ Setup:
         with open(version_txt_path, "w") as f:
             f.write("# Reference Fixture Version Information\n")
             f.write(f"# Generated: {version_info['generated_at']}\n")
-            f.write(f"# Method: Web UI (Playwright automation)\n")
+            f.write("# Method: Web UI (Playwright automation)\n")
             f.write(f"# Web URL: {version_info['web_url']}\n")
             f.write(f"# Total fixtures: {version_info['total_fixtures']}\n")
             f.write(f"# Failed: {version_info['failed_fixtures']}\n")
@@ -630,7 +630,7 @@ Setup:
         print("=" * 70)
         print(f"  Generated: {version_info['total_fixtures']}")
         print(f"  Failed: {version_info['failed_fixtures']}")
-        print(f"  Method: Web UI (Playwright)")
+        print("  Method: Web UI (Playwright)")
         print(f"  Web URL: {version_info['web_url']}")
         print(f"  Output: {args.output_dir}")
         print("=" * 70)

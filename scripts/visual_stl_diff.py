@@ -28,7 +28,7 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict
 
 import numpy as np
 
@@ -38,19 +38,21 @@ except ImportError:
     print("Error: trimesh is required. Install with: pip install trimesh")
     sys.exit(1)
 
+# Optional dependencies. Importing Normalize, Axes3D, and Image here is how
+# availability is probed, so they are unused by design (F401).
 try:
     import matplotlib
     matplotlib.use('Agg')  # Non-interactive backend
     import matplotlib.pyplot as plt
-    from matplotlib.colors import Normalize
-    from mpl_toolkits.mplot3d import Axes3D
+    from matplotlib.colors import Normalize  # noqa: F401
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
     print("Warning: matplotlib not available. PNG rendering disabled.")
 
 try:
-    from PIL import Image
+    from PIL import Image  # noqa: F401
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False

@@ -82,7 +82,7 @@ def check_fixtures():
             print(f"     Size: {size_mb:.2f} MB")
             print(f"     {fixture['description']}")
             if not fixture["has_params"]:
-                print(f"     ⚠️  Warning: params.json missing")
+                print("     ⚠️  Warning: params.json missing")
             print()
     
     # Print missing fixtures
@@ -94,9 +94,9 @@ def check_fixtures():
             print(f"  {priority_marker} {fixture['name']}")
             print(f"     {fixture['description']}")
             if not fixture["has_dir"]:
-                print(f"     ⚠️  Directory not created yet")
+                print("     ⚠️  Directory not created yet")
             if fixture["has_params"]:
-                print(f"     ✓ params.json exists (copy parameters from this file)")
+                print("     ✓ params.json exists (copy parameters from this file)")
             print()
     
     # Summary

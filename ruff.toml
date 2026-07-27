@@ -1,0 +1,22 @@
+# Lint configuration for the test suite.
+#
+# Ruff's *default* rule set grows with each release, so running `ruff check`
+# without a config means CI's verdict depends on which ruff version pip happens
+# to install that day. Ruff 0.16 turned on UP/PIE/BLE/PLW/RUF by default and
+# failed this repo on an unchanged tree; the CI workflow pins the version, and
+# this file pins which rules are actually being asked for.
+#
+# E + F is what the suite was written against; I is added deliberately because
+# import order is worth enforcing and costs nothing.
+
+[lint]
+select = ["E", "F", "I"]
+# Assertion messages and braille test strings are long by nature, and wrapping
+# them hurts readability more than the column limit helps.
+ignore = ["E501"]
+
+[lint.isort]
+# pytest puts tests/ on sys.path, so these local modules are imported by bare
+# name; scripts/ imports them as `tests.*` after inserting the project root.
+# Without this, ruff sorts them as third-party.
+known-first-party = ["conftest", "openscad_runner", "tests"]

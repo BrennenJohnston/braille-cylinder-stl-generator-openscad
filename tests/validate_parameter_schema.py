@@ -18,7 +18,7 @@ import logging
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -609,10 +609,10 @@ def main():
         print("PARAMETER SCHEMA VALIDATION RESULTS")
         print("=" * 70)
 
-        # Group by severity
+        # Group by severity. Info-level results are counted in the summary
+        # below but never listed individually, so they are not collected here.
         errors = [r for r in results if r["severity"] == "error"]
         warnings = [r for r in results if r["severity"] == "warning"]
-        infos = [r for r in results if r["severity"] == "info"]
 
         # Print errors
         failed_errors = [e for e in errors if not e["passed"]]
