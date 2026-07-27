@@ -3,7 +3,7 @@ Guard that the MakerWorld single-file build stays in sync with the canonical
 dual-file desktop generator.
 
 MakerWorld's Parametric Model Maker accepts only one .scad file and does not
-support `include <...>`, so `makerworld/Braille_Cylinder_STL_Generator_MakerWorld.scad`
+support `include <...>`, so `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`
 is a flattened copy of the canonical main file with presets.scad inlined and
 `dot_shape` defaulting to "Rounded".
 
@@ -16,7 +16,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL = REPO_ROOT / "Braille_Cylinder_STL_Generator.scad"
-MAKERWORLD = REPO_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld.scad"
+MAKERWORLD = REPO_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad"
 
 # The geometry body starts at this marker and runs to EOF. Everything below it
 # must be identical between the canonical file and the MakerWorld flattened copy.

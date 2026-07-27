@@ -1,0 +1,46 @@
+{
+  "test_name": "cylinder_rounded_emboss_tactile",
+  "description": "Cylinder: Rounded dots, Embossing plate, Tactile indicator mode (raised seam-gap arrow)",
+  "tags": [
+    "cylinder",
+    "rounded",
+    "emboss",
+    "tactile",
+    "indicator_mode"
+  ],
+  "priority": "high",
+  "reference_stl": "cross_platform/cylinder_rounded_emboss_tactile/reference.stl",
+  "stl_size_bytes": 1932403,
+  "stl_sha256": "b0bddf2aa3f57153c139336d2b6930a111577dc29dd99c7b2f8276299d21d9f5",
+  "mesh_properties": {
+    "volume_mm3": 10462.99384852683,
+    "surface_area_mm2": 9868.7497849095,
+    "bounding_box_mm": [
+      [
+        -16.2,
+        -16.388543269115218,
+        0.0
+      ],
+      [
+        15.4,
+        15.4,
+        52.0
+      ]
+    ],
+    "face_count": 6032,
+    "vertex_count": 3032,
+    "is_watertight": true,
+    "centroid_mm": [
+      -0.09345989072011367,
+      -0.06348296180335351,
+      26.064542532163156
+    ]
+  },
+  "generation": {
+    "method": "openscad",
+    "openscad_version": "OpenSCAD version 2026.01.03",
+    "scad_file": "Braille_Cylinder_STL_Generator.scad",
+    "duration_seconds": 0.5126161575317383
+  },
+  "generated_at": "2026-07-27T03:17:50.727101Z"
+}

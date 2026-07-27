@@ -34,6 +34,25 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 |--------------------|-------------------|--------|
 | `plate_type` | Select Plate to Generate | `"Embossing Plate"`, `"Counter Plate"` |
 
+### Indicator Mode
+
+Every parameter in this section is OpenSCAD-only — the web app has no tactile
+indicator mode, so all six map to `"web_api_name": null`.
+
+| OpenSCAD Parameter | Default | Range / Values | Notes |
+|--------------------|---------|----------------|-------|
+| `indicator_mode` | `"Visual"` | `"Visual"`, `"Tactile"` | `Visual` = recessed marker cells at the start of each row (current behavior). `Tactile` = raised arrow on the emboss plate + matching recess on the counter plate, in the seam gap. See Note 3. |
+| `tactile_indicator_width` | 4.0 mm | 2–10 mm | Indicator width around the cylinder |
+| `tactile_indicator_length` | 5.0 mm | 2–15 mm | Indicator length along the cylinder axis; the default matches the 5 mm braille dot field height |
+| `tactile_indicator_raise` | 0.8 mm | 0–2 mm | How far the emboss arrow stands proud. Kept below the braille dot height so the dots carry the rolling pressure |
+| `tactile_recess_clearance` | 0.2 mm | 0–1 mm | Outline margin around the counter recess |
+| `tactile_recess_extra_depth` | 0.2 mm | 0–1 mm | Counter recess depth beyond the raise; 0 = exact same-depth nesting |
+
+The five tactile sliders are **not** preset-driven — same policy as
+`grid_columns`. The paper-thickness presets describe paper and dot geometry;
+the indicator is a mechanical alignment feature and must not move when the
+user switches preset.
+
 ### Paper Thickness Preset
 | OpenSCAD Parameter | Web App Equivalent | Default | Values |
 |--------------------|-------------------|---------|--------|
@@ -45,7 +64,7 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 | OpenSCAD Parameter | Web App Equivalent | Values |
 |--------------------|-------------------|--------|
 | `dot_shape` | Braille Dot Shape | `"Rounded"` (default), `"Cone"` |
-| `indicators` | Indicator Letters (Emboss and Counter) | `"On"` (default), `"Off"` — gates only the square marker; the triangle alignment indicator is always generated |
+| `indicators` | Indicator Letters (Emboss and Counter) | `"On"` (default), `"Off"` — gates only the square marker; the triangle alignment indicator is always generated. **Visual indicator mode only** — ignored when `indicator_mode = "Tactile"` |
 
 ### Expert Mode - Cylinder Dimensions
 | OpenSCAD Parameter | Web App Equivalent | Default | Range |
@@ -123,7 +142,7 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 > lives in the `[Hidden]` block of the SCAD file and is normalized into
 > `dot_shape` at load time. New code should always use `dot_shape`.
 
-### 2. **Indicator Letters (cylinder-only)**
+### 2. **Indicator Letters — Visual mode (cylinder-only)**
 - The **triangle alignment indicator at column 0 is always generated** —
   it is critical to the mechanical device the cylinder mounts into and
   has no user-facing toggle.
@@ -145,16 +164,49 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 > removed when card support was retired in v2.0. Only the cylinder
 > layout above ships now.
 
-### 3. **Flexible Counter Plate Recesses**
+### 3. **Tactile indicator mode (cylinder-only)**
+Setting `indicator_mode = "Tactile"` swaps the marker columns for a
+blind-accessible indicator carried by both plates. Cylinder diameter, height,
+and the polygonal cutout are unchanged — only surface features differ.
+
+- **Placement.** One indicator per braille row, centred in the seam gap
+  between the last and first cell. The grid is centred on angle 0, so that
+  midpoint is always exactly **180°** — and 180° is the fixed point of the
+  counter plate's `mirror([0,1,0])` / angle-negation construction, so the
+  emboss arrow and the counter recess self-align radially with no extra maths,
+  at any rotation of the paired cylinders.
+- **Shape.** An isosceles triangle, **symmetric circumferentially** (so the
+  mirrored recess has an identical outline and the two nest rather than
+  collide) and **asymmetric axially, apex toward the cylinder top** (so a
+  blind user feels which end is up on either plate). Raised-vs-recessed
+  distinguishes the embosser from the counter by touch.
+- **Crush safety.** The default 0.8 mm raise is below the 1.0 mm braille dot
+  height, so the dots always carry the rolling pressure. At defaults the arrow
+  tip sits at radius 16.2 mm and the recess floor at 14.4 mm — 0.2 mm of radial
+  slack, 0.2 mm of outline clearance, and ~0.93 mm of wall left over the
+  polygonal cutout.
+- **Uniform raise/depth.** Both features are a radial prism intersected with a
+  shell band tessellated at `CYLINDER_SHELL_FN`, so the raise and depth stay
+  constant across the arrow. A flat prism 4 mm wide on a 15.4 mm radius would
+  lose ~0.13 mm at its edges to the chord sagitta — large next to the 0.2 mm
+  nesting margin.
+- **Capacity.** No marker cells, so `actual_grid_columns == grid_columns` and
+  up to 14 text cells fit the default cylinder. `indicators` is ignored.
+- **Seam-gap guard.** When the gap drops below
+  `tactile_indicator_width + 5 mm`, both plates render a red
+  `TACTILE GAP TOO SMALL: <gap>mm` extrusion above the cylinder and the desktop
+  console echoes the measured gap plus the fix.
+
+### 4. **Flexible Counter Plate Recesses**
 - **Bowl Recess (Rounded)**: Spherical cap with adjustable diameter and depth
 - **Cone Recess (Cone)**: Frustum cone matching emboss dot shape
 - Universal counter plates work for all possible dot positions
 
-### 4. **Multiple Dot Shapes**
+### 5. **Multiple Dot Shapes**
 - **Rounded**: Cone base + hemispherical dome (more comfortable to touch)
 - **Cone**: Frustum cone (traditional, easier to print)
 
-### 5. **Cylinder Support**
+### 6. **Cylinder Support**
 - Full parametric control over diameter, height, and polygonal cutout
 - Seam offset allows rotation adjustment
 - Supports both rounded and cone dot shapes on curved surfaces
@@ -163,9 +215,10 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 
 All default values match the web-based generator's defaults (0.4mm paper preset applied on load):
 - Cylinder: 30.8mm diameter × 52mm height
-- Grid: 13 text cells × 4 rows (with Indicator Letters ON, 2 additional cells are reserved = 15 total; with Indicator Letters OFF only the triangle cell is reserved, so up to 14 text cells fit the default cylinder)
+- Grid: 13 text cells × 4 rows (in Visual indicator mode with Indicator Letters ON, 2 additional cells are reserved = 15 total; with Indicator Letters OFF only the triangle cell is reserved; Tactile indicator mode reserves none — either narrower layout fits up to 14 text cells on the default cylinder)
 - Spacing matches BANA specifications
 - Default shape: Rounded (the dropdown still offers Cone)
+- Default indicator mode: Visual (the dropdown still offers Tactile)
 - Default preset: 0.4mm (optimized for thicker paper, larger dots)
 
 ## Workflow Comparison
@@ -214,23 +267,29 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
    - The preset controls: spacing (4 params: cell/line/dot spacing + Y adjust), emboss rounded (4 params), emboss cone (3 params), counter bowl (2 params), counter cone (3 params), and cylinder dimensions (5 params)
    - Text, plate type, shape selection, rendering quality, and grid layout (`grid_columns`/`grid_rows`) remain user-controlled
 
-2. **Indicator Letters**: The triangle alignment indicator at column 0 is
-   **always generated** (no user-facing toggle). When Indicator Letters is
-   enabled (`indicator_on = true` in the Customizer; `indicator_shapes =
-   "on"` is the legacy backward-compat alias), the cylinder reserves the
-   **first two cells** (col 0 = triangle, col 1 = rectangle) at the leading
-   edge for alignment markers; when disabled, only the triangle cell is
-   reserved. The `grid_columns` parameter represents the number of cells
-   *available for text*, not including markers — the code internally adds
+2. **Indicator Letters**: Visual indicator mode only. The triangle alignment
+   indicator at column 0 is **always generated** (no user-facing toggle). When
+   Indicator Letters is enabled (`indicator_on = true` in the Customizer;
+   `indicator_shapes = "on"` is the legacy backward-compat alias), the cylinder
+   reserves the **first two cells** (col 0 = triangle, col 1 = rectangle) at
+   the leading edge for alignment markers; when disabled, only the triangle
+   cell is reserved. The `grid_columns` parameter represents the number of
+   cells *available for text*, not including markers — the code internally adds
    2 cells when Indicator Letters is On and 1 cell when Off.
 
-3. **Rounded vs. Cone**: The web app calls these "Rounded" and "Cone" - both terms refer to the combined emboss+counter shape pair.
+3. **Indicator Mode**: `indicator_mode = "Tactile"` reserves **no** marker
+   cells (`actual_grid_columns == grid_columns`), places the alignment
+   indicator in the seam gap at 180° instead, and ignores `indicators`
+   entirely. `Visual` is the default and reproduces the layout in Note 2
+   exactly. Both plates of a pair must use the same mode.
 
-4. **Counter Plate Universality**: Counter plates have recesses at ALL possible dot positions (all 6 dots × all cells × all rows), making them universal for any braille pattern.
+4. **Rounded vs. Cone**: The web app calls these "Rounded" and "Cone" - both terms refer to the combined emboss+counter shape pair.
 
-5. **Parameter Names**: OpenSCAD uses snake_case (e.g., `grid_columns`) to match the web app's JavaScript variable names, ensuring consistency across platforms.
+5. **Counter Plate Universality**: Counter plates have recesses at ALL possible dot positions (all 6 dots × all cells × all rows), making them universal for any braille pattern.
 
-6. **"Card Thickness" UI Label**: Despite the web UI label "Card Thickness", this preset system is NOT the removed card-geometry feature. It's a parametric memory system for setting multiple dials at once.
+6. **Parameter Names**: OpenSCAD uses snake_case (e.g., `grid_columns`) to match the web app's JavaScript variable names, ensuring consistency across platforms.
+
+7. **"Card Thickness" UI Label**: Despite the web UI label "Card Thickness", this preset system is NOT the removed card-geometry feature. It's a parametric memory system for setting multiple dials at once.
 
 ## References
 

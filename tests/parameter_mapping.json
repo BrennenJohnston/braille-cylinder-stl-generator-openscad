@@ -2,8 +2,8 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "OpenSCAD to Web API Parameter Mapping",
   "description": "Machine-readable mapping between OpenSCAD customizer variables and web API parameters. Source of truth for cross-platform validation.",
-  "version": "2.2.0",
-  "last_updated": "2026-05-30",
+  "version": "2.3.0",
+  "last_updated": "2026-07-26",
   "documentation": "See docs/PARAMETER_MAPPING.md for human-readable version",
   
   "ui_parameter_format": {
@@ -88,6 +88,72 @@
       "description": "Which plate to generate"
     },
     {
+      "openscad_name": "indicator_mode",
+      "web_api_name": null,
+      "web_ui_label": "Indicator Mode",
+      "type": "enum",
+      "default": "Visual",
+      "values": ["Visual", "Tactile"],
+      "section": "Indicator Mode",
+      "description": "Visual = recessed triangle (plus optional letter square) in marker cells at the start of each row. Tactile = raised arrow on the embossing plate and matching recess on the counter plate, centred in the seam gap, with no marker cells.",
+      "note": "OpenSCAD-only; the web app has no tactile indicator mode"
+    },
+    {
+      "openscad_name": "tactile_indicator_width",
+      "web_api_name": null,
+      "web_ui_label": "Tactile Indicator Width",
+      "type": "float",
+      "default": 4.0,
+      "range": [2, 10],
+      "section": "Indicator Mode",
+      "description": "Tactile indicator width measured around the cylinder (mm)",
+      "note": "OpenSCAD-only; Tactile indicator mode"
+    },
+    {
+      "openscad_name": "tactile_indicator_length",
+      "web_api_name": null,
+      "web_ui_label": "Tactile Indicator Length",
+      "type": "float",
+      "default": 5.0,
+      "range": [2, 15],
+      "section": "Indicator Mode",
+      "description": "Tactile indicator length measured along the cylinder axis (mm); the default matches the 5 mm braille dot field height",
+      "note": "OpenSCAD-only; Tactile indicator mode"
+    },
+    {
+      "openscad_name": "tactile_indicator_raise",
+      "web_api_name": null,
+      "web_ui_label": "Tactile Indicator Raise",
+      "type": "float",
+      "default": 0.8,
+      "range": [0, 2],
+      "section": "Indicator Mode",
+      "description": "How far the embossing plate's arrow stands proud of the surface (mm); kept below the braille dot height so the dots carry the rolling pressure",
+      "note": "OpenSCAD-only; Tactile indicator mode"
+    },
+    {
+      "openscad_name": "tactile_recess_clearance",
+      "web_api_name": null,
+      "web_ui_label": "Tactile Recess Clearance",
+      "type": "float",
+      "default": 0.2,
+      "range": [0, 1],
+      "section": "Indicator Mode",
+      "description": "Outline margin added around the counter plate's recess (mm) so the arrow enters even when slightly misaligned",
+      "note": "OpenSCAD-only; Tactile indicator mode"
+    },
+    {
+      "openscad_name": "tactile_recess_extra_depth",
+      "web_api_name": null,
+      "web_ui_label": "Tactile Recess Extra Depth",
+      "type": "float",
+      "default": 0.2,
+      "range": [0, 1],
+      "section": "Indicator Mode",
+      "description": "Counter recess depth added on top of the arrow raise (mm); 0 gives exact same-depth nesting",
+      "note": "OpenSCAD-only; Tactile indicator mode"
+    },
+    {
       "openscad_name": "paper_thickness_preset",
       "web_api_name": "paper_thickness_preset",
       "web_ui_label": "Card Thickness",
@@ -104,7 +170,7 @@
       "web_api_name": "combined_shape",
       "web_ui_label": "Braille Dot Shape",
       "type": "enum",
-      "default": "Cone",
+      "default": "Rounded",
       "values": ["Rounded", "Cone"],
       "test_system_values": ["rounded", "cone"],
       "value_mapping": {
@@ -132,7 +198,7 @@
         "Off": "Off"
       },
       "section": "Expert Mode - Shape Selection",
-      "description": "Row start/end markers"
+      "description": "Visual indicator mode only: adds the square letter marker next to the always-present alignment triangle. Ignored when indicator_mode is Tactile."
     },
     {
       "openscad_name": "cylinder_diameter_mm",
@@ -196,7 +262,7 @@
       "default": 13,
       "range": [1, 20],
       "section": "Expert Mode - Braille Spacing",
-      "description": "Text capacity in braille cells per row (matches the web app default of 13 text cells; when indicators are On, 2 extra marker cells are added; with indicators Off, up to 15 cells fit the default cylinder)"
+      "description": "Text capacity in braille cells per row (matches the web app default of 13 text cells). Visual indicator mode adds 2 marker cells when Indicator Letters are On, or 1 (the alignment triangle) when Off; Tactile mode adds none. Up to 14 text cells fit the default cylinder in either of the narrower layouts."
     },
     {
       "openscad_name": "grid_rows",

@@ -36,7 +36,7 @@ Want to run this in MakerWorld's **Parametric Model Maker** instead of the
 desktop app? A flattened, single-file build lives in
 [`makerworld/`](makerworld/):
 
-- [`makerworld/Braille_Cylinder_STL_Generator_MakerWorld.scad`](makerworld/Braille_Cylinder_STL_Generator_MakerWorld.scad) — one `.scad` file (presets inlined, no `include`), ready to upload. Defaults to the `Rounded` dot shape.
+- [`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`](makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad) — one `.scad` file (presets inlined, no `include`), ready to upload. Defaults to the `Rounded` dot shape.
 - See [`makerworld/README.md`](makerworld/README.md) for upload steps and the maintainer re-flatten procedure.
 - New to the workflow? Start with the [MakerWorld Quick Start Guide](docs/MAKERWORLD_QUICK_START.md) (also as a printable [PDF](docs/MakerWorld_Quick_Start_Guide.pdf)).
 
@@ -81,15 +81,37 @@ it by `tests/test_makerworld_sync.py`.
 - **Rounded**: Dome-shaped dots with spherical bowl recesses
 - **Cone**: Traditional frustum cone dots with matching cone recesses
 
-### Indicator Letters
-- The triangle alignment indicator at the start of each row is **always
-  generated** — it is critical to the mechanical device the cylinder mounts
-  into and has no user-facing toggle
+### Indicator Mode (Visual or Tactile)
+
+`indicator_mode` chooses how each row is marked for alignment. Cylinder
+diameter, height, and the polygonal cutout are identical either way — only the
+surface features change.
+
+**Visual (default)** — marker cells at the start of every row:
+- The triangle alignment indicator is **always generated** — it is critical to
+  the mechanical device the cylinder mounts into and has no user-facing toggle
 - The `indicators` toggle ("Indicator Letters") controls only the square
   marker next to the triangle
 - On: 2 marker cells per row (triangle + square); Off: 1 marker cell
   (triangle only), freeing 1 cell of physical space per row
-- Text capacity always stays at `grid_columns`
+
+**Tactile** — a blind-accessible indicator in the seam gap instead:
+- A **raised arrow** on the embossing plate and a **matching recess** on the
+  counter plate, one per braille row, centred in the gap between the last and
+  first cell. That midpoint is always exactly 180°, which is invariant under
+  the counter plate's mirroring, so the two self-align at any rotation of the
+  paired cylinders
+- The arrow **points at the cylinder top**, so you can feel which end is up on
+  either plate; raised-vs-recessed tells you which cylinder is the embosser
+- **Crush-safe**: the 0.8 mm default raise sits below the 1.0 mm braille dot
+  height, so the dots — not the indicator — carry the rolling pressure
+- **No marker cells**, so up to 14 text cells fit the default cylinder. The
+  Indicator Letters toggle is ignored in this mode
+- Five sliders tune it: `tactile_indicator_width` / `_length` / `_raise`, plus
+  `tactile_recess_clearance` and `tactile_recess_extra_depth` for the counter
+  plate's fit
+
+Text capacity always stays at `grid_columns` in every mode.
 
 ### Paper Thickness Presets
 - **0.4mm Preset** (default): Optimized for thicker paper, larger dots
@@ -121,7 +143,7 @@ dropdown still offers `Cone`):
 - Seam Offset: 0°
 
 ### Braille Grid
-- Cells per row: 13 (available for text; 2 additional cells reserved when Indicator Letters is On — matches the web app default; with Indicator Letters Off only the triangle cell is reserved, so up to 14 text cells fit the default cylinder)
+- Cells per row: 13 (available for text; in Visual indicator mode 2 additional cells are reserved when Indicator Letters is On — matches the web app default — or 1 for the triangle alone when Off. Tactile indicator mode reserves none. Either narrower layout fits up to 14 text cells on the default cylinder)
 - Number of rows: 4
 - Cell spacing: 6.5mm
 - Line spacing: 10.0mm
@@ -196,9 +218,10 @@ pytest tests/cross_platform_validation.py --comparison-config=tests/compare_conf
 - **2 indicator isolation tests**: Minimal fixtures for debugging
 - **1 parametric variation test**: Custom cutout geometry
 - **3 preset/multiline coverage tests**: multiline render, 0.3mm emboss preset, 0.3mm counter preset
+- **2 tactile indicator mode tests**: emboss raised arrow, counter recess
 - **Customizer validation tests**: Prevent dropdown duplicate issues
 
-This adds up to **14** cross-platform fixtures (`total_test_cases: 14` in `tests/fixtures/cross_platform/test_cases.json`).
+This adds up to **16** cross-platform fixtures (`total_test_cases: 16` in `tests/fixtures/cross_platform/test_cases.json`).
 
 See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed testing instructions.
 
@@ -230,10 +253,10 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
 
 ### "TEXT TOO LONG" Warning
 - Any of `Line_1`–`Line_4` is longer than the text capacity
-- Capacity = `grid_columns` (default 13), whether Indicator Letters is On or
-  Off. The grid is widened by 2 cells when Indicator Letters is On (triangle +
-  square) or by 1 cell when Off (triangle only), so the text capacity is
-  unchanged
+- Capacity = `grid_columns` (default 13) in every indicator mode. Visual mode
+  widens the grid by 2 cells when Indicator Letters is On (triangle + square)
+  or by 1 cell when Off (triangle only), and Tactile mode widens it by none, so
+  the text capacity is unchanged either way
 - A red `TEXT TOO LONG: <longest line>/<capacity>` extrusion (e.g.
   `TEXT TOO LONG: 16/13`) is rendered above the cylinder whenever the limit
   is exceeded, and the console prints a per-line `echo()` warning such as
@@ -250,6 +273,18 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
     entirely: every pasted cell renders and no warning appears, but rows
     longer than the capacity may crowd the seam gap
 
+### "TACTILE GAP TOO SMALL" Warning
+- Tactile indicator mode only: the seam gap between the last and first cell is
+  no longer wide enough for the indicator plus a clear zone either side of it
+  (the threshold is `tactile_indicator_width + 5 mm`)
+- A red `TACTILE GAP TOO SMALL: <gap>mm` extrusion renders above the cylinder
+  on **both** plates, and the console prints the measured gap and the required
+  minimum
+- At defaults the gap is 18.8 mm at 13 text cells and 12.3 mm at 14; 15 cells
+  leaves only 5.8 mm, which trips the warning
+- Solutions: lower `grid_columns`, raise `cylinder_diameter_mm`, or narrow
+  `tactile_indicator_width`
+
 ### Dots Don't Align
 - Check `braille_y_adjust` for vertical offset, or `seam_offset_degrees` for angular offset around the cylinder
 - Ensure spacing settings match between emboss and counter plates
@@ -257,7 +292,22 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
 ### Plates Don't Fit Together
 - Verify both plates use same `dot_shape` setting
 - Check that counter plate dimensions match emboss dimensions
-- Ensure the `indicators` (Indicator Letters) setting is the same for both plates
+- Ensure `indicator_mode` is the same for both plates — a Visual emboss plate
+  and a Tactile counter plate have different row layouts and will not pair
+- In Visual mode, ensure the `indicators` (Indicator Letters) setting is the
+  same for both plates
+
+### Tactile Indicator Binds or Gets Crushed
+- The arrow should nest into the counter recess, never bottom out. At defaults
+  the arrow tip sits at radius 16.2 mm and the recess floor at 14.4 mm, leaving
+  0.2 mm of radial slack plus a 0.2 mm outline margin
+- If the plates bind, raise `tactile_recess_clearance` (outline) or
+  `tactile_recess_extra_depth` (depth)
+- If the indicator marks the paper too heavily, lower
+  `tactile_indicator_raise` — it must stay below the braille dot height so the
+  dots carry the rolling pressure
+- Deep recesses thin the wall over the polygonal cutout. At defaults that wall
+  is ~0.93 mm; increasing `tactile_recess_extra_depth` eats into it directly
 
 ---
 
@@ -303,5 +353,5 @@ For general braille embossing questions, see the [web app](https://braille-card-
 
 ---
 
-**Version**: 2.3.0  
-**Last Updated**: 2026-06-04
+**Version**: 2.4.0  
+**Last Updated**: 2026-07-26

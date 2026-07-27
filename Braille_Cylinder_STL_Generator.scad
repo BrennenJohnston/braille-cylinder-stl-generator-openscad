@@ -95,6 +95,20 @@ text_limit_check = "On"; // [On, Off]
 // Choose which plate to generate
 plate_type = "Embossing Plate"; // [Embossing Plate, Counter Plate]
 
+/* [Indicator Mode] */
+// How each row is marked for alignment. Visual = today's recessed triangle (plus the optional letter square) in marker cells at the start of every row. Tactile = a raised arrow on the embossing plate and a matching recess on the counter plate, centred in the seam gap and pointing at the cylinder top, so a blind user can find the alignment point and tell which end is up by touch. Tactile removes the marker cells (freeing them for text) and ignores the Indicator Letters toggle.
+indicator_mode = "Visual"; // [Visual, Tactile]
+// Tactile only: indicator width measured around the cylinder (mm)
+tactile_indicator_width = 4.0; // [2:0.1:10]
+// Tactile only: indicator length measured along the cylinder axis (mm). The default matches the 5 mm height of a braille dot field.
+tactile_indicator_length = 5.0; // [2:0.1:15]
+// Tactile only: how far the embossing plate's arrow stands proud of the surface (mm). Keep this BELOW the braille dot height so the dots — not the indicator — carry the rolling pressure.
+tactile_indicator_raise = 0.8; // [0:0.1:2]
+// Tactile only: outline margin added around the counter plate's recess (mm), so the arrow still enters the recess when the two cylinders are slightly misaligned.
+tactile_recess_clearance = 0.2; // [0:0.05:1]
+// Tactile only: counter recess depth added on top of the arrow raise (mm). 0 = exact same-depth nesting. Large values thin the wall between the recess and the polygonal cutout.
+tactile_recess_extra_depth = 0.2; // [0:0.05:1]
+
 /* [Paper Thickness Preset] */
 // Preset optimized for paper thickness (sets multiple parameters below)
 paper_thickness_preset = "0.4mm"; // [0.4mm, 0.3mm, Custom]
@@ -102,7 +116,7 @@ paper_thickness_preset = "0.4mm"; // [0.4mm, 0.3mm, Custom]
 /* [Expert Mode - Shape Selection] */
 // Braille Dot Shape (Emboss and Counter) - affects both plate types (Rounded is the default for the 0.4mm and 0.3mm presets)
 dot_shape = "Rounded"; // [Rounded, Cone]
-// Indicator Letters (Emboss and Counter) - square marker cutout next to the alignment triangle. Off frees 1 cell per row for braille text; the triangle alignment indicators are always included (they are critical to the mechanical device the cylinder mounts into).
+// Indicator Letters (Emboss and Counter) - VISUAL INDICATOR MODE ONLY (Tactile mode has no marker cells and ignores this). Square marker cutout next to the alignment triangle. Off frees 1 cell per row for braille text; the triangle alignment indicators are always included (they are critical to the mechanical device the cylinder mounts into).
 indicators = "On"; // [On, Off]
 
 /* [Expert Mode - Cylinder Dimensions] */
@@ -114,7 +128,7 @@ seam_offset_degrees = 0.0; // [0:1:360] Seam offset (degrees) — Rotates starti
 
 /* [Expert Mode - Braille Spacing] */
 // --- Braille Dimensions ---
-grid_columns = 13; // [1:1:20] Text capacity in braille cells per row (matches the web app default of 13 text cells; when Indicator Letters are On, 2 extra marker cells are added; when Off, 1 extra cell for the always-present alignment triangle — up to 14 text cells fit the default cylinder with Indicator Letters Off)
+grid_columns = 13; // [1:1:20] Text capacity in braille cells per row (matches the web app default of 13 text cells; in Visual indicator mode, 2 extra marker cells are added when Indicator Letters are On, or 1 extra cell for the always-present alignment triangle when Off — up to 14 text cells fit the default cylinder with Indicator Letters Off. Tactile indicator mode adds no marker cells, so up to 14 text cells fit the default cylinder; 15 leaves too little seam gap for the indicator)
 grid_rows = 4; // [1:1:10] Number of lines of braille
 cell_spacing = 6.5; // [2:0.1:15] Horizontal spacing between cells (mm)
 line_spacing = 10.0; // [5:0.1:25] Vertical spacing between lines (mm)
@@ -199,6 +213,11 @@ indicator_on = (indicator_shapes == "on") ? true :
                (indicator_shapes == "off") ? false :
                (indicators == "On");
 
+// Tactile indicator mode replaces the recessed marker columns with a raised
+// arrow (emboss) / matching recess (counter) in the seam gap. It supersedes
+// `indicator_on`, which only ever gates the Visual letter square.
+tactile_on = (indicator_mode == "Tactile");
+
 // Map render quality to segment counts (support both UI and test system)
 quality_fn = (hemisphere_quality == "low" || render_quality == "Low") ? 24 :
              (hemisphere_quality == "medium" || render_quality == "Medium") ? 32 :
@@ -276,17 +295,59 @@ active_polygon_cutout_radius_mm = _preset_polygon_cutout_radius_mm;
 active_polygon_cutout_points = _preset_polygon_cutout_points;
 active_seam_offset_degrees = _preset_seam_offset_degrees;
 
-// Grid dimensions. The triangle alignment marker column is ALWAYS present (it has
-// no user-facing toggle); the indicator letter/square column is added only when
-// Indicator Letters are On.
-actual_grid_columns = indicator_on ? (active_grid_columns + 2) : (active_grid_columns + 1);
+// -----------------------------------------------------------------------------
+// TACTILE INDICATOR CONSTANTS
+// -----------------------------------------------------------------------------
+// Declared here, ahead of the grid maths, because OpenSCAD evaluates top-level
+// assignments strictly in source order — a constant used by a calculated value
+// must already exist at that point. (Constants consumed only inside modules,
+// like INDICATOR_OVERCUT below, can be declared later.)
+
+// Clear zone required either side of the indicator, on top of its own width,
+// before the seam gap is considered too tight (2 mm dot zone per neighbouring
+// cell plus 1 mm of margin).
+TACTILE_MIN_GAP_MARGIN = 5.0;
+
+// Radial thickness of the working prism the arrow is extruded into. Must exceed
+// raise + recess depth + base embed so the prism always straddles the shell
+// surface; the shell band intersection is what sets the actual raise/depth.
+TACTILE_PRISM_SPAN = 6;
+
+// How far the raised arrow's base sinks below the shell surface, so the union
+// with the shell is a solid overlap rather than a coplanar touch.
+TACTILE_BASE_EMBED = 0.2;
+
+// How far the recess cutter projects past the shell surface, so the cut opening
+// never leaves coplanar faces behind.
+TACTILE_RECESS_OVERCUT = 1;
+
+// Grid dimensions. In Visual indicator mode the triangle alignment marker column
+// is ALWAYS present (it has no user-facing toggle) and the indicator letter/square
+// column is added only when Indicator Letters are On. Tactile mode has no marker
+// columns at all — its indicator lives in the seam gap — so the grid is exactly
+// the text cells and the freed space widens the gap.
+actual_grid_columns = tactile_on ? active_grid_columns :
+                      indicator_on ? (active_grid_columns + 2) : (active_grid_columns + 1);
 grid_width = (actual_grid_columns - 1) * active_cell_spacing;
 
-// Text-capacity check. Text capacity is always active_grid_columns; the grid is
-// widened by 2 marker cells when Indicator Letters are On, or by 1 (the alignment
-// triangle) when Off, so text capacity is unchanged. The check (and row clipping)
-// can be bypassed with text_limit_check = "Off", which renders every pasted cell —
-// rows may then crowd the seam.
+// Seam gap: the arc between the last and first cell centers, measured the long
+// way around through the seam. The grid is centered on angle 0, so the middle of
+// this gap is always exactly 180° — where the tactile indicator sits. Warn when
+// the gap can no longer hold the indicator plus a clear zone either side of it.
+seam_gap_mm = PI * active_cylinder_diameter_mm - grid_width;
+tactile_gap_too_small = tactile_on && (seam_gap_mm < tactile_indicator_width + TACTILE_MIN_GAP_MARGIN);
+
+if (tactile_gap_too_small)
+    echo(str("WARNING: Tactile indicator needs a seam gap of at least ",
+             tactile_indicator_width + TACTILE_MIN_GAP_MARGIN, " mm; the current layout leaves ",
+             seam_gap_mm, " mm. Lower grid_columns or raise cylinder_diameter_mm."));
+
+// Text-capacity check. Text capacity is always active_grid_columns; in Visual mode
+// the grid is widened by 2 marker cells when Indicator Letters are On, or by 1 (the
+// alignment triangle) when Off, and Tactile mode adds none, so text capacity is
+// unchanged in every case. The check (and row clipping) can be bypassed with
+// text_limit_check = "Off", which renders every pasted cell — rows may then crowd
+// the seam.
 max_line_len = max([len(Line_1), len(Line_2), len(Line_3), len(Line_4)]);
 text_too_long = (text_limit_check == "On") && (max_line_len > active_grid_columns);
 
@@ -362,10 +423,13 @@ function get_dot_pattern(char) =
 // based on what kind of surface it is. The five sources are intentionally
 // segregated (not competing) — pick whichever matches your geometry class:
 //
-//   1. CYLINDER_SHELL_FN = 64   — the outer cylinder shell. Hardcoded so the
-//      visual roundness of the printable face matches the web preview's
+//   1. CYLINDER_SHELL_FN = 64   — the outer cylinder shell, and any band
+//      concentric with it (the tactile indicator's shell_band). Hardcoded so
+//      the visual roundness of the printable face matches the web preview's
 //      three.js mesh exactly. Fixture STLs depend on this; never make it
-//      user-tweakable.
+//      user-tweakable. Sharing the constant is also what keeps the tactile
+//      raise/recess radially uniform: band and shell tessellate identically,
+//      so their radial difference is constant across the whole arrow.
 //
 //   2. cone_segments  (slider)  — every cone/frustum primitive (emboss dot
 //      base/sides, cone counter recess). User-controllable 8..64; default 16.
@@ -492,6 +556,112 @@ module place_row_indicators(y_pos, tri_depth, rect_depth) {
 }
 
 // =============================================================================
+// TACTILE INDICATOR MODULES
+// =============================================================================
+//
+// Tactile mode drops the marker columns entirely and puts one indicator per row
+// in the seam gap instead: RAISED on the embossing plate, RECESSED on the
+// counter plate. Two properties make the pair work:
+//
+//   - Position. The grid is centred on angle 0, so the midpoint of the gap
+//     between the last and first cells is always exactly 180°. The counter
+//     plate is built by mirroring about the XZ plane / negating angles, and
+//     180° is the fixed point of that transform — so the arrow and its recess
+//     line up radially by construction, at any rotation of the paired
+//     cylinders, with no extra bookkeeping.
+//
+//   - Shape. An isosceles triangle symmetric in the rolling direction, with its
+//     apex toward the cylinder TOP. Circumferential symmetry means the mirrored
+//     recess has exactly the same outline as the arrow, so the two nest instead
+//     of colliding. Axial asymmetry means a blind user feels the point and knows
+//     which end is up — on both plates — while raised-vs-recessed tells them
+//     which cylinder they are holding.
+//
+// The raise is deliberately less than the braille dot height so the dots, never
+// the indicator, carry the rolling pressure.
+
+// Indicator outline in the local frame used by place_cylinder_marker children:
+// +X runs circumferentially, +Y points at the cylinder TOP. Symmetric in X,
+// apex at +Y.
+module tactile_arrow_2d(w, l) {
+    polygon(points = [[-w/2, -l/2], [w/2, -l/2], [0, l/2]]);
+}
+
+// A band concentric with the cylinder shell (see $fn TESSELLATION POLICY case 1).
+// Intersecting the extruded outline with this band is what makes the raise and
+// the recess depth radially uniform: a flat prism 4 mm wide on a 15.4 mm radius
+// would lose ~0.13 mm at its edges to the chord sagitta, which is large next to
+// a 0.2 mm nesting margin.
+module tactile_shell_band(r_in, r_out) {
+    difference() {
+        cylinder(h = active_cylinder_height_mm,     r = r_out, center = true, $fn = CYLINDER_SHELL_FN);
+        cylinder(h = active_cylinder_height_mm + 2, r = r_in,  center = true, $fn = CYLINDER_SHELL_FN);
+    }
+}
+
+// Radial prism straddling the shell surface at 180° (the seam-gap centre).
+// Passing cyl_radius = radius + span/2 with no overcut makes place_cylinder_marker
+// put the child's origin exactly on the surface, so the prism reaches span/2 both
+// outward and inward from it.
+module tactile_surface_prism(y_pos, span) {
+    place_cylinder_marker(180, y_pos, radius + span / 2, span, 0)
+        translate([0, 0, -span / 2])
+            linear_extrude(height = span)
+                children();
+}
+
+// Raised arrow — union into the EMBOSS plate.
+module tactile_raised(y_pos) {
+    intersection() {
+        tactile_surface_prism(y_pos, TACTILE_PRISM_SPAN)
+            tactile_arrow_2d(tactile_indicator_width, tactile_indicator_length);
+        tactile_shell_band(radius - TACTILE_BASE_EMBED, radius + tactile_indicator_raise);
+    }
+}
+
+// Matching recess — subtract from the COUNTER plate. Grown by
+// tactile_recess_clearance in the plane and tactile_recess_extra_depth radially
+// so the arrow still enters when the two cylinders are slightly out of register.
+module tactile_recess_cut(y_pos) {
+    intersection() {
+        tactile_surface_prism(y_pos, TACTILE_PRISM_SPAN)
+            offset(delta = tactile_recess_clearance)
+                tactile_arrow_2d(tactile_indicator_width, tactile_indicator_length);
+        tactile_shell_band(radius - tactile_indicator_raise - tactile_recess_extra_depth,
+                           radius + TACTILE_RECESS_OVERCUT);
+    }
+}
+
+// Seam gap too tight for the indicator: warn in 3D, because the MakerWorld
+// customizer preview cannot show console output. Stacked one step above the
+// TEXT TOO LONG warning, reusing the same placement constants.
+module tactile_gap_warning() {
+    if (tactile_gap_too_small) {
+        translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + 2 * INVALID_TEXT_STACK_GAP])
+        color("red")
+        linear_extrude(height = INVALID_TEXT_DEPTH)
+        text(str("TACTILE GAP TOO SMALL: ", round(seam_gap_mm * 10) / 10, "mm"),
+             size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
+    }
+}
+
+// One tactile indicator per braille row, at the same row pitch the Visual
+// marker columns use.
+module tactile_rows_raised() {
+    for (row = [0 : active_grid_rows - 1]) {
+        y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
+        tactile_raised(y_pos);
+    }
+}
+
+module tactile_rows_recessed() {
+    for (row = [0 : active_grid_rows - 1]) {
+        y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
+        tactile_recess_cut(y_pos);
+    }
+}
+
+// =============================================================================
 // DOT CREATION MODULES
 // =============================================================================
 
@@ -609,7 +779,15 @@ module cylinder_emboss_plate() {
                     linear_extrude(height = INVALID_TEXT_DEPTH)
                     text(str("TEXT TOO LONG: ", max_line_len, "/", active_grid_columns), size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
                 }
-        
+
+                // TACTILE GAP TOO SMALL warning (Tactile mode only; no-op otherwise).
+                tactile_gap_warning();
+
+                // Tactile mode: raised alignment arrows in the seam gap, one per row.
+                if (tactile_on) {
+                    tactile_rows_raised();
+                }
+
                 // Create braille dots on cylinder surface
                 lines = [Line_1, Line_2, Line_3, Line_4];
                 
@@ -623,9 +801,11 @@ module cylinder_emboss_plate() {
                             ? len(lines[row]) - 1
                             : min(active_grid_columns - 1, len(lines[row]) - 1);
                         for (col = [0 : row_last_col]) {
-                            // Shift past the marker columns: triangle (always) at col 0,
-                            // plus the indicator letter square at col 1 when On.
-                            actual_col = indicator_on ? (col + 2) : (col + 1);
+                            // Visual mode: shift past the marker columns — triangle
+                            // (always) at col 0, plus the indicator letter square at
+                            // col 1 when On. Tactile mode has no marker columns.
+                            actual_col = tactile_on ? col :
+                                         indicator_on ? (col + 2) : (col + 1);
                             angle_rad = start_angle + (actual_col * cell_spacing_angle);
                             angle_deg = angle_rad * 180 / PI;
                             dots = get_dot_pattern(lines[row][col]);
@@ -650,74 +830,96 @@ module cylinder_emboss_plate() {
                 }
             }
 
-            // Subtract indicator recesses. The triangle alignment marker is always
-            // recessed; place_row_indicators adds the square only when Indicator
-            // Letters are On. Emboss renders the shared row layout directly; the
-            // counter plate renders the same module under mirror([0,1,0]) for a
-            // true mirrored pair (see cylinder_counter_plate).
-            for (row = [0 : active_grid_rows - 1]) {
-                y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
-                place_row_indicators(y_pos, INDICATOR_TRIANGLE_DEPTH_EMBOSS, INDICATOR_RECT_DEPTH_EMBOSS);
+            // Subtract indicator recesses (Visual mode only — Tactile replaces the
+            // marker columns with the raised arrows added above). The triangle
+            // alignment marker is always recessed; place_row_indicators adds the
+            // square only when Indicator Letters are On. Emboss renders the shared
+            // row layout directly; the counter plate renders the same module under
+            // mirror([0,1,0]) for a true mirrored pair (see cylinder_counter_plate).
+            if (!tactile_on) {
+                for (row = [0 : active_grid_rows - 1]) {
+                    y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
+                    place_row_indicators(y_pos, INDICATOR_TRIANGLE_DEPTH_EMBOSS, INDICATOR_RECT_DEPTH_EMBOSS);
+                }
             }
         }
     }
 }
 
 module cylinder_counter_plate() {
-    translate([0, 0, active_cylinder_height_mm/2])
-    difference() {
-        // Base cylinder
-        cylinder_shell(cutout_rotate_deg = active_seam_offset_degrees);
+    translate([0, 0, active_cylinder_height_mm/2]) {
+        difference() {
+            // Base cylinder
+            cylinder_shell(cutout_rotate_deg = active_seam_offset_degrees);
 
-        // Angular grid + dot-positioning constants are derived at top level;
-        // see `radius`, `start_angle`, `dot_positions`, etc. above.
+            // Angular grid + dot-positioning constants are derived at top level;
+            // see `radius`, `start_angle`, `dot_positions`, etc. above.
 
-        // Create indicator recesses. The triangle alignment marker is always
-        // recessed; place_row_indicators adds the square only when Indicator
-        // Letters are On. The counter plate is an exact mirror of the emboss
-        // plate: render the shared emboss-orientation row layout under
-        // mirror([0,1,0]) so the triangle->rectangle center spacing is identical
-        // on both plates and the triangles point the opposite way (a reflection).
-        // Braille dots are radially symmetric and already mirror via angle
-        // negation below, so they stay aligned with the mirrored indicators.
-        for (row = [0 : active_grid_rows - 1]) {
-            y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
-            mirror([0, 1, 0])   // counter = exact mirror image of emboss
-                place_row_indicators(y_pos, active_counter_height, active_counter_height);
-        }
-        
-        // Create recesses for ALL possible dot positions. When the text limit
-        // is bypassed, also cover any extra columns the emboss plate renders
-        // so both plates stay in lockstep.
-        counter_last_col = (text_limit_check == "Off")
-            ? max(active_grid_columns, max_line_len) - 1
-            : active_grid_columns - 1;
-        for (row = [0 : active_grid_rows - 1]) {
-            y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
-            
-            for (col = [0 : counter_last_col]) {
-                // Shift past the marker columns: triangle (always) at col 0,
-                // plus the indicator letter square at col 1 when On.
-                actual_col = indicator_on ? (col + 2) : (col + 1);
-                angle_rad = start_angle + (actual_col * cell_spacing_angle);
-                angle_deg = -(angle_rad * 180 / PI);
-                
-                for (i = [0:5]) {
-                    dot_pos = dot_positions[i];
-                    dot_angle_rad = angle_rad + dot_col_angle_offsets[dot_pos[1]];
-                    dot_angle_deg = -(dot_angle_rad * 180 / PI);
-                    dot_y = y_pos + dot_row_offsets[dot_pos[0]];
-                    
-                    recess_radius_offset = use_rounded_dots ? 0 : INDICATOR_OVERCUT;
-                    x = (radius + recess_radius_offset) * cos(dot_angle_deg);
-                    y = (radius + recess_radius_offset) * sin(dot_angle_deg);
-                    
-                    translate([x, y, dot_y])
-                    rotate([0, 90, dot_angle_deg])
-                    counter_recess();
+            // Create indicator recesses (Visual mode only — Tactile uses the
+            // seam-gap arrow recess below instead). The triangle alignment marker
+            // is always recessed; place_row_indicators adds the square only when
+            // Indicator Letters are On. The counter plate is an exact mirror of the
+            // emboss plate: render the shared emboss-orientation row layout under
+            // mirror([0,1,0]) so the triangle->rectangle center spacing is identical
+            // on both plates and the triangles point the opposite way (a reflection).
+            // Braille dots are radially symmetric and already mirror via angle
+            // negation below, so they stay aligned with the mirrored indicators.
+            if (!tactile_on) {
+                for (row = [0 : active_grid_rows - 1]) {
+                    y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
+                    mirror([0, 1, 0])   // counter = exact mirror image of emboss
+                        place_row_indicators(y_pos, active_counter_height, active_counter_height);
+                }
+            }
+
+            // Tactile mode: the arrow recess the emboss plate's raised arrow nests
+            // into. It sits at 180°, the fixed point of this plate's mirror /
+            // angle-negation construction, so it needs no mirroring of its own —
+            // it lands on the emboss arrow either way.
+            if (tactile_on) {
+                tactile_rows_recessed();
+            }
+
+            // Create recesses for ALL possible dot positions. When the text limit
+            // is bypassed, also cover any extra columns the emboss plate renders
+            // so both plates stay in lockstep.
+            counter_last_col = (text_limit_check == "Off")
+                ? max(active_grid_columns, max_line_len) - 1
+                : active_grid_columns - 1;
+            for (row = [0 : active_grid_rows - 1]) {
+                y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
+
+                for (col = [0 : counter_last_col]) {
+                    // Visual mode: shift past the marker columns — triangle (always)
+                    // at col 0, plus the indicator letter square at col 1 when On.
+                    // Tactile mode has no marker columns.
+                    actual_col = tactile_on ? col :
+                                 indicator_on ? (col + 2) : (col + 1);
+                    angle_rad = start_angle + (actual_col * cell_spacing_angle);
+                    angle_deg = -(angle_rad * 180 / PI);
+
+                    for (i = [0:5]) {
+                        dot_pos = dot_positions[i];
+                        dot_angle_rad = angle_rad + dot_col_angle_offsets[dot_pos[1]];
+                        dot_angle_deg = -(dot_angle_rad * 180 / PI);
+                        dot_y = y_pos + dot_row_offsets[dot_pos[0]];
+
+                        recess_radius_offset = use_rounded_dots ? 0 : INDICATOR_OVERCUT;
+                        x = (radius + recess_radius_offset) * cos(dot_angle_deg);
+                        y = (radius + recess_radius_offset) * sin(dot_angle_deg);
+
+                        translate([x, y, dot_y])
+                        rotate([0, 90, dot_angle_deg])
+                        counter_recess();
+                    }
                 }
             }
         }
+
+        // TACTILE GAP TOO SMALL warning (Tactile mode only; no-op otherwise). Sits
+        // outside the difference() so the recess cuts can't eat it, and is shown on
+        // this plate too — a MakerWorld user may generate the counter plate alone.
+        tactile_gap_warning();
     }
 }
 

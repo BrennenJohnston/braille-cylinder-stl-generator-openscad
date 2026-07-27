@@ -8,6 +8,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Tactile indicator mode (`indicator_mode` = `Visual` / `Tactile`).** A new
+  `/* [Indicator Mode] */` Customizer section in both SCAD builds. `Visual`
+  (default) is the existing behavior, byte-for-byte: recessed alignment
+  triangle at the start of every row, plus the letter square when Indicator
+  Letters are On. `Tactile` replaces those marker columns with a
+  blind-accessible indicator that both plates share:
+  - **Raised arrow on the embossing plate, matching recess on the counter
+    plate**, one per braille row, centred in the seam gap between the last and
+    first cell. Because the grid is centred on angle 0, that midpoint is always
+    exactly 180° — the fixed point of the counter plate's `mirror([0,1,0])` /
+    angle-negation construction — so the arrow and its recess self-align
+    radially at any rotation of the paired cylinders.
+  - **The arrow points at the cylinder top**, so a user can feel which end is
+    up on either plate, while raised-vs-recessed tells them which cylinder they
+    are holding. It is circumferentially symmetric so the mirrored recess has
+    the identical outline and the two nest instead of colliding.
+  - **Crush-safe by design.** The 0.8 mm default raise is deliberately below
+    the 1.0 mm braille dot height, so the dots — never the indicator — carry
+    the rolling pressure. Verified nesting at defaults: arrow tip at radius
+    16.2 mm, recess floor at 14.4 mm (0.2 mm radial slack), 0.2 mm outline
+    clearance, and 0.93 mm of wall left over the polygonal cutout.
+  - **Marker columns are dropped**, so `grid_columns` alone sets the grid and
+    up to 14 text cells fit the default 30.8 mm cylinder. The Indicator Letters
+    toggle is ignored in this mode.
+  - Five Tactile-only sliders (`tactile_indicator_width`,
+    `tactile_indicator_length`, `tactile_indicator_raise`,
+    `tactile_recess_clearance`, `tactile_recess_extra_depth`). Like
+    `grid_columns`, they are slider-only — the paper-thickness presets never
+    touch them.
+  - Curvature-conforming geometry: both features are a radial prism
+    intersected with a shell band built at `CYLINDER_SHELL_FN`, so the raise
+    and recess depth stay uniform across the whole arrow (a flat prism would
+    lose ~0.13 mm at its edges to the chord sagitta — large next to a 0.2 mm
+    nesting margin).
+- **`TACTILE GAP TOO SMALL` warning.** In Tactile mode, when the seam gap can
+  no longer hold the indicator plus a clear zone either side (e.g.
+  `grid_columns = 15` on the default cylinder, which leaves only 5.8 mm), red
+  3D text renders above the cylinder on **both** plates with the measured gap,
+  plus a desktop `echo()` naming the fix. Stacked one step above
+  `TEXT TOO LONG`, reusing the shared `INVALID_TEXT_*` placement constants.
+- **`tests/test_tactile_mode.py`.** Fast source-only guards (32 checks across
+  both SCAD builds) covering the Customizer surface, the 180° placement, the
+  shell-band tessellation, the recess clearance offset, the crush-safety
+  invariant (raise < dot height), and the Visual path staying gated behind
+  `!tactile_on`. Includes an ordering guard for `TACTILE_MIN_GAP_MARGIN`:
+  OpenSCAD evaluates top-level assignments sequentially, so a forward
+  reference would silently resolve to `undef` and the warning would never fire.
+- **Two Tactile reference fixtures** (`cylinder_rounded_emboss_tactile`,
+  `cylinder_rounded_counter_tactile`), fixture set version 2.4.0. All 14
+  pre-existing reference STLs are byte-identical after regeneration, which is
+  the proof that Visual mode is untouched.
 - **`text_limit_check` On/Off parameter (Text Input section).** `On` (default)
   keeps the existing behavior: rows are clipped to the cell capacity and the
   red warning renders when a line is too long. `Off` bypasses the check —
@@ -61,6 +112,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   capacity sliders always govern the grid, matching the web app where the
   Card Thickness dropdown never touches columns/rows. Updated `presets.scad`,
   the inlined MakerWorld copy, `tests/test_presets.py`, and docs.
+- **MakerWorld single-file build renamed to
+  `Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`.** Byte-identical rename
+  of the previous file; `tests/test_makerworld_sync.py`, `README.md`,
+  `makerworld/README.md`, and `docs/MAKERWORLD_QUICK_START.md` now point at the
+  new filename.
 
 ### Removed
 - **Braille wedge card generator split into its own repository.** The
@@ -75,6 +131,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fixtures are untouched.
 
 ### Fixed
+- **`tests/validate_parameter_schema.py` was failing on the `dot_shape`
+  default.** `tests/parameter_mapping.json` still recorded `"Cone"` after the
+  default changed to `"Rounded"`, so the CI schema check errored out. The
+  mapping now records `"Rounded"`, matching both SCAD builds.
 - **False-positive `TEXT TOO LONG` warning with indicators On.** The warning
   threshold subtracted 2 cells when indicators were enabled
   (`active_grid_columns - (indicator_on ? 2 : 0)`), implying a "Design B"

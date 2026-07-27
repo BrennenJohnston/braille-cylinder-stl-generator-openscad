@@ -1,8 +1,8 @@
 # Reference Fixture Version Information
-# Generated: 2026-07-23T22:40:06.194528Z
+# Generated: 2026-07-27T03:17:52.716633Z
 # Method: OpenSCAD self-test mode
 # OpenSCAD: OpenSCAD version 2026.01.03
-# Total fixtures: 14
+# Total fixtures: 16
 # Failed: 0
 
 # See FIXTURES_VERSION.json for full metadata

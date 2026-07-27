@@ -91,7 +91,7 @@ Use this ONLY for:
 
 ## Test Case Matrix
 
-Current test suite (14 cylinder tests):
+Current test suite (16 cylinder tests):
 
 ### Core Matrix (8 tests)
 All combinations of: dot shape (rounded/cone) × plate type (emboss/counter) × indicators (on/off)
@@ -120,6 +120,12 @@ Minimal fixtures for indicator recess bug diagnosis:
 12. `cylinder_rounded_emboss_multiline` (multi-line render path)
 13. `cylinder_rounded_emboss_03mm` (0.3mm paper-thickness preset, emboss)
 14. `cylinder_rounded_counter_03mm` (0.3mm paper-thickness preset, counter)
+
+### Indicator Mode (2 tests)
+Tactile indicator mode — raised seam-gap arrow instead of marker columns:
+
+15. `cylinder_rounded_emboss_tactile` (raised arrow at 180°)
+16. `cylinder_rounded_counter_tactile` (matching arrow recess)
 
 ## Fixture Directory Structure
 

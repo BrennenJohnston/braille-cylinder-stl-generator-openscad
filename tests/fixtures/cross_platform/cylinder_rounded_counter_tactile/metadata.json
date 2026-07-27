@@ -1,0 +1,47 @@
+{
+  "test_name": "cylinder_rounded_counter_tactile",
+  "description": "Cylinder: Rounded dots, Counter plate, Tactile indicator mode (seam-gap arrow recess)",
+  "tags": [
+    "cylinder",
+    "rounded",
+    "counter",
+    "tactile",
+    "indicator_mode",
+    "slow_openscad"
+  ],
+  "priority": "high",
+  "reference_stl": "cross_platform/cylinder_rounded_counter_tactile/reference.stl",
+  "stl_size_bytes": 26002040,
+  "stl_sha256": "b29571752a9317c672d9b37dfaf214c5fdd3c1fd9b0adba1e77ba8146abe88a5",
+  "mesh_properties": {
+    "volume_mm3": 10054.145316817894,
+    "surface_area_mm2": 10335.779867898891,
+    "bounding_box_mm": [
+      [
+        -15.4,
+        -15.4,
+        0.0
+      ],
+      [
+        15.4,
+        15.4,
+        52.0
+      ]
+    ],
+    "face_count": 80880,
+    "vertex_count": 40440,
+    "is_watertight": true,
+    "centroid_mm": [
+      0.12435465495536406,
+      4.2204895009215104e-15,
+      25.995965171372216
+    ]
+  },
+  "generation": {
+    "method": "openscad",
+    "openscad_version": "OpenSCAD version 2026.01.03",
+    "scad_file": "Braille_Cylinder_STL_Generator.scad",
+    "duration_seconds": 1.0061924457550049
+  },
+  "generated_at": "2026-07-27T03:17:52.713835Z"
+}
