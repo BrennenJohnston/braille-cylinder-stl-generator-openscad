@@ -14,6 +14,16 @@ This is the **offline OpenSCAD companion** to the web-based Braille STL Generato
 | **OpenSCAD** (this repo) | [github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad) | Offline use, full parametric control |
 | **Web App Source** | [github.com/BrennenJohnston/braille-cylinder-stl-generator](https://github.com/BrennenJohnston/braille-cylinder-stl-generator) | Web app source code |
 
+### The device these plates go into
+
+The cylinders this generator produces are the interchangeable plates for the
+[**Custom Braille Embosser**](https://github.com/BrennenJohnston/custom-braille-embosser-3d-printing-project)
+— a hand-operated braille embosser built from ten snap-fit 3D-printed parts, with
+no fasteners, springs, glue, or electronics. Generate an embossing plate and its
+matching counter plate at the same card-stock thickness, print both, and snap them
+into the holders. That repo has the device's CAD sources, print profiles, and
+build documentation.
+
 ### Spin-off Projects
 
 The following repositories were extracted from earlier iterations of this project and are now developed separately:
@@ -21,6 +31,8 @@ The following repositories were extracted from earlier iterations of this projec
 | Repo | Description |
 |------|-------------|
 | [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad) | Directly readable 3D-printed braille cards, printed leaning at 75° (CHI 2024 optimal angle) with break-away support fins. Incubated here as `experimental/braille-business-card/`. |
+| [braille-sign-openscad](https://github.com/BrennenJohnston/braille-sign-openscad) | Two-part ADA-style tactile signs: a raised-letter plate above a braille plate. Split out of the wedge card repo. |
+| [braille-charm-openscad](https://github.com/BrennenJohnston/braille-charm-openscad) | Braille charms, pendants, zipper pulls, and bracelet clips. Split out of the wedge card repo. |
 | [openscad-plug-puller](https://github.com/BrennenJohnston/openscad-plug-puller) | Parametric OpenSCAD plug puller — an assistive device for gripping and removing electrical plugs (flat tool + heavy-duty clamshell). |
 | `cad-to-openscad-pipeline` (private) | Reusable methodology and tooling for converting CAD models into clean parametric OpenSCAD, including the `dxf_to_openscad_polygon` tool. Not published yet. |
 
