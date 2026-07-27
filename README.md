@@ -17,12 +17,15 @@ This is the **offline OpenSCAD companion** to the web-based Braille STL Generato
 ### The device these plates go into
 
 The cylinders this generator produces are the interchangeable plates for the
-[**Custom Braille Embosser**](https://github.com/BrennenJohnston/custom-braille-embosser-3d-printing-project)
-— a hand-operated braille embosser built from ten snap-fit 3D-printed parts, with
-no fasteners, springs, glue, or electronics. Generate an embossing plate and its
-matching counter plate at the same card-stock thickness, print both, and snap them
-into the holders. That repo has the device's CAD sources, print profiles, and
-build documentation.
+**Custom Braille Embosser** — a hand-operated braille embosser built from ten
+snap-fit 3D-printed parts, with no fasteners, springs, glue, or electronics.
+Generate an embossing plate and its matching counter plate at the same card-stock
+thickness, print both, and snap them into the holders.
+
+Build files, print profiles, and documentation for the device are on
+[Printables](https://www.printables.com/model/1742352-custom-braille-card-embosser-hand-operated),
+[MakerWorld](https://makerworld.com/en/models/2881581-custom-braille-card-embosser-hand-operated),
+and [Thingiverse](https://www.thingiverse.com/thing:7365273).
 
 ### Spin-off Projects
 
