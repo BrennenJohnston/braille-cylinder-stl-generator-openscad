@@ -64,7 +64,7 @@
 // REFERENCES
 // =============================================================================
 //  [1] Web-based Generator (with automatic translation): 
-//      https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator
+//      https://github.com/BrennenJohnston/braille-cylinder-stl-generator
 //      https://braille-card-and-cylinder-stl-gener.vercel.app
 //  [2] Branah Braille Translator: https://www.branah.com/braille-translator
 //  [3] BANA — Size and Spacing: https://brailleauthority.org/size-and-spacing-braille-characters
@@ -458,7 +458,7 @@ function get_dot_pattern(char) =
 // INDICATOR SHAPE MODULES
 // =============================================================================
 //
-// Reference: braille-card-and-cylinder-stl-generator/docs/specifications/
+// Reference: braille-cylinder-stl-generator/docs/specifications/
 //   RECESS_INDICATOR_SPECIFICATIONS.md
 //
 // CRITICAL SEMANTICS:

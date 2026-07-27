@@ -2,7 +2,7 @@
 
 This document maps the OpenSCAD customizer parameters to the web-based braille generator UI controls.
 
-**Note:** This repository contains only the OpenSCAD cylinder generator. For the web app source code, see [braille-card-and-cylinder-stl-generator](https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator). This mapping ensures the OpenSCAD Customizer stays aligned with web UI terminology and defaults.
+**Note:** This repository contains only the OpenSCAD cylinder generator. For the web app source code, see [braille-cylinder-stl-generator](https://github.com/BrennenJohnston/braille-cylinder-stl-generator). This mapping ensures the OpenSCAD Customizer stays aligned with web UI terminology and defaults.
 
 ## Overview
 
@@ -294,8 +294,8 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
 ## References
 
 - Web-based Generator: https://braille-card-and-cylinder-stl-gener.vercel.app
-- Web App Source: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator
-- OpenSCAD Version: https://github.com/BrennenJohnston/braille-stl-generator-openscad
+- Web App Source: https://github.com/BrennenJohnston/braille-cylinder-stl-generator
+- OpenSCAD Version: https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad
 - Branah Braille Translator: https://www.branah.com/braille-translator
 - BANA Size & Spacing: https://brailleauthority.org/size-and-spacing-braille-characters
 

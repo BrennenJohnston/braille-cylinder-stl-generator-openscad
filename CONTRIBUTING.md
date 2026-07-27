@@ -26,12 +26,12 @@ By participating in this project, you agree to maintain a respectful and inclusi
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/YOUR-USERNAME/braille-stl-generator-openscad.git
-   cd braille-stl-generator-openscad
+   git clone https://github.com/YOUR-USERNAME/braille-cylinder-stl-generator-openscad.git
+   cd braille-cylinder-stl-generator-openscad
    ```
 3. **Add upstream remote**:
    ```bash
-   git remote add upstream https://github.com/BrennenJohnston/braille-stl-generator-openscad.git
+   git remote add upstream https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad.git
    ```
 
 ## Development Setup
@@ -174,7 +174,7 @@ parameter_name = default_value; // [min:step:max] or [option1, option2]
 ## Related Projects
 
 - **Web App**: [braille-card-and-cylinder-stl-gener.vercel.app](https://braille-card-and-cylinder-stl-gener.vercel.app)
-- **Web App Source**: [github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator](https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator)
+- **Web App Source**: [github.com/BrennenJohnston/braille-cylinder-stl-generator](https://github.com/BrennenJohnston/braille-cylinder-stl-generator)
 
 ## Questions?
 

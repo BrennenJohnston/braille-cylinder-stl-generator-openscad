@@ -117,6 +117,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of the previous file; `tests/test_makerworld_sync.py`, `README.md`,
   `makerworld/README.md`, and `docs/MAKERWORLD_QUICK_START.md` now point at the
   new filename.
+- **Repository renamed to `braille-cylinder-stl-generator-openscad`,** matching
+  its web app companion's rename to `braille-cylinder-stl-generator`. Neither
+  tool has generated flat cards since the web app's v2.0.0, so the old names
+  advertised a feature that no longer exists. GitHub redirects the old URLs; the
+  CI badge, clone instructions, LICENSE required notice, and every cross-link in
+  the READMEs, docs, tests, and both SCAD headers now use the new names.
+- **Sibling-repo links that pointed at private repos.** The README's Spin-off
+  Projects table linked private `plug-puller-openscad`, which 404s for anyone
+  but the owner; it now links the public release repo
+  [openscad-plug-puller](https://github.com/BrennenJohnston/openscad-plug-puller).
+  `cad-to-openscad-pipeline` is unpublished, so it is named as private instead of
+  linked.
 
 ### Removed
 - **Braille wedge card generator split into its own repository.** The
@@ -273,11 +285,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Plug_Puller_Parametric.scad`, root `Plug_Puller_v4_Parametric.scad`,
   `dxf_extracts/`, `obj_vertex_data.txt`,
   `artifacts/plug_puller_validation/`, and stray validation renders) —
-  moved to
-  [plug-puller-openscad](https://github.com/BrennenJohnston/plug-puller-openscad).
+  moved to `plug-puller-openscad` (private dev repo); the public release lives
+  at [openscad-plug-puller](https://github.com/BrennenJohnston/openscad-plug-puller).
 - DXF/SVG conversion scripts (`scripts/dxf_to_openscad_polygon.py`,
   `scripts/extract_svg_overlay_outline.py`) — moved to
-  [cad-to-openscad-pipeline](https://github.com/BrennenJohnston/cad-to-openscad-pipeline).
+  `cad-to-openscad-pipeline` (private).
 - `braille_x_adjust` Customizer slider and the corresponding
   `active_braille_x_adjust` aggregator. On a cylinder the X axis is
   the angular wrap around the seam, so a linear "X adjust" had no
@@ -337,13 +349,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `active_polygon_cutout_points` semantic, global `$fn = 32`
   default) are each documented with their intent.
 - This `CHANGELOG.md` file.
-- Spin-off sibling repository [plug-puller-openscad](https://github.com/BrennenJohnston/plug-puller-openscad)
-  (private) — holds the Plug Puller v1/v2/v3/v4 design work
-  previously living in `Plug Puller Test/`.
-- Spin-off sibling repository
-  [cad-to-openscad-pipeline](https://github.com/BrennenJohnston/cad-to-openscad-pipeline)
-  (private) — packages the CAD-to-OpenSCAD methodology and the
-  general-purpose `dxf-to-openscad-polygon` console script.
+- Spin-off sibling repository `plug-puller-openscad` (private) — holds the
+  Plug Puller v1/v2/v3/v4 design work previously living in
+  `Plug Puller Test/`. Public release:
+  [openscad-plug-puller](https://github.com/BrennenJohnston/openscad-plug-puller).
+- Spin-off sibling repository `cad-to-openscad-pipeline` (private) — packages
+  the CAD-to-OpenSCAD methodology and the general-purpose
+  `dxf-to-openscad-polygon` console script.
 
 ### Tests
 - `tests/test_presets.py` (9 tests): asserts the `PRESET_04` and

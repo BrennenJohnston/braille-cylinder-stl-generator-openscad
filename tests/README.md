@@ -352,7 +352,7 @@ git lfs pull
 ## References
 
 - **Web Generator**: https://braille-card-and-cylinder-stl-gener.vercel.app
-- **Web Source**: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator
+- **Web Source**: https://github.com/BrennenJohnston/braille-cylinder-stl-generator
 - **OpenSCAD**: https://openscad.org/
 - **CloudCompare**: https://www.cloudcompare.org/
 - **Git LFS**: https://git-lfs.github.com/

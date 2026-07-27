@@ -59,7 +59,7 @@ Run the web generator source code headlessly using Node.js to generate STLs prog
 
 **Requirements:**
 
-1. Clone web generator repository: `github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator`
+1. Clone web generator repository: `github.com/BrennenJohnston/braille-cylinder-stl-generator`
 2. Identify STL generation entry point (client-side generator module)
 3. Create Node.js script to:
    - Accept parameters from `test_cases.json`

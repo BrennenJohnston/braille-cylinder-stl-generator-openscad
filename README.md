@@ -2,7 +2,7 @@
 
 Parametric OpenSCAD program for generating braille embossing plates and counter plates for cylindrical objects.
 
-[![STL Validation](https://github.com/BrennenJohnston/braille-stl-generator-openscad/actions/workflows/stl-validation.yml/badge.svg)](https://github.com/BrennenJohnston/braille-stl-generator-openscad/actions/workflows/stl-validation.yml)
+[![STL Validation](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad/actions/workflows/stl-validation.yml/badge.svg)](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad/actions/workflows/stl-validation.yml)
 
 ## 🔗 Related Project
 
@@ -11,8 +11,8 @@ This is the **offline OpenSCAD companion** to the web-based Braille STL Generato
 | Version | Link | Use Case |
 |---------|------|----------|
 | **Web App** | [braille-card-and-cylinder-stl-gener.vercel.app](https://braille-card-and-cylinder-stl-gener.vercel.app) | Browser-based with automatic translation |
-| **OpenSCAD** (this repo) | [github.com/BrennenJohnston/braille-stl-generator-openscad](https://github.com/BrennenJohnston/braille-stl-generator-openscad) | Offline use, full parametric control |
-| **Web App Source** | [github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator](https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator) | Web app source code |
+| **OpenSCAD** (this repo) | [github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad) | Offline use, full parametric control |
+| **Web App Source** | [github.com/BrennenJohnston/braille-cylinder-stl-generator](https://github.com/BrennenJohnston/braille-cylinder-stl-generator) | Web app source code |
 
 ### Spin-off Projects
 
@@ -21,8 +21,8 @@ The following repositories were extracted from earlier iterations of this projec
 | Repo | Description |
 |------|-------------|
 | [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad) | Directly readable 3D-printed braille cards, printed leaning at 75° (CHI 2024 optimal angle) with break-away support fins. Incubated here as `experimental/braille-business-card/`. |
-| [plug-puller-openscad](https://github.com/BrennenJohnston/plug-puller-openscad) | Parametric SCAD + CAD data for the Plug Puller experiments (v1.0–v4.0). |
-| [cad-to-openscad-pipeline](https://github.com/BrennenJohnston/cad-to-openscad-pipeline) | Reusable methodology and tooling for converting CAD models into clean parametric OpenSCAD, including the `dxf_to_openscad_polygon` tool. |
+| [openscad-plug-puller](https://github.com/BrennenJohnston/openscad-plug-puller) | Parametric OpenSCAD plug puller — an assistive device for gripping and removing electrical plugs (flat tool + heavy-duty clamshell). |
+| `cad-to-openscad-pipeline` (private) | Reusable methodology and tooling for converting CAD models into clean parametric OpenSCAD, including the `dxf_to_openscad_polygon` tool. Not published yet. |
 
 ## ⚠️ Key Difference
 
@@ -344,7 +344,7 @@ See the [LICENSE](LICENSE) file for full terms.
 ## 📞 Support
 
 For issues specific to this OpenSCAD version:
-1. [Open an issue](https://github.com/BrennenJohnston/braille-stl-generator-openscad/issues) on this repository
+1. [Open an issue](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad/issues) on this repository
 2. Check parameter values in Customizer
 3. Verify Unicode braille character validity
 4. Ensure OpenSCAD version 2024.x or newer (2026.01.03+ recommended)

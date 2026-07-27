@@ -267,7 +267,7 @@ def print_next_steps(all_checks_passed, has_fixtures):
         print("=" * 70)
         print("\nNext steps:")
         print("  1. Start the web generator (in separate terminal):")
-        print("     cd ../braille-card-and-cylinder-stl-generator")
+        print("     cd ../braille-cylinder-stl-generator")
         print("     python app.py")
         print("\n  2. Generate reference fixtures:")
         print("     python scripts/regenerate_fixtures.py")

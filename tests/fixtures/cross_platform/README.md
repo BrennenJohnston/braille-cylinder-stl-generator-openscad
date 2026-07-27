@@ -197,8 +197,8 @@ git lfs install
 ## References
 
 - **Web Generator**: https://braille-card-and-cylinder-stl-gener.vercel.app
-- **Web Source**: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator
-- **OpenSCAD Source**: https://github.com/BrennenJohnston/braille-stl-generator-openscad
+- **Web Source**: https://github.com/BrennenJohnston/braille-cylinder-stl-generator
+- **OpenSCAD Source**: https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad
 - **Git LFS**: https://git-lfs.github.com/
 
 ---

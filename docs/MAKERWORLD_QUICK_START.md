@@ -221,7 +221,7 @@ Business-card examples take the content decisions from BANA's Fact Sheet
 - [BANA *Business Cards Fact Sheet* (PDF, approved March 2024)](https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf)
 - [BANA *Size and Spacing of Braille Characters*](https://www.brailleauthority.org/size-and-spacing-braille-characters)
 - [The Rules of Unified English Braille (ICEB)](https://iceb.org/ueb.html)
-- [This project on GitHub](https://github.com/BrennenJohnston/braille-stl-generator-openscad)
-- [Web app companion project](https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator) — translates English for you in the browser
+- [This project on GitHub](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad)
+- [Web app companion project](https://github.com/BrennenJohnston/braille-cylinder-stl-generator) — translates English for you in the browser
 - For complex cases (international phone numbers, multiple languages,
   credentials), consider working with a **UEB-certified transcriber**.
