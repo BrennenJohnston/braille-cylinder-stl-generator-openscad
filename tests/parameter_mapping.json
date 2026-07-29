@@ -3,7 +3,7 @@
   "title": "OpenSCAD to Web API Parameter Mapping",
   "description": "Machine-readable mapping between OpenSCAD customizer variables and web API parameters. Source of truth for cross-platform validation.",
   "version": "2.3.0",
-  "last_updated": "2026-07-26",
+  "last_updated": "2026-07-29",
   "documentation": "See docs/PARAMETER_MAPPING.md for human-readable version",
   
   "ui_parameter_format": {
@@ -89,69 +89,69 @@
     },
     {
       "openscad_name": "indicator_mode",
-      "web_api_name": null,
-      "web_ui_label": "Indicator Mode",
+      "web_api_name": "indicator_mode",
+      "web_ui_label": "Row Indicator Style",
       "type": "enum",
       "default": "Visual",
       "values": ["Visual", "Tactile"],
       "section": "Indicator Mode",
       "description": "Visual = recessed triangle (plus optional letter square) in marker cells at the start of each row. Tactile = raised arrow on the embossing plate and matching recess on the counter plate, centred in the seam gap, with no marker cells.",
-      "note": "OpenSCAD-only; the web app has no tactile indicator mode"
+      "note": "Ported to the web app 2026-07-29; enum casing differs on the wire (visual/tactile). Schema home: indicators.indicator_mode"
     },
     {
       "openscad_name": "tactile_indicator_width",
-      "web_api_name": null,
+      "web_api_name": "tactile_indicator_width",
       "web_ui_label": "Tactile Indicator Width",
       "type": "float",
       "default": 4.0,
       "range": [2, 10],
       "section": "Indicator Mode",
       "description": "Tactile indicator width measured around the cylinder (mm)",
-      "note": "OpenSCAD-only; Tactile indicator mode"
+      "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
     },
     {
       "openscad_name": "tactile_indicator_length",
-      "web_api_name": null,
+      "web_api_name": "tactile_indicator_length",
       "web_ui_label": "Tactile Indicator Length",
       "type": "float",
       "default": 5.0,
       "range": [2, 15],
       "section": "Indicator Mode",
       "description": "Tactile indicator length measured along the cylinder axis (mm); the default matches the 5 mm braille dot field height",
-      "note": "OpenSCAD-only; Tactile indicator mode"
+      "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
     },
     {
       "openscad_name": "tactile_indicator_raise",
-      "web_api_name": null,
+      "web_api_name": "tactile_indicator_raise",
       "web_ui_label": "Tactile Indicator Raise",
       "type": "float",
       "default": 0.8,
       "range": [0, 2],
       "section": "Indicator Mode",
       "description": "How far the embossing plate's arrow stands proud of the surface (mm); kept below the braille dot height so the dots carry the rolling pressure",
-      "note": "OpenSCAD-only; Tactile indicator mode"
+      "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
     },
     {
       "openscad_name": "tactile_recess_clearance",
-      "web_api_name": null,
+      "web_api_name": "tactile_recess_clearance",
       "web_ui_label": "Tactile Recess Clearance",
       "type": "float",
       "default": 0.2,
       "range": [0, 1],
       "section": "Indicator Mode",
       "description": "Outline margin added around the counter plate's recess (mm) so the arrow enters even when slightly misaligned",
-      "note": "OpenSCAD-only; Tactile indicator mode"
+      "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
     },
     {
       "openscad_name": "tactile_recess_extra_depth",
-      "web_api_name": null,
+      "web_api_name": "tactile_recess_extra_depth",
       "web_ui_label": "Tactile Recess Extra Depth",
       "type": "float",
       "default": 0.2,
       "range": [0, 1],
       "section": "Indicator Mode",
       "description": "Counter recess depth added on top of the arrow raise (mm); 0 gives exact same-depth nesting",
-      "note": "OpenSCAD-only; Tactile indicator mode"
+      "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
     },
     {
       "openscad_name": "paper_thickness_preset",

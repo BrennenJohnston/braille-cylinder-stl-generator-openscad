@@ -43,6 +43,11 @@ The following repositories were extracted from earlier iterations of this projec
 
 **This OpenSCAD version requires pre-translated Unicode braille text.** It does NOT include automatic translation.
 
+The gap runs one way only. The web app also accepts pre-translated braille — it
+has a Braille (Unicode) field whose contents are used verbatim — so the
+paste-braille workflow below works in both. Automatic translation is the single
+thing you give up by working offline.
+
 ---
 
 ## 📦 MakerWorld Single-File Build (Alternative)

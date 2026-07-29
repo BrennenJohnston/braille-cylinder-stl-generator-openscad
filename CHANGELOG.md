@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Documentation now reflects that the web app has ported tactile indicator mode
+  (2026-07-29). `docs/PARAMETER_MAPPING.md` claimed "the web app has no tactile
+  indicator mode, so all six map to `web_api_name: null`", which is no longer
+  true: all six parameters carry the same names there, and the five numeric
+  defaults are asserted equal by a test on the web side. Filled in the real
+  `web_api_name` values in both `docs/PARAMETER_MAPPING.md` and
+  `tests/parameter_mapping.json`; `text_limit_check` remains the only
+  genuinely OpenSCAD-only parameter.
+- Noted in `README.md` and `docs/PARAMETER_MAPPING.md` that the pre-translated
+  braille workflow is no longer unique to this version — the web app has a
+  Braille (Unicode) field that is used verbatim. Automatic translation is the
+  one thing working offline still costs you.
+- Expanded the phone-number guidance in `docs/MAKERWORLD_QUICK_START.md` to
+  explain *why* hyphens have to become periods: a period keeps UEB numeric mode
+  but a hyphen or parenthesis ends it, so `206-543-4779` correctly needs three
+  number signs (15 cells, will not fit) against one for `206.543.4779` (13
+  cells). Previously the guide only warned about translators repeating the sign
+  after periods, which is a different cause with a different fix.
+
 ## [2.4.0] - 2026-07-27
 
 ### Added
