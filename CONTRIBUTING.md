@@ -173,7 +173,7 @@ parameter_name = default_value; // [min:step:max] or [option1, option2]
 
 ## Related Projects
 
-- **Web App**: [braille-card-and-cylinder-stl-gener.vercel.app](https://braille-card-and-cylinder-stl-gener.vercel.app)
+- **Web App**: [braille-cylinder-stl-generator.vercel.app](https://braille-cylinder-stl-generator.vercel.app)
 - **Web App Source**: [github.com/BrennenJohnston/braille-cylinder-stl-generator](https://github.com/BrennenJohnston/braille-cylinder-stl-generator)
 
 ## Questions?

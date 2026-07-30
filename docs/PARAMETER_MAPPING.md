@@ -305,7 +305,7 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
 
 ## References
 
-- Web-based Generator: https://braille-card-and-cylinder-stl-gener.vercel.app
+- Web-based Generator: https://braille-cylinder-stl-generator.vercel.app
 - Web App Source: https://github.com/BrennenJohnston/braille-cylinder-stl-generator
 - OpenSCAD Version: https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad
 - Branah Braille Translator: https://www.branah.com/braille-translator

@@ -125,7 +125,7 @@ The `FIXTURES_VERSION.txt` file records the web generator version used to create
 ```
 web_generator_commit: abc123def456
 web_generator_version: 1.2.3
-web_api_url: https://braille-card-and-cylinder-stl-gener.vercel.app
+web_api_url: https://braille-cylinder-stl-generator.vercel.app
 generated_date: 2026-01-08T10:30:00Z
 python_script: scripts/regenerate_fixtures.py
 ```
@@ -196,7 +196,7 @@ git lfs install
 
 ## References
 
-- **Web Generator**: https://braille-card-and-cylinder-stl-gener.vercel.app
+- **Web Generator**: https://braille-cylinder-stl-generator.vercel.app
 - **Web Source**: https://github.com/BrennenJohnston/braille-cylinder-stl-generator
 - **OpenSCAD Source**: https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad
 - **Git LFS**: https://git-lfs.github.com/

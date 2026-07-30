@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-07-29
+
 ### Changed
+- Web app links now point at `https://braille-cylinder-stl-generator.vercel.app`.
+  The web app's Vercel project was recreated under its renamed GitHub repo, so the
+  old `braille-card-and-cylinder-stl-gener.vercel.app` deployment is no longer the
+  one receiving updates. Changed in the REFERENCES header of both SCAD builds,
+  `README.md`, `CONTRIBUTING.md`, `docs/PARAMETER_MAPPING.md`, `tests/README.md`,
+  and `tests/fixtures/cross_platform/README.md`. Geometry is untouched, so the
+  reference STLs and `fixture_version` are unchanged — but the SCAD hashes move,
+  which is why this needs a tag: the web app repo vendors the MakerWorld build and
+  pins it by hash.
 - Documentation now reflects that the web app has ported tactile indicator mode
   (2026-07-29). `docs/PARAMETER_MAPPING.md` claimed "the web app has no tactile
   indicator mode, so all six map to `web_api_name: null`", which is no longer

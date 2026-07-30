@@ -10,7 +10,7 @@ This is the **offline OpenSCAD companion** to the web-based Braille STL Generato
 
 | Version | Link | Use Case |
 |---------|------|----------|
-| **Web App** | [braille-card-and-cylinder-stl-gener.vercel.app](https://braille-card-and-cylinder-stl-gener.vercel.app) | Browser-based with automatic translation |
+| **Web App** | [braille-cylinder-stl-generator.vercel.app](https://braille-cylinder-stl-generator.vercel.app) | Browser-based with automatic translation |
 | **OpenSCAD** (this repo) | [github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad) | Offline use, full parametric control |
 | **Web App Source** | [github.com/BrennenJohnston/braille-cylinder-stl-generator](https://github.com/BrennenJohnston/braille-cylinder-stl-generator) | Web app source code |
 
@@ -333,7 +333,7 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
 
 ## 📚 References
 
-1. **Web Generator**: https://braille-card-and-cylinder-stl-gener.vercel.app
+1. **Web Generator**: https://braille-cylinder-stl-generator.vercel.app
 2. **Branah Translator**: https://www.branah.com/braille-translator
 3. **BANA Standards**: https://brailleauthority.org/size-and-spacing-braille-characters
 4. **NLS Spec 800**: https://www.loc.gov/nls/
@@ -369,9 +369,9 @@ For issues specific to this OpenSCAD version:
 3. Verify Unicode braille character validity
 4. Ensure OpenSCAD version 2024.x or newer (2026.01.03+ recommended)
 
-For general braille embossing questions, see the [web app](https://braille-card-and-cylinder-stl-gener.vercel.app).
+For general braille embossing questions, see the [web app](https://braille-cylinder-stl-generator.vercel.app).
 
 ---
 
-**Version**: 2.4.0  
-**Last Updated**: 2026-07-26
+**Version**: 2.4.1  
+**Last Updated**: 2026-07-29
