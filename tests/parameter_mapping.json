@@ -2,8 +2,8 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "OpenSCAD to Web API Parameter Mapping",
   "description": "Machine-readable mapping between OpenSCAD customizer variables and web API parameters. Source of truth for cross-platform validation.",
-  "version": "2.3.0",
-  "last_updated": "2026-07-29",
+  "version": "2.4.0",
+  "last_updated": "2026-08-01",
   "documentation": "See docs/PARAMETER_MAPPING.md for human-readable version",
   
   "ui_parameter_format": {
@@ -58,6 +58,61 @@
       "default": "",
       "section": "Text Input - Pre-Translated Braille",
       "description": "Fourth line of braille text"
+    },
+    {
+      "openscad_name": "Line_5",
+      "web_api_name": "line5",
+      "web_ui_label": "Line 5",
+      "type": "string",
+      "default": "",
+      "section": "Text Input - Pre-Translated Braille",
+      "description": "Fifth line of braille text"
+    },
+    {
+      "openscad_name": "Line_6",
+      "web_api_name": "line6",
+      "web_ui_label": "Line 6",
+      "type": "string",
+      "default": "",
+      "section": "Text Input - Pre-Translated Braille",
+      "description": "Sixth line of braille text"
+    },
+    {
+      "openscad_name": "Line_7",
+      "web_api_name": "line7",
+      "web_ui_label": "Line 7",
+      "type": "string",
+      "default": "",
+      "section": "Text Input - Pre-Translated Braille",
+      "description": "Seventh line of braille text"
+    },
+    {
+      "openscad_name": "Line_8",
+      "web_api_name": "line8",
+      "web_ui_label": "Line 8",
+      "type": "string",
+      "default": "",
+      "section": "Text Input - Pre-Translated Braille",
+      "description": "Eighth line of braille text"
+    },
+    {
+      "openscad_name": "Line_9",
+      "web_api_name": "line9",
+      "web_ui_label": "Line 9",
+      "type": "string",
+      "default": "",
+      "section": "More Braille Lines (Advanced)",
+      "description": "Ninth line of braille text",
+      "note": "The Customizer cannot add fields on demand, so the two lines that reach the grid_rows maximum of 10 sit in their own tab instead of lengthening the main text input. The web app grows its line list dynamically and has no equivalent split."
+    },
+    {
+      "openscad_name": "Line_10",
+      "web_api_name": "line10",
+      "web_ui_label": "Line 10",
+      "type": "string",
+      "default": "",
+      "section": "More Braille Lines (Advanced)",
+      "description": "Tenth line of braille text"
     },
     {
       "openscad_name": "text_limit_check",
@@ -548,6 +603,7 @@
     "Version 2.0.0: Card support removed, cylinder-only operation",
     "Version 2.1.0: Paper thickness preset system added, defaults updated to match web app 0.4mm preset",
     "Version 2.2.0: Aggressive customizer polish (file rename, preset routing extraction, magic-number naming, $fn policy doc), TEXT TOO LONG warning geometry, expanded test coverage (presets/backward-compat/text-too-long suites, 3 new cross-platform fixtures, slider-range schema validator), split-repo cleanup (Plug Puller + CAD-to-OpenSCAD methodology extracted to sibling repos)",
+    "Version 2.4.0: Line_5 - Line_10 added so the Customizer exposes every row grid_rows allows; Line_9 and Line_10 sit in the 'More Braille Lines (Advanced)' section because the Customizer cannot add fields on demand",
     "This mapping is the source of truth for cross-platform validation",
     "Human-readable documentation in docs/PARAMETER_MAPPING.md should be kept in sync",
     "Web API uses snake_case; OpenSCAD uses snake_case (aligned)",

@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-08-01
+
+Closes the gap between how many braille rows the generator can render and how
+many the Customizer let you type. `grid_rows` has allowed up to 10 rows since
+2.0.0, but only four `Line_N` fields existed — so rows 5 through 10 were
+reachable only by editing the source or passing `-D` flags.
+
+### Added
+
+- **`Line_5` – `Line_10`.** `Line_5` – `Line_8` join the existing
+  `[Text Input - Pre-Translated Braille]` tab, so eight rows are visible without
+  hunting for anything. `Line_9` and `Line_10` sit in a new
+  `[More Braille Lines (Advanced)]` tab: the Customizer cannot add fields on
+  demand the way the web app grows its line list, and putting all ten in the
+  first tab pushes the rest of the settings off screen for the common case. The
+  parameter names are the same wherever they display, so presets and `-D`
+  overrides are unaffected.
+- **`TOO MANY LINES: n/grid_rows` warning.** Only the first `grid_rows` rows are
+  ever rendered. Until now, braille pasted into a line past that limit simply
+  never appeared — no console message, nothing on the model, and an exported STL
+  quietly missing text. The generator now reports it the way it reports every
+  other problem: a console `echo()` naming the row to raise `grid_rows` to, plus
+  red text above the cylinder for the MakerWorld preview, which has no console.
+  Unlike `TEXT TOO LONG` this is not gated on `text_limit_check`; rows past the
+  grid cannot be drawn under any setting, so there is no bypass worth offering.
+- `tests/test_too_many_lines.py`: render test comparing bounding-box Z-max
+  (skipped without OpenSCAD, as `test_text_too_long.py` does), source guards for
+  the warning, and guards pinning the `Line_1` – `Line_10` wiring — every row
+  declared, `_all_lines` complete and in order, no stray `Line_N` outside its
+  declaration, the `grid_rows` slider max matching the field count, and the
+  MakerWorld build carrying the same declarations.
+
+### Changed
+
+- **`_all_lines` is now the single source of truth for the text.** The capacity
+  check, the per-line console diagnostics, the invalid-character check, and the
+  dot loop each used to name `Line_1` through `Line_4` individually, which is
+  four places to forget when a row is added. They all iterate one list now, so
+  adding row 11 someday means declaring it and appending it — nothing else.
+- `docs/PARAMETER_MAPPING.md` and `tests/parameter_mapping.json` (bumped to
+  mapping version 2.4.0) document the six new parameters and the Advanced tab.
+
+### Notes for maintainers
+
+- The MakerWorld build was re-flattened per `makerworld/README.md`; its geometry
+  body stays byte-identical to the canonical file.
+- The SCAD hashes move with this release. The web app repo vendors the MakerWorld
+  build and pins it by hash, so it needs a re-vendor against this tag.
+
 ## [2.4.1] - 2026-07-29
 
 ### Changed

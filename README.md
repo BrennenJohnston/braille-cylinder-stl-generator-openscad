@@ -164,7 +164,9 @@ dropdown still offers `Cone`):
 
 ### Braille Grid
 - Cells per row: 13 (available for text; in Visual indicator mode 2 additional cells are reserved when Indicator Letters is On — matches the web app default — or 1 for the triangle alone when Off. Tactile indicator mode reserves none. Either narrower layout fits up to 14 text cells on the default cylinder)
-- Number of rows: 4
+- Number of rows: 4 (`grid_rows`, adjustable up to 10; `Line_1`–`Line_8` are in
+  the main Text Input tab and `Line_9`–`Line_10` under **More Braille Lines
+  (Advanced)**, because the Customizer cannot add fields on demand)
 - Cell spacing: 6.5mm
 - Line spacing: 10.0mm
 - Dot spacing: 2.5mm
@@ -272,7 +274,7 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
 - Solution: Translate at Branah.com and copy the braille output
 
 ### "TEXT TOO LONG" Warning
-- Any of `Line_1`–`Line_4` is longer than the text capacity
+- Any of `Line_1`–`Line_10` is longer than the text capacity
 - Capacity = `grid_columns` (default 13) in every indicator mode. Visual mode
   widens the grid by 2 cells when Indicator Letters is On (triangle + square)
   or by 1 cell when Off (triangle only), and Tactile mode widens it by none, so
@@ -292,6 +294,19 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
   - Set `text_limit_check = "Off"` (Text Input section) to bypass the check
     entirely: every pasted cell renders and no warning appears, but rows
     longer than the capacity may crowd the seam gap
+
+### "TOO MANY LINES" Warning
+- You filled a `Line_N` past `grid_rows`, which renders only its first
+  `grid_rows` rows. Without this warning that text would have gone missing from
+  the exported STL with nothing to tell you
+- A red `TOO MANY LINES: <deepest filled line>/<grid_rows>` extrusion (e.g.
+  `TOO MANY LINES: 7/4`) renders above the cylinder, and the console names the
+  value to raise `grid_rows` to
+- Solution: raise `grid_rows` (Expert Mode - Braille Spacing) to at least the
+  deepest line you filled, and check `cylinder_height_mm` is tall enough to hold
+  them — roughly `grid_rows × line_spacing`, so 7 rows needs about 70 mm
+- Unlike `TEXT TOO LONG`, this warning has no `text_limit_check` bypass: rows
+  past the grid cannot be rendered at any setting
 
 ### "TACTILE GAP TOO SMALL" Warning
 - Tactile indicator mode only: the seam gap between the last and first cell is
