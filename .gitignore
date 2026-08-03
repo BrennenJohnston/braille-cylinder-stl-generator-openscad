@@ -44,3 +44,6 @@ experimental/
 .tabnine/
 .aider*
 .continue/
+
+# OpenSCAD scad-check output
+build/
