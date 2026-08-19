@@ -118,10 +118,10 @@ plate_type = "Embossing Plate"; // [Embossing Plate, Counter Plate]
 indicator_mode = "Visual"; // [Visual, Tactile]
 // Tactile only: indicator width measured around the cylinder (mm)
 tactile_indicator_width = 4.0; // [2:0.1:10]
-// Tactile only: indicator length measured along the cylinder axis (mm). The default matches the 5 mm height of a braille dot field.
-tactile_indicator_length = 5.0; // [2:0.1:15]
+// Tactile only: indicator length measured along the cylinder axis (mm). The default is long enough for a fingertip to read the direction of the point in one pass; at the 10 mm default line_spacing it also means each row's arrow meets the base of the one above.
+tactile_indicator_length = 10.0; // [2:0.1:15]
 // Tactile only: how far the embossing plate's arrow stands proud of the surface (mm). Keep this BELOW the braille dot height so the dots — not the indicator — carry the rolling pressure.
-tactile_indicator_raise = 0.8; // [0:0.1:2]
+tactile_indicator_raise = 0.5; // [0:0.1:2]
 // Tactile only: outline margin added around the counter plate's recess (mm), so the arrow still enters the recess when the two cylinders are slightly misaligned.
 tactile_recess_clearance = 0.2; // [0:0.05:1]
 // Tactile only: counter recess depth added on top of the arrow raise (mm). 0 = exact same-depth nesting. Large values thin the wall between the recess and the polygonal cutout.

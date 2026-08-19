@@ -33,10 +33,20 @@ MAKERWORLD = (
 # The five Tactile-only sliders, with the exact `[min:step:max]` each ships with.
 TACTILE_SLIDERS = {
     "tactile_indicator_width": ("4.0", "[2:0.1:10]"),
-    "tactile_indicator_length": ("5.0", "[2:0.1:15]"),
-    "tactile_indicator_raise": ("0.8", "[0:0.1:2]"),
+    "tactile_indicator_length": ("10.0", "[2:0.1:15]"),
+    "tactile_indicator_raise": ("0.5", "[0:0.1:2]"),
     "tactile_recess_clearance": ("0.2", "[0:0.05:1]"),
     "tactile_recess_extra_depth": ("0.2", "[0:0.05:1]"),
+}
+
+# 2026-08-18: the canonical defaults were aligned to the web app (length
+# 5.0 -> 10.0 mm, raise 0.8 -> 0.5 mm). The MakerWorld build is re-flattened by
+# its own phase and still carries the old pair, so the gap is pinned here rather
+# than left to make the guard quietly wrong. Delete these two entries in the same
+# change that re-flattens the variant.
+MAKERWORLD_PENDING_REFLATTEN = {
+    "tactile_indicator_length": "5.0",
+    "tactile_indicator_raise": "0.8",
 }
 
 BOTH_BUILDS = pytest.mark.parametrize(
@@ -78,6 +88,8 @@ def test_indicator_mode_dropdown(scad_path):
 def test_tactile_slider_declared(scad_path, name):
     """Each tactile slider keeps its documented default and range."""
     default, rng = TACTILE_SLIDERS[name]
+    if scad_path == MAKERWORLD and name in MAKERWORLD_PENDING_REFLATTEN:
+        default = MAKERWORLD_PENDING_REFLATTEN[name]
     scad = _read(scad_path)
     expected = f"{name} = {default}; // {rng}"
     assert expected in scad, (

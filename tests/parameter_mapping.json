@@ -2,8 +2,8 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "OpenSCAD to Web API Parameter Mapping",
   "description": "Machine-readable mapping between OpenSCAD customizer variables and web API parameters. Source of truth for cross-platform validation.",
-  "version": "2.4.0",
-  "last_updated": "2026-08-01",
+  "version": "2.5.0",
+  "last_updated": "2026-08-18",
   "documentation": "See docs/PARAMETER_MAPPING.md for human-readable version",
   
   "ui_parameter_format": {
@@ -169,22 +169,22 @@
       "web_api_name": "tactile_indicator_length",
       "web_ui_label": "Tactile Indicator Length",
       "type": "float",
-      "default": 5.0,
+      "default": 10.0,
       "range": [2, 15],
       "section": "Indicator Mode",
-      "description": "Tactile indicator length measured along the cylinder axis (mm); the default matches the 5 mm braille dot field height",
-      "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
+      "description": "Tactile indicator length measured along the cylinder axis (mm); long enough for a fingertip to read the direction of the point in one pass",
+      "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there. Aligned to the web value 2026-08-18 (was 5.0)"
     },
     {
       "openscad_name": "tactile_indicator_raise",
       "web_api_name": "tactile_indicator_raise",
       "web_ui_label": "Tactile Indicator Raise",
       "type": "float",
-      "default": 0.8,
+      "default": 0.5,
       "range": [0, 2],
       "section": "Indicator Mode",
       "description": "How far the embossing plate's arrow stands proud of the surface (mm); kept below the braille dot height so the dots carry the rolling pressure",
-      "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
+      "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there. Aligned to the web value 2026-08-18 (was 0.8)"
     },
     {
       "openscad_name": "tactile_recess_clearance",
@@ -603,6 +603,7 @@
     "Version 2.0.0: Card support removed, cylinder-only operation",
     "Version 2.1.0: Paper thickness preset system added, defaults updated to match web app 0.4mm preset",
     "Version 2.2.0: Aggressive customizer polish (file rename, preset routing extraction, magic-number naming, $fn policy doc), TEXT TOO LONG warning geometry, expanded test coverage (presets/backward-compat/text-too-long suites, 3 new cross-platform fixtures, slider-range schema validator), split-repo cleanup (Plug Puller + CAD-to-OpenSCAD methodology extracted to sibling repos)",
+    "Version 2.5.0: Cross-repo parity audit (Phase 08). The only two numeric drifts in the 46-parameter surface were aligned to the web app: tactile_indicator_length 5.0 -> 10.0 mm and tactile_indicator_raise 0.8 -> 0.5 mm. The MakerWorld variant still carries the old pair until its own re-flatten phase",
     "Version 2.4.0: Line_5 - Line_10 added so the Customizer exposes every row grid_rows allows; Line_9 and Line_10 sit in the 'More Braille Lines (Advanced)' section because the Customizer cannot add fields on demand",
     "This mapping is the source of truth for cross-platform validation",
     "Human-readable documentation in docs/PARAMETER_MAPPING.md should be kept in sync",
