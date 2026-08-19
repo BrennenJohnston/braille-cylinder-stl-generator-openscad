@@ -236,9 +236,30 @@ ds_self_check = false;
 interpoint_offset_x_mm = 1.25; // circumferential, measured around the cylinder
 interpoint_offset_y_mm = 1.25; // axial, measured along the cylinder
 
+// The BACK face's braille, one field per row, in the same row order as
+// Line_1..Line_10. Hidden and empty for now; the Customizer tab that exposes
+// them - and the INVALID CHARACTERS / capacity warnings that must cover them -
+// arrive with the double-sided UI phase. Until then tests fill them with -D.
+// Read only when ds_on, so an empty set changes nothing.
+Back_Line_1 = "";
+Back_Line_2 = "";
+Back_Line_3 = "";
+Back_Line_4 = "";
+Back_Line_5 = "";
+Back_Line_6 = "";
+Back_Line_7 = "";
+Back_Line_8 = "";
+Back_Line_9 = "";
+Back_Line_10 = "";
+
 // Normalized gate. Declared here rather than beside is_emboss_plate / tactile_on
 // in CALCULATED VALUES because that section lives past the MakerWorld sync marker.
 ds_on = (double_sided == "On") || (double_sided == "on");
+
+// Back-face counterpart of _all_lines, under the same contract: the single
+// source of truth for the back content, so no geometry ever names a Back_Line_N.
+_all_back_lines = [Back_Line_1, Back_Line_2, Back_Line_3, Back_Line_4, Back_Line_5,
+                   Back_Line_6, Back_Line_7, Back_Line_8, Back_Line_9, Back_Line_10];
 
 // -----------------------------------------------------------------------------
 // D1 - THE INTERPOINT OFFSET (signed off 2026-08-16)
@@ -276,6 +297,25 @@ DS_DOT_DOME_DIA = 0.8;    // dome diameter where it meets the base, mm
 DS_DOT_DOME_H   = 0.4;    // dome height, mm - total double-sided dot height 0.8 mm
 DS_BOWL_DIA     = 1.3;    // paired recess (bowl) opening diameter, mm
 DS_BOWL_DEPTH   = 0.5;    // paired recess depth, mm
+
+// Derived from the six numbers above, so editing one of them moves the geometry
+// with it and no size is ever written twice.
+DS_DOT_HEIGHT = DS_DOT_BASE_H + DS_DOT_DOME_H;   // total raised dot height, mm
+
+// Dome and bowl are both spherical caps: R = (a^2 + h^2) / (2h) for an opening
+// radius a and a height/depth h. Same formula the single-sided dot and the
+// counter plate's bowl already use.
+DS_DOT_DOME_R = ((DS_DOT_DOME_DIA / 2) * (DS_DOT_DOME_DIA / 2) + DS_DOT_DOME_H * DS_DOT_DOME_H)
+                / (2 * DS_DOT_DOME_H);
+DS_BOWL_R     = ((DS_BOWL_DIA / 2) * (DS_BOWL_DIA / 2) + DS_BOWL_DEPTH * DS_BOWL_DEPTH)
+                / (2 * DS_BOWL_DEPTH);
+
+// How far the bowl's sphere centre sits OUTSIDE the shell surface. Putting the
+// centre here, instead of on the surface, is what makes the cut exactly
+// DS_BOWL_DEPTH deep under the dot centre. The web app's Python geometry uses
+// this same convention; its browser worker centres the sphere on the surface
+// and therefore cuts DS_BOWL_R deep instead - see the cross-validation notes.
+DS_BOWL_CENTER_OFFSET = DS_BOWL_R - DS_BOWL_DEPTH;
 
 // Printability thresholds for the material left between a raised dot and a
 // neighbouring recess on the same surface (Bambu X1C, 0.4 mm nozzle: Arachne
@@ -383,6 +423,9 @@ function ds_same_surface_min_gap(dot_dia, recess_dia, offx, offy,
 //   gap_single_sided  the web app's single-sided sizes - the documented failure
 //                     case, below the 0.34 mm floor
 //   gap_legacy_cone   the legacy cone footprints - negative, i.e. overlapping
+// The four values after them are the derived footprint geometry the paired dot
+// and recess are actually built from, echoed so the cut depth this file produces
+// can be cited without opening a mesh.
 if (ds_self_check) {
     echo("DS_SELFCHECK: every value below is mm");
     echo(str("DS_SELFCHECK lattice_1_25_1_25=", ds_lattice_min_center_distance(1.25, 1.25)));
@@ -390,6 +433,10 @@ if (ds_self_check) {
     echo(str("DS_SELFCHECK gap_option_b=",      ds_same_surface_min_gap(DS_DOT_BASE_DIA, DS_BOWL_DIA, 1.25, 1.25)));
     echo(str("DS_SELFCHECK gap_single_sided=",  ds_same_surface_min_gap(1.5, 1.8, 1.25, 1.25)));
     echo(str("DS_SELFCHECK gap_legacy_cone=",   ds_same_surface_min_gap(1.8, 1.8, 1.25, 1.25)));
+    echo(str("DS_SELFCHECK dot_height=",         DS_DOT_HEIGHT));
+    echo(str("DS_SELFCHECK dot_dome_r=",         DS_DOT_DOME_R));
+    echo(str("DS_SELFCHECK bowl_sphere_r=",      DS_BOWL_R));
+    echo(str("DS_SELFCHECK bowl_center_offset=", DS_BOWL_CENTER_OFFSET));
 }
 
 // -----------------------------------------------------------------------------
@@ -448,7 +495,33 @@ indicator_on = (indicator_shapes == "on") ? true :
 // Tactile indicator mode replaces the recessed marker columns with a raised
 // arrow (emboss) / matching recess (counter) in the seam gap. It supersedes
 // `indicator_on`, which only ever gates the Visual letter square.
-tactile_on = (indicator_mode == "Tactile");
+//
+// Double-sided mode is always tactile. Its two cylinders carry 1:1 paired
+// recesses across the whole surface, which is exactly where the Visual marker
+// columns would sit, and a blind user working a double-sided pair needs the
+// seam arrow to tell the two cylinders apart. The web app refuses the
+// combination outright; here it is forced, and warned about below.
+tactile_on = (indicator_mode == "Tactile") || ds_on;
+
+// Set when that forcing actually overrode a user's choice, so it can be both
+// echoed and rendered as 3D warning text.
+ds_forced_tactile = ds_on && (indicator_mode != "Tactile");
+
+if (ds_forced_tactile)
+    echo(str("WARNING: double_sided is On, so indicator_mode \"", indicator_mode,
+             "\" has been overridden and this plate renders with tactile seam ",
+             "arrows. Set indicator_mode = Tactile to clear this."));
+
+// Material left between a raised dot and its nearest neighbouring recess, both
+// of which share this surface in double-sided mode. The 336-point lattice sweep
+// behind it is only paid for when the mode is on.
+ds_same_surface_gap = ds_on
+    ? ds_same_surface_min_gap(DS_DOT_BASE_DIA, DS_BOWL_DIA,
+                              interpoint_offset_x_mm, interpoint_offset_y_mm)
+    : 0;
+// Below DS_GAP_FLOOR the guard in the DOUBLE-SIDED MATH section has already
+// stopped the render; this is the printable-but-marginal band above it.
+ds_dots_too_close = ds_on && (ds_same_surface_gap < DS_GAP_RELIABLE);
 
 // Map render quality to segment counts (support both UI and test system)
 quality_fn = (hemisphere_quality == "low" || render_quality == "Low") ? 24 :
@@ -507,7 +580,13 @@ _preset_seam_offset_degrees            = preset_value(paper_thickness_preset, "s
 // Active emboss dot parameters (based on shape selection, using preset-routed values)
 // Note: cone/rounded emboss modules consume the underlying _preset_* constants
 // directly; only the composite height is needed at this layer.
-active_emboss_height = use_rounded_dots ? (_preset_rounded_dot_base_height + _preset_rounded_dot_dome_height) : _preset_emboss_dot_height;
+// Double-sided ships its own FIXED footprint (Option B, signed off 2026-08-16):
+// raised dots and recesses now share one surface, and at the single-sided sizes
+// only 0.118 mm of material would be left between neighbours. So the ds gate
+// wins over both the shape selection and the paper-thickness preset, and no
+// dial reaches it. `braille_dot_for_plate` below routes the matching solid.
+active_emboss_height = ds_on ? DS_DOT_HEIGHT :
+                       use_rounded_dots ? (_preset_rounded_dot_base_height + _preset_rounded_dot_dome_height) : _preset_emboss_dot_height;
 
 // Active counter dot parameters (based on shape selection, using preset-routed values)
 active_counter_height = use_rounded_dots ? _preset_counter_dot_depth : _preset_cone_counter_dot_height;
@@ -739,7 +818,8 @@ INVALID_TEXT_Z_OFFSET   = 5;   // mm above the cylinder top
 INVALID_TEXT_SIZE       = 5;   // text() font size in mm
 INVALID_TEXT_DEPTH      = 2;   // linear_extrude height in mm
 // Pitch of the warning stack above INVALID CHARACTERS, one step per warning:
-// TEXT TOO LONG, TACTILE GAP TOO SMALL, then TOO MANY LINES.
+// TEXT TOO LONG, TACTILE GAP TOO SMALL, TOO MANY LINES, then the two
+// double-sided ones - DOUBLE-SIDED REQUIRES TACTILE and DOTS TOO CLOSE.
 INVALID_TEXT_STACK_GAP  = 8;   // mm
 
 module indicator_triangle_2d(rotate_180 = false) {
@@ -896,6 +976,29 @@ module tactile_gap_warning() {
     }
 }
 
+// The two double-sided warnings, in 3D for the same reason as the ones above:
+// the MakerWorld customizer preview cannot show console output. Stacked one and
+// two steps above TOO MANY LINES, reusing the same placement constants.
+//
+// WORDING NOT YET SIGNED OFF - draft strings pending review.
+module ds_mode_warnings() {
+    if (ds_forced_tactile) {
+        translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + 4 * INVALID_TEXT_STACK_GAP])
+        color("red")
+        linear_extrude(height = INVALID_TEXT_DEPTH)
+        text("DOUBLE-SIDED REQUIRES TACTILE",
+             size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
+    }
+
+    if (ds_dots_too_close) {
+        translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + 5 * INVALID_TEXT_STACK_GAP])
+        color("red")
+        linear_extrude(height = INVALID_TEXT_DEPTH)
+        text(str("DOTS TOO CLOSE: ", round(ds_same_surface_gap * 1000) / 1000, " mm"),
+             size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
+    }
+}
+
 // One tactile indicator per braille row, at the same row pitch the Visual
 // marker columns use.
 module tactile_rows_raised() {
@@ -962,6 +1065,51 @@ module braille_dot_centered() {
     }
 }
 
+// Double-sided raised dot, CENTERED at origin like braille_dot_centered().
+// Same frustum-plus-spherical-cap construction; only the sizes differ, and they
+// come from the fixed Option B constants rather than any slider or preset.
+module ds_braille_dot_centered() {
+    _center_z = DS_DOT_BASE_H + DS_DOT_DOME_H - DS_DOT_DOME_R;
+
+    translate([0, 0, -DS_DOT_HEIGHT / 2]) {
+        union() {
+            translate([0, 0, DS_DOT_BASE_H / 2])
+            cylinder(
+                h = DS_DOT_BASE_H,
+                r1 = DS_DOT_BASE_DIA / 2,
+                r2 = DS_DOT_DOME_DIA / 2,
+                center = true,
+                $fn = cone_segments
+            );
+            intersection() {
+                translate([0, 0, _center_z])
+                sphere(r = DS_DOT_DOME_R, $fn = quality_fn);
+                translate([0, 0, DS_DOT_BASE_H + DS_DOT_DOME_R])
+                cube([DS_DOT_DOME_R * 4, DS_DOT_DOME_R * 4, DS_DOT_DOME_R * 2], center = true);
+            }
+        }
+    }
+}
+
+// Which raised dot this plate draws. Double-sided overrides the shape selection
+// entirely; single-sided is untouched.
+module braille_dot_for_plate() {
+    if (ds_on) {
+        ds_braille_dot_centered();
+    } else {
+        braille_dot_centered();
+    }
+}
+
+// Double-sided paired recess: the bowl that receives the opposing cylinder's
+// raised dot. Called with its origin ON the shell surface, so the sphere centre
+// lands DS_BOWL_CENTER_OFFSET outside it and the cut is DS_BOWL_DEPTH deep under
+// the dot centre. Always a spherical cap - the cone family has no ds variant.
+module ds_counter_recess() {
+    translate([0, 0, DS_BOWL_CENTER_OFFSET])
+    sphere(r = DS_BOWL_R, $fn = quality_fn);
+}
+
 // Create a recess for counter plate (bowl or cone shape)
 module counter_recess() {
     if (use_rounded_dots) {
@@ -1000,6 +1148,66 @@ module cylinder_shell(cutout_rotate_deg = 0) {
     }
 }
 
+// Double-sided: one bowl per ACTUAL back-text dot, never a universal grid.
+// Subtracted from THIS cylinder, it is the seat the opposing cylinder's raised
+// back dot drops into at the nip, so the two must be built from the same walk.
+//
+// Where a back dot lands, in two steps, both taken in the planar (pre-seam)
+// frame the emboss plate places its own dots in:
+//
+//   1. MIRROR about the seam plane. Back-side text reads normally from behind
+//      the card; seen from the front - the frame both cylinders are laid out in
+//      - it reads reversed. The grid is centred on angle 0, so that plane passes
+//      through the grid centre and the mirror is just a negated angle.
+//   2. ONE DIAGONAL INTERPOINT STEP, in the DS_BACK_DIRECTION sense: around the
+//      cylinder by interpoint_offset_x_mm (as an angle, arc / radius) and up the
+//      cylinder by interpoint_offset_y_mm. This is what stops a back dot landing
+//      on a front one and flattening it.
+//
+// Ported from the web generator's back_grid_transform() in
+// app/geometry/interpoint.py, which stays the authoritative implementation.
+module ds_back_recesses() {
+    for (row = [0 : min(active_grid_rows - 1, len(_all_back_lines) - 1)]) {
+        if (len(_all_back_lines[row]) > 0) {
+            y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
+
+            row_last_col = (text_limit_check == "Off")
+                ? len(_all_back_lines[row]) - 1
+                : min(active_grid_columns - 1, len(_all_back_lines[row]) - 1);
+            for (col = [0 : row_last_col]) {
+                // Double-sided forces tactile, so this always resolves to col;
+                // it is written as the shared expression so the back walk cannot
+                // drift from the front one.
+                actual_col = tactile_on ? col :
+                             indicator_on ? (col + 2) : (col + 1);
+                angle_rad = start_angle + (actual_col * cell_spacing_angle);
+                dots = get_dot_pattern(_all_back_lines[row][col]);
+
+                for (i = [0:5]) {
+                    if (dots[i] == 1) {
+                        dot_pos = dot_positions[i];
+                        front_angle_rad = angle_rad + dot_col_angle_offsets[dot_pos[1]];
+                        front_dot_y     = y_pos + dot_row_offsets[dot_pos[0]];
+
+                        back_angle_rad = -front_angle_rad
+                                         + DS_BACK_DIRECTION * (interpoint_offset_x_mm / radius);
+                        back_dot_y     = front_dot_y
+                                         + DS_BACK_DIRECTION * interpoint_offset_y_mm;
+                        back_angle_deg = back_angle_rad * 180 / PI;
+
+                        x = radius * cos(back_angle_deg);
+                        y = radius * sin(back_angle_deg);
+
+                        translate([x, y, back_dot_y])
+                            rotate([0, 90, back_angle_deg])
+                                ds_counter_recess();
+                    }
+                }
+            }
+        }
+    }
+}
+
 module cylinder_emboss_plate() {
     translate([0, 0, active_cylinder_height_mm/2]) {
         // Angular grid + dot-positioning constants are derived at top level;
@@ -1032,6 +1240,10 @@ module cylinder_emboss_plate() {
 
                 // TACTILE GAP TOO SMALL warning (Tactile mode only; no-op otherwise).
                 tactile_gap_warning();
+
+                // DOUBLE-SIDED REQUIRES TACTILE / DOTS TOO CLOSE warnings
+                // (double-sided mode only; no-op otherwise).
+                ds_mode_warnings();
 
                 // TOO MANY LINES warning (see top-level rows_used /
                 // too_many_rows). The dot loop below stops at active_grid_rows,
@@ -1082,7 +1294,7 @@ module cylinder_emboss_plate() {
                                     
                                     translate([x, y, dot_y])
                                         rotate([0, 90, dot_angle_deg])
-                                            braille_dot_centered();
+                                            braille_dot_for_plate();
                                 }
                             }
                         }
@@ -1101,6 +1313,15 @@ module cylinder_emboss_plate() {
                     y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
                     place_row_indicators(y_pos, INDICATOR_TRIANGLE_DEPTH_EMBOSS, INDICATOR_RECT_DEPTH_EMBOSS);
                 }
+            }
+
+            // Double-sided: the seats for the opposing cylinder's back dots.
+            // Subtracted last, after the raised dots are unioned in, so a bowl
+            // that reaches a neighbouring dot cuts it rather than being buried
+            // by it - the same shell -> union raised -> subtract recesses order
+            // the web app's manifold worker uses.
+            if (ds_on) {
+                ds_back_recesses();
             }
         }
     }

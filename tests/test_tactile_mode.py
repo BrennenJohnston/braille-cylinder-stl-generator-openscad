@@ -49,6 +49,14 @@ MAKERWORLD_PENDING_REFLATTEN = {
     "tactile_indicator_raise": "0.8",
 }
 
+# How many braille-cell walks read the shared column-shift expression. Two plate
+# modules, plus - in the canonical file since the double-sided phase -
+# ds_back_recesses(), which walks the back text through the same expression so
+# the back layout cannot drift from the front. The MakerWorld build is
+# re-flattened in its own phase and still carries only the two. Raise its entry
+# to match the canonical one in the same change that re-flattens the variant.
+COLUMN_SHIFT_WALKS = {CANONICAL: 3, MAKERWORLD: 2}
+
 BOTH_BUILDS = pytest.mark.parametrize(
     "scad_path", [CANONICAL, MAKERWORLD], ids=["canonical", "makerworld"]
 )
@@ -267,13 +275,14 @@ def test_visual_marker_columns_are_gated_off_in_tactile_mode(scad_path):
 def test_column_shift_drops_the_marker_cells_in_tactile_mode(scad_path):
     """Text starts at column 0 in Tactile mode, and the grid stops widening."""
     scad = _read(scad_path)
+    expected = COLUMN_SHIFT_WALKS[scad_path]
     assert (
         scad.count(
             "actual_col = tactile_on ? col :\n"
         )
-        == 2
+        == expected
     ), (
-        "Both plate modules must shift braille cells with "
+        f"All {expected} braille-cell walks in {scad_path.name} must shift cells with "
         "`actual_col = tactile_on ? col : ...` so Tactile text starts at "
         "column 0 while Visual keeps its +1/+2 marker offset."
     )

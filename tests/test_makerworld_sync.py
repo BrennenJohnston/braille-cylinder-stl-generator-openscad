@@ -14,6 +14,8 @@ main file. See makerworld/README.md for the maintainer re-flatten procedure.
 
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL = REPO_ROOT / "Braille_Cylinder_STL_Generator.scad"
 MAKERWORLD = REPO_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad"
@@ -32,8 +34,22 @@ def test_makerworld_file_exists():
     assert MAKERWORLD.exists(), f"Missing MakerWorld single-file build: {MAKERWORLD}"
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="ds geometry lands below the sync marker in Phase 10; the "
+    "MakerWorld variant is re-flattened in Phase 14",
+)
 def test_geometry_body_is_byte_identical():
-    """The geometry body (marker -> EOF) must match the canonical main file."""
+    """The geometry body (marker -> EOF) must match the canonical main file.
+
+    Expected to fail from Phase 10 until Phase 14. The double-sided geometry -
+    the forced-tactile gate, the paired-recess walk and the Option B dot - all
+    live below the marker, and the MakerWorld variant cannot be re-flattened
+    piecemeal: its header lacks `ds_on` and every `DS_*` name the new body
+    references, so a body-only copy would not parse. `strict=True` is the point:
+    the moment Phase 14 re-flattens and this starts passing, the suite goes RED
+    until this marker is deleted, so it cannot be quietly left behind.
+    """
     canonical = CANONICAL.read_text(encoding="utf-8")
     makerworld = MAKERWORLD.read_text(encoding="utf-8")
 
