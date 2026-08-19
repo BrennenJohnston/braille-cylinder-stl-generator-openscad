@@ -310,12 +310,27 @@ DS_DOT_DOME_R = ((DS_DOT_DOME_DIA / 2) * (DS_DOT_DOME_DIA / 2) + DS_DOT_DOME_H *
 DS_BOWL_R     = ((DS_BOWL_DIA / 2) * (DS_BOWL_DIA / 2) + DS_BOWL_DEPTH * DS_BOWL_DEPTH)
                 / (2 * DS_BOWL_DEPTH);
 
-// How far the bowl's sphere centre sits OUTSIDE the shell surface. Putting the
-// centre here, instead of on the surface, is what makes the cut exactly
-// DS_BOWL_DEPTH deep under the dot centre. The web app's Python geometry uses
-// this same convention; its browser worker centres the sphere on the surface
-// and therefore cuts DS_BOWL_R deep instead - see the cross-validation notes.
-DS_BOWL_CENTER_OFFSET = DS_BOWL_R - DS_BOWL_DEPTH;
+// WHAT THE BOWL ACTUALLY IS, and why DS_BOWL_DEPTH is not its depth.
+//
+// The bowl's sphere is centred ON the shell surface, not outside it, so the cut
+// is a HEMISPHERE of radius DS_BOWL_R:
+//
+//     printed depth = DS_BOWL_R          (NOT DS_BOWL_DEPTH)
+//     printed mouth = 2 * DS_BOWL_R      (NOT DS_BOWL_DIA)
+//
+// At the shipped 1.3 / 0.5 that is 0.6725 mm deep and 1.345 mm across. DS_BOWL_DIA
+// and DS_BOWL_DEPTH are shape inputs to DS_BOWL_R above and nothing more; any sum
+// computed from them directly is wrong. Note DS_BOWL_R is MINIMISED at
+// DS_BOWL_DEPTH = DS_BOWL_DIA / 2, so over part of the range raising the depth
+// makes the printed bowl SHALLOWER (0.5 -> 0.70 goes 0.6725 -> 0.6518 mm).
+//
+// This matches static/workers/csg-worker-manifold.js in the web repo
+// (radialOffset = cylRadius), which is the authoritative convention by Brennen's
+// decision of 2026-08-19: it is the geometry that has actually been printed and
+// embossed. The web app's own Python renderer, and the SINGLE-SIDED
+// counter_recess() below, both use the other convention - centre (R - depth)
+// outside the surface, cut exactly the nominal depth. Single-sided is
+// deliberately left alone: changing it would move every counter plate in use.
 
 // Printability thresholds for the material left between a raised dot and a
 // neighbouring recess on the same surface (Bambu X1C, 0.4 mm nozzle: Arachne
@@ -436,7 +451,7 @@ if (ds_self_check) {
     echo(str("DS_SELFCHECK dot_height=",         DS_DOT_HEIGHT));
     echo(str("DS_SELFCHECK dot_dome_r=",         DS_DOT_DOME_R));
     echo(str("DS_SELFCHECK bowl_sphere_r=",      DS_BOWL_R));
-    echo(str("DS_SELFCHECK bowl_center_offset=", DS_BOWL_CENTER_OFFSET));
+    echo(str("DS_SELFCHECK bowl_printed_mouth=",  2 * DS_BOWL_R));
 }
 
 // -----------------------------------------------------------------------------
@@ -1102,11 +1117,13 @@ module braille_dot_for_plate() {
 }
 
 // Double-sided paired recess: the bowl that receives the opposing cylinder's
-// raised dot. Called with its origin ON the shell surface, so the sphere centre
-// lands DS_BOWL_CENTER_OFFSET outside it and the cut is DS_BOWL_DEPTH deep under
-// the dot centre. Always a spherical cap - the cone family has no ds variant.
+// raised dot. Called with its origin ON the shell surface, and the sphere sits
+// at that origin - so the cut is a hemisphere DS_BOWL_R deep and 2 * DS_BOWL_R
+// across, NOT DS_BOWL_DEPTH deep. See the constants block for why, and do not
+// "fix" this to the nominal-depth convention: it deliberately matches the web
+// app's browser worker, which is the geometry that has been printed and
+// embossed. Always a spherical cap - the cone family has no ds variant.
 module ds_counter_recess() {
-    translate([0, 0, DS_BOWL_CENTER_OFFSET])
     sphere(r = DS_BOWL_R, $fn = quality_fn);
 }
 

@@ -25,13 +25,20 @@ Two kinds of test live here, following ``tests/test_interpoint_math_scad.py``:
 * **Source guards** read the .scad as text and run everywhere, including the
   no-OpenSCAD CI job.
 
-MEASURED, 2026-08-18, OpenSCAD 2026.01.03 Manifold: this repo cuts the 1.3 mm
-bowl **0.4968 mm** deep below the nominal cylinder radius, against a nominal
-DS_BOWL_DEPTH of 0.5 mm. The 0.0032 mm shortfall is the sphere tessellation, not
-the maths: at ``quality_fn`` = 32 the deepest ring sits at 84.375 deg of
-latitude, so it reaches 0.6725 * sin(84.375) = 0.66926 of the sphere radius
-below a centre that is 0.1725 mm outside the surface. Phase 13's cross-validation
-tolerances cite this number.
+MEASURED, 2026-08-19, OpenSCAD 2026.01.03 Manifold: this repo cuts the 1.3 mm
+bowl **0.6693 mm** deep below the nominal cylinder radius. That is NOT the 0.5 mm
+``DS_BOWL_DEPTH`` suggests, and it is not meant to be: the bowl's sphere is
+centred ON the shell surface, so the cut is a hemisphere of radius ``DS_BOWL_R``
+= 0.6725 mm, and the 0.0032 mm shortfall is sphere tessellation (at
+``quality_fn`` = 32 the deepest ring sits at 84.375 deg of latitude, reaching
+0.6725 * sin(84.375) = 0.66926 mm).
+
+That convention is deliberate, decided 2026-08-19: it matches
+``static/workers/csg-worker-manifold.js`` in the web repo, which is the geometry
+that has actually been printed and embossed. The web app's own Python renderer,
+and this file's SINGLE-SIDED counter plate, both use the other convention -
+centre (R - depth) outside the surface, cut exactly the nominal depth - and are
+deliberately left alone. Phase 13's cross-validation tolerances cite 0.6693 mm.
 
 License: PolyForm Noncommercial 1.0.0
 """
@@ -83,7 +90,7 @@ ANGLE_TOL_DEG = 0.05
 Z_TOL_MM = 0.01
 # Measured bowl depth, mm, and how far it may drift before the number quoted in
 # this file's docstring (and in Phase 13's tolerances) stops being true.
-MEASURED_BOWL_DEPTH_MM = 0.4968
+MEASURED_BOWL_DEPTH_MM = 0.6693
 BOWL_DEPTH_TOL_MM = 0.002
 
 
@@ -466,24 +473,34 @@ class TestFootprints:
 
     def test_bowl_cut_depth(self, ds_features, layout):
         """
-        The number Phase 13 cross-validates against. Nominal DS_BOWL_DEPTH is
-        0.5 mm; what this repo actually cuts is a hair less, because the sphere
-        is tessellated and its deepest ring stops short of the pole.
+        The number Phase 13 cross-validates against. The cut is a hemisphere of
+        radius DS_BOWL_R, so it is DEEPER than DS_BOWL_DEPTH, by design - see
+        this file's header. Tessellation takes a few micron off the pole.
         """
+        sphere_r = (
+            (layout["bowl_dia"] / 2) ** 2 + layout["bowl_depth"] ** 2
+        ) / (2 * layout["bowl_depth"])
         depths = [
             layout["radius"] - c["r_min"] for c in ds_features.clusters(ds_features.recessed)
         ]
         measured = max(depths)
-        print(f"\nMEASURED ds bowl cut depth = {measured:.4f} mm (nominal {layout['bowl_depth']} mm)")
+        print(
+            f"\nMEASURED ds bowl cut depth = {measured:.4f} mm "
+            f"(hemisphere of radius {sphere_r:.4f}; DS_BOWL_DEPTH is {layout['bowl_depth']})"
+        )
         assert max(depths) - min(depths) <= 1e-6, f"Bowls cut to different depths: {depths}"
         assert abs(measured - MEASURED_BOWL_DEPTH_MM) <= BOWL_DEPTH_TOL_MM, (
             f"The bowl now cuts {measured:.4f} mm deep, not the {MEASURED_BOWL_DEPTH_MM} mm "
             "this file documents and Phase 13's cross-validation tolerances cite. Re-measure "
             "and update both, or find what moved."
         )
-        assert measured < layout["bowl_depth"], (
-            "A tessellated cap cannot cut deeper than its nominal depth; something "
-            "other than DS_BOWL_DEPTH is driving the cut."
+        assert measured > layout["bowl_depth"], (
+            "The bowl cut no deeper than DS_BOWL_DEPTH, which means the sphere is no "
+            "longer centred on the shell surface. That silently un-matches the web app, "
+            "whose browser worker is the authoritative convention (decision 2026-08-19)."
+        )
+        assert measured < sphere_r, (
+            "A tessellated hemisphere cannot cut deeper than its own radius."
         )
 
     def test_raised_dots_use_the_option_b_height(self, ds_features, layout):
@@ -670,7 +687,7 @@ class TestSourceGuards:
                 "module ds_braille_dot_centered()",
                 ["DS_DOT_BASE_H", "DS_DOT_BASE_DIA", "DS_DOT_DOME_DIA", "DS_DOT_DOME_R", "DS_DOT_HEIGHT"],
             ),
-            ("module ds_counter_recess()", ["DS_BOWL_CENTER_OFFSET", "DS_BOWL_R"]),
+            ("module ds_counter_recess()", ["DS_BOWL_R"]),
         ):
             start = scad_source.index(module)
             block = scad_source[start : start + 1200]
@@ -691,20 +708,26 @@ class TestSourceGuards:
             scad_source,
         )
 
-    def test_bowl_is_a_spherical_cap_of_the_signed_off_size(self, scad_source):
-        """R = (a^2 + h^2) / (2h), and the centre sits R - h outside the surface."""
+    def test_bowl_is_a_hemisphere_centred_on_the_surface(self, scad_source):
+        """
+        R = (a^2 + h^2) / (2h), and the sphere sits AT the module origin, which
+        the callers put on the shell surface. That is the web app's browser-worker
+        convention, authoritative by decision 2026-08-19, and it makes the printed
+        bowl a hemisphere R deep and 2R across rather than DS_BOWL_DEPTH deep.
+        """
         assert re.search(
             r"DS_BOWL_R\s*=\s*\(\(DS_BOWL_DIA\s*/\s*2\)\s*\*\s*\(DS_BOWL_DIA\s*/\s*2\)\s*"
             r"\+\s*DS_BOWL_DEPTH\s*\*\s*DS_BOWL_DEPTH\)\s*/\s*\(2\s*\*\s*DS_BOWL_DEPTH\)",
             scad_source,
         )
-        assert re.search(
-            r"DS_BOWL_CENTER_OFFSET\s*=\s*DS_BOWL_R\s*-\s*DS_BOWL_DEPTH\s*;", scad_source
-        ), (
-            "Putting the sphere centre DS_BOWL_R - DS_BOWL_DEPTH outside the surface is "
-            "what makes the cut exactly DS_BOWL_DEPTH deep. Centring it ON the surface "
-            "would cut DS_BOWL_R deep instead."
+        start = scad_source.index("module ds_counter_recess()")
+        body = scad_source[start : scad_source.index("\n}\n", start)]
+        assert "translate" not in body, (
+            "ds_counter_recess() must place the sphere at its own origin, with no radial "
+            "translate. Offsetting it outward reverts to the nominal-depth convention and "
+            "silently un-matches the web app, which is what actually gets printed."
         )
+        assert re.search(r"sphere\s*\(\s*r\s*=\s*DS_BOWL_R", body)
 
     def test_warning_strings_are_present(self, scad_source):
         """
