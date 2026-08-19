@@ -197,6 +197,220 @@ PI = 3.14159265359;
 include <presets.scad>;
 
 // =============================================================================
+// DOUBLE-SIDED (INTERPOINT) MATH  -  BETA, hidden until a later phase
+// =============================================================================
+//
+// Double-sided ("interpoint") mode embosses BOTH faces of one card in a single
+// pass between two counter-rotating cylinders. Each cylinder then carries raised
+// dots (its own face's braille) AND recesses (to receive the other cylinder's
+// dots) on the same surface. The back grid is shifted diagonally - the industry
+// "interpoint" offset - so a front dot and a back dot never land on the same
+// patch of paper and flatten each other.
+//
+// This section is MATH ONLY: constants, pure functions, self-checks and range
+// guards. No geometry reads it yet - the paired dot/recess placement arrives in
+// a later phase. `double_sided` is hidden and defaults to "Off", and with it Off
+// nothing here changes a single byte of the rendered model.
+//
+// Ported from the web generator's app/geometry/interpoint.py, which stays the
+// authoritative implementation. The numbers are the approved 2026-08-16
+// interpoint research decisions D1/D2/D3, recorded next to each constant.
+//
+// PLACEMENT: this block sits ABOVE the BACKWARD COMPATIBILITY marker on purpose.
+// Everything from that marker to EOF must stay byte-identical to the MakerWorld
+// flattened build (tests/test_makerworld_sync.py), and that build is re-flattened
+// in its own phase. Anything added below the marker breaks that guard.
+
+/* [Hidden] */
+// Master gate for double-sided mode. Accepts "On"/"Off" and the lowercase
+// "on"/"off" the test system uses, the same way plate_type and dot_shape accept
+// both the Customizer label and a lowercase form. Promoted to a visible
+// dropdown, with the offsets below, in a later phase.
+double_sided = "Off";
+// Print the self-check echoes below. Off in normal renders so scripts\scad-check.ps1
+// stays quiet; tests/test_interpoint_math_scad.py renders with this On.
+ds_self_check = false;
+// The interpoint offset actually used, in mm - how far the back grid is shifted
+// from the front grid. Hidden now; promoted with sliders limited to
+// DS_OFFSET_MIN_MM..DS_OFFSET_MAX_MM in a later phase.
+interpoint_offset_x_mm = 1.25; // circumferential, measured around the cylinder
+interpoint_offset_y_mm = 1.25; // axial, measured along the cylinder
+
+// Normalized gate. Declared here rather than beside is_emboss_plate / tactile_on
+// in CALCULATED VALUES because that section lives past the MakerWorld sync marker.
+ds_on = (double_sided == "On") || (double_sided == "on");
+
+// -----------------------------------------------------------------------------
+// D1 - THE INTERPOINT OFFSET (signed off 2026-08-16)
+// -----------------------------------------------------------------------------
+// The back grid sits 1.25 mm diagonally from the front grid. Source: US Patent
+// 5,527,117 (Roy, Impact Devices, 1996). Sweeping the fully-populated
+// 2.5 / 6.5 / 10.0 lattice confirms the diagonal is the optimum: it maximises the
+// smallest front-to-back centre distance, at 1.767767 mm.
+DS_OFFSET_MIN_MM = 1.15;  // smallest offset the guards below accept, mm
+DS_OFFSET_MAX_MM = 1.35;  // largest offset the guards below accept, mm
+
+// -----------------------------------------------------------------------------
+// D3 - WHICH WAY THE BACK GRID SHIFTS (signed off 2026-08-16)
+// -----------------------------------------------------------------------------
+// +1 = the back grid slides toward the END of the line; its features land LEFT
+// of Cylinder A's raised arrows, seen from outside the cylinder with the top up.
+// Physically confirmed 2026-08. If a printed pair ever crowds the unexpected
+// side of the arrow, FLIP THIS SIGN FIRST - no clearance number can catch a
+// wrong choice, because both signs measure exactly the same distances (the set
+// of front-minus-back difference vectors already holds every vector and its
+// negative).
+DS_BACK_DIRECTION = 1;
+
+// -----------------------------------------------------------------------------
+// D2 - DOUBLE-SIDED FOOTPRINTS, "OPTION B" (signed off 2026-08-16)
+// -----------------------------------------------------------------------------
+// Double-sided needs smaller dots than single-sided, because raised dots and
+// recesses now share one surface. At the shipped single-sided sizes only
+// 0.118 mm of material is left between neighbours - below the 0.34 mm a 0.4 mm
+// nozzle can print. Option B leaves 0.518 mm. Single-sided keeps today's sizes.
+// These ship FIXED, with no Customizer dials, by decision (2026-08-16).
+DS_DOT_BASE_DIA = 1.2;    // raised dot base diameter, mm
+DS_DOT_BASE_H   = 0.4;    // raised dot base height, mm
+DS_DOT_DOME_DIA = 0.8;    // dome diameter where it meets the base, mm
+DS_DOT_DOME_H   = 0.4;    // dome height, mm - total double-sided dot height 0.8 mm
+DS_BOWL_DIA     = 1.3;    // paired recess (bowl) opening diameter, mm
+DS_BOWL_DEPTH   = 0.5;    // paired recess depth, mm
+
+// Printability thresholds for the material left between a raised dot and a
+// neighbouring recess on the same surface (Bambu X1C, 0.4 mm nozzle: Arachne
+// widens anything from 0.1 to 0.34 mm up to 0.34 mm, and drops anything below
+// 0.1 mm entirely).
+DS_GAP_RELIABLE = 0.50;   // comfortably printable, mm
+DS_GAP_FLOOR    = 0.34;   // hard minimum, enforced by the guard below, mm
+
+// Axial step between the front rows and the back rows: back rows sit 1.25 mm
+// higher than front rows. Same number as the interpoint_offset_y_mm default, and
+// unused by the maths in this phase - it is the nominal the row placement in a
+// later phase builds on.
+DS_AXIAL_STEP = 1.25;
+
+// -----------------------------------------------------------------------------
+// THE REFERENCE LATTICE THE CLEARANCE SWEEP RUNS ON
+// -----------------------------------------------------------------------------
+// Mirrors of the canonical grid defaults, not a new source: the same
+// 2.5 / 6.5 / 10.0 mm the braille spacing sliders default to. Interpoint offsets
+// the back grid; it never re-spaces braille. These are deliberately constants
+// rather than reads of active_dot_spacing and friends, so the reported clearance
+// is always the documented worst case - the same number interpoint.py reports.
+DS_DOT_PITCH  = 2.5;      // dot-to-dot inside one cell, mm
+DS_CELL_PITCH = 6.5;      // cell-to-cell along a row, mm
+DS_LINE_PITCH = 10.0;     // row-to-row, mm
+
+// Sweep bounds, matching interpoint.py's TACTILE_COLUMNS and GRID_ROWS. The
+// answer does not actually depend on them - the closest pair is always inside a
+// single cell - but they are pinned so this file and the web repo report the
+// same number from the same sweep.
+DS_LATTICE_COLS = 14;
+DS_LATTICE_ROWS = 4;
+
+// The fixed dot map, [row, col] for dots 1-6. Identical to `dot_positions` in
+// the geometry section; declared separately only because that one lives past the
+// MakerWorld sync marker. Never reorder either copy.
+DS_DOT_MAP = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]];
+
+// -----------------------------------------------------------------------------
+// PURE FUNCTIONS
+// -----------------------------------------------------------------------------
+
+// Every dot position of a fully-populated grid: all six dots of every cell of
+// every row, as [x, y] in mm, x along the row and y up the cylinder. This is the
+// worst case for same-surface crowding - real text never fills every position,
+// but a counter plate's recesses may, and a user can type text that does.
+function ds_lattice_points(cols       = DS_LATTICE_COLS,
+                           rows       = DS_LATTICE_ROWS,
+                           dot_pitch  = DS_DOT_PITCH,
+                           cell_pitch = DS_CELL_PITCH,
+                           line_pitch = DS_LINE_PITCH) =
+    let (col_offsets = [-dot_pitch / 2, dot_pitch / 2],
+         row_offsets = [dot_pitch, 0, -dot_pitch])
+    [ for (col = [0 : cols - 1])
+        for (row = [0 : rows - 1])
+          for (d = DS_DOT_MAP)
+            [ col * cell_pitch + col_offsets[d[1]],
+              -row * line_pitch + row_offsets[d[0]] ] ];
+
+// Smallest centre-to-centre distance, in mm, between a front feature and a back
+// one. The back lattice is the front lattice mirrored and then translated, but a
+// fully-populated grid is symmetric about its own centre, so the mirror maps it
+// onto itself and the worst case reduces to a pure translation by the interpoint
+// offset. DS_BACK_DIRECTION is applied so the code says which way the back grid
+// goes; it provably cannot change the answer (see D3 above).
+function ds_lattice_min_center_distance(offx, offy,
+                                        cols       = DS_LATTICE_COLS,
+                                        rows       = DS_LATTICE_ROWS,
+                                        dot_pitch  = DS_DOT_PITCH,
+                                        cell_pitch = DS_CELL_PITCH,
+                                        line_pitch = DS_LINE_PITCH) =
+    let (pts     = ds_lattice_points(cols, rows, dot_pitch, cell_pitch, line_pitch),
+         shift_x = DS_BACK_DIRECTION * offx,
+         shift_y = DS_BACK_DIRECTION * offy)
+    sqrt(min([ for (b = pts)
+                 min([ for (f = pts)
+                         let (dx = f[0] - (b[0] + shift_x),
+                              dy = f[1] - (b[1] + shift_y))
+                         dx * dx + dy * dy ]) ]));
+
+// Material left between a raised dot and its nearest neighbouring recess, in mm.
+// Both live on the same cylinder surface: one face's raised dots and the recesses
+// that receive the other face's dots. NEGATIVE means the two footprints overlap
+// and the printed ridge between them does not exist. Compare against
+// DS_GAP_RELIABLE (0.50 mm) and DS_GAP_FLOOR (0.34 mm).
+function ds_same_surface_min_gap(dot_dia, recess_dia, offx, offy,
+                                 cols       = DS_LATTICE_COLS,
+                                 rows       = DS_LATTICE_ROWS,
+                                 dot_pitch  = DS_DOT_PITCH,
+                                 cell_pitch = DS_CELL_PITCH,
+                                 line_pitch = DS_LINE_PITCH) =
+    ds_lattice_min_center_distance(offx, offy, cols, rows, dot_pitch, cell_pitch, line_pitch)
+    - (dot_dia + recess_dia) / 2;
+
+// -----------------------------------------------------------------------------
+// SELF-CHECKS
+// -----------------------------------------------------------------------------
+// Five values with known answers, so a change to the maths above is caught at
+// once instead of silently shifting every clearance. Printed only when
+// ds_self_check is true, and independent of double_sided - the functions are
+// pure, so they can be checked with the feature Off.
+// tests/test_interpoint_math_scad.py renders with -D ds_self_check=true and
+// asserts all five to +/-0.001 mm.
+//   gap_option_b      the shipped double-sided footprints - comfortably printable
+//   gap_single_sided  the web app's single-sided sizes - the documented failure
+//                     case, below the 0.34 mm floor
+//   gap_legacy_cone   the legacy cone footprints - negative, i.e. overlapping
+if (ds_self_check) {
+    echo("DS_SELFCHECK: every value below is mm");
+    echo(str("DS_SELFCHECK lattice_1_25_1_25=", ds_lattice_min_center_distance(1.25, 1.25)));
+    echo(str("DS_SELFCHECK lattice_1_25_0=",    ds_lattice_min_center_distance(1.25, 0)));
+    echo(str("DS_SELFCHECK gap_option_b=",      ds_same_surface_min_gap(DS_DOT_BASE_DIA, DS_BOWL_DIA, 1.25, 1.25)));
+    echo(str("DS_SELFCHECK gap_single_sided=",  ds_same_surface_min_gap(1.5, 1.8, 1.25, 1.25)));
+    echo(str("DS_SELFCHECK gap_legacy_cone=",   ds_same_surface_min_gap(1.8, 1.8, 1.25, 1.25)));
+}
+
+// -----------------------------------------------------------------------------
+// GUARDS
+// -----------------------------------------------------------------------------
+// Active only when double_sided is On. A failed assert stops the render and
+// fails scripts\scad-check.ps1 - that is the point. A pair printed outside these
+// ranges will not register, and nothing in a rendered preview would show it.
+if (ds_on) {
+    assert(interpoint_offset_x_mm >= DS_OFFSET_MIN_MM &&
+           interpoint_offset_x_mm <= DS_OFFSET_MAX_MM,
+           "interpoint_offset_x_mm outside 1.15-1.35 range");
+    assert(interpoint_offset_y_mm >= DS_OFFSET_MIN_MM &&
+           interpoint_offset_y_mm <= DS_OFFSET_MAX_MM,
+           "interpoint_offset_y_mm outside 1.15-1.35 range");
+    assert(ds_same_surface_min_gap(DS_DOT_BASE_DIA, DS_BOWL_DIA,
+                                   interpoint_offset_x_mm, interpoint_offset_y_mm) >= DS_GAP_FLOOR,
+           "double-sided dots and recesses too close to print");
+}
+
+// =============================================================================
 // BACKWARD COMPATIBILITY - Test System Parameters
 // =============================================================================
 // The automated test system passes parameters via -D flags using these names.
