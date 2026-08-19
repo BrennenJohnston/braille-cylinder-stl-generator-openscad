@@ -181,7 +181,7 @@ def test_row_warning_is_not_gated_on_text_limit_check(scad_source):
 
 @pytest.mark.slow
 def test_too_many_lines_emits_warning_extrusion(
-    warning_runner, _trimesh, warning_offsets, tmp_path
+    warning_runner, _trimesh, warning_offsets, tmp_path  # noqa: F811  (pytest fixtures, imported above)
 ):
     """
     Filling a row past grid_rows must raise the bounding box by at least one
