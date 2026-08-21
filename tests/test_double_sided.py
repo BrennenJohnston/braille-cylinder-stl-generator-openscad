@@ -12,9 +12,12 @@ With ``double_sided = "On"`` the embossing plate gains three things:
    the web generator's ``app/geometry/interpoint.py``, which stays authoritative:
    mirror the layout about the seam plane, then take one diagonal interpoint
    step in the ``DS_BACK_DIRECTION`` sense.
-3. The Option B footprints (2026-08-16), fixed: raised dots shrink to 1.2 mm
-   base / 0.8 mm tall and the bowls are 1.3 mm x 0.5 mm deep, because a raised
-   dot and a recess now share one surface.
+3. The fixed footprints, keyed to ``paper_thickness_preset`` since 2026-08-20
+   (FD-8/FD-9): the "0.3mm" preset renders Option B (dot 1.2 mm base x 0.8 mm
+   tall, bowl 1.3 x 0.5), everything else renders Q2, the print-matrix winner
+   (dot 1.2 x 1.0 mm tall with a 1.0 mm dome, bowl 1.4 x 0.5) - because a
+   raised dot and a recess share one surface, and one footprint cannot serve
+   both card stocks.
 
 Two kinds of test live here, following ``tests/test_interpoint_math_scad.py``:
 
@@ -25,20 +28,22 @@ Two kinds of test live here, following ``tests/test_interpoint_math_scad.py``:
 * **Source guards** read the .scad as text and run everywhere, including the
   no-OpenSCAD CI job.
 
-MEASURED, 2026-08-19, OpenSCAD 2026.01.03 Manifold: this repo cuts the 1.3 mm
-bowl **0.6693 mm** deep below the nominal cylinder radius. That is NOT the 0.5 mm
-``DS_BOWL_DEPTH`` suggests, and it is not meant to be: the bowl's sphere is
+MEASURED, 2026-08-19/20, OpenSCAD 2026.01.03 Manifold: this repo cuts the 0.3
+package's 1.3 mm bowl **0.6693 mm** deep and the 0.4 package's 1.4 mm bowl
+**0.7364 mm** deep below the nominal cylinder radius. Neither is the 0.5 mm
+``DS_BOWL_DEPTH`` suggests, and neither is meant to be: the bowl's sphere is
 centred ON the shell surface, so the cut is a hemisphere of radius ``DS_BOWL_R``
-= 0.6725 mm, and the 0.0032 mm shortfall is sphere tessellation (at
-``quality_fn`` = 32 the deepest ring sits at 84.375 deg of latitude, reaching
-0.6725 * sin(84.375) = 0.66926 mm).
+(0.6725 / 0.7400 mm), and the few-micron shortfall is sphere tessellation (at
+``quality_fn`` = 32 the deepest ring sits at 84.375 deg of latitude:
+0.6725 * sin(84.375) = 0.66926; 0.7400 * sin(84.375) = 0.73644).
 
 That convention is deliberate, decided 2026-08-19: it matches
 ``static/workers/csg-worker-manifold.js`` in the web repo, which is the geometry
 that has actually been printed and embossed. The web app's own Python renderer,
 and this file's SINGLE-SIDED counter plate, both use the other convention -
 centre (R - depth) outside the surface, cut exactly the nominal depth - and are
-deliberately left alone. Phase 13's cross-validation tolerances cite 0.6693 mm.
+deliberately left alone. Phase 13's cross-validation tolerances cite these two
+numbers (0.6693 / 0.7364 mm).
 
 License: PolyForm Noncommercial 1.0.0
 """
@@ -83,14 +88,26 @@ DOT_MAP = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]]
 #   the cylinder - LEFT of the seam arrow, seen from outside with the top up.
 #   D2, 2026-08-16: Option B raised dots are 0.4 + 0.4 = 0.8 mm tall.
 BACK_DIRECTION = 1
-OPTION_B_DOT_HEIGHT_MM = 0.8
+
+# The signed-off footprint packages, hardcoded on purpose for the same reason
+# (FD-8/FD-9, 2026-08-20): paper_thickness_preset "0.3mm" renders Option B,
+# validated on 0.3 mm stock 2026-08-17; every other value - "0.4mm" is the
+# shipped default - renders Q2, validated on 0.4 mm stock 2026-08-20.
+#   dot_height     base + dome, mm
+#   bowl_dia       nominal bowl opening, mm (a shape input, not the mouth)
+#   measured_bowl  the tessellated hemisphere cut depth, mm - the number this
+#                  file's docstring quotes and Phase 13's tolerances cite
+PACKAGES = {
+    "0.4mm": dict(dot_height=1.0, bowl_dia=1.4, measured_bowl=0.7364),
+    "0.3mm": dict(dot_height=0.8, bowl_dia=1.3, measured_bowl=0.6693),
+}
+DEFAULT_PACKAGE = "0.4mm"  # paper_thickness_preset's shipped default
 
 # How close a rendered feature must land to where the maths puts it.
 ANGLE_TOL_DEG = 0.05
 Z_TOL_MM = 0.01
-# Measured bowl depth, mm, and how far it may drift before the number quoted in
-# this file's docstring (and in Phase 13's tolerances) stops being true.
-MEASURED_BOWL_DEPTH_MM = 0.6693
+# How far a measured bowl depth may drift before the numbers quoted above stop
+# being true.
 BOWL_DEPTH_TOL_MM = 0.002
 
 
@@ -138,9 +155,9 @@ def layout():
         "offset_x": _scad_constant("interpoint_offset_x_mm"),
         "offset_y": _scad_constant("interpoint_offset_y_mm"),
         "back_dir": BACK_DIRECTION,
-        "bowl_dia": _scad_constant("DS_BOWL_DIA"),
+        "bowl_dia": PACKAGES[DEFAULT_PACKAGE]["bowl_dia"],
         "bowl_depth": _scad_constant("DS_BOWL_DEPTH"),
-        "dot_height": OPTION_B_DOT_HEIGHT_MM,
+        "dot_height": PACKAGES[DEFAULT_PACKAGE]["dot_height"],
         "arrow_raise": _scad_constant("tactile_indicator_raise"),
         "arrow_length": _scad_constant("tactile_indicator_length"),
     }
@@ -469,7 +486,7 @@ class TestCylinderAGeometry:
 
 
 class TestFootprints:
-    """The Option B sizes reach the mesh, not just the constants block."""
+    """The active package's sizes reach the mesh, not just the constants block."""
 
     def test_bowl_cut_depth(self, ds_features, layout):
         """
@@ -489,8 +506,9 @@ class TestFootprints:
             f"(hemisphere of radius {sphere_r:.4f}; DS_BOWL_DEPTH is {layout['bowl_depth']})"
         )
         assert max(depths) - min(depths) <= 1e-6, f"Bowls cut to different depths: {depths}"
-        assert abs(measured - MEASURED_BOWL_DEPTH_MM) <= BOWL_DEPTH_TOL_MM, (
-            f"The bowl now cuts {measured:.4f} mm deep, not the {MEASURED_BOWL_DEPTH_MM} mm "
+        expected_bowl = PACKAGES[DEFAULT_PACKAGE]["measured_bowl"]
+        assert abs(measured - expected_bowl) <= BOWL_DEPTH_TOL_MM, (
+            f"The bowl now cuts {measured:.4f} mm deep, not the {expected_bowl} mm "
             "this file documents and Phase 13's cross-validation tolerances cite. Re-measure "
             "and update both, or find what moved."
         )
@@ -503,10 +521,11 @@ class TestFootprints:
             "A tessellated hemisphere cannot cut deeper than its own radius."
         )
 
-    def test_raised_dots_use_the_option_b_height(self, ds_features, layout):
+    def test_raised_dots_use_the_active_package_height(self, ds_features, layout):
         """
-        Double-sided dots are 0.8 mm tall, not the 1.0 mm single-sided default.
-        The dome is a tessellated spherical cap, so it lands just under nominal.
+        The default preset renders the Q2 package: 1.0 mm tall - the same height
+        as the single-sided 0.4 die but on a 1.2 mm base, not 1.5. The dome is a
+        tessellated spherical cap, so it lands just under nominal.
         """
         heights = [
             c["r_max"] - layout["radius"]
@@ -514,9 +533,56 @@ class TestFootprints:
         ]
         for h in heights:
             assert 0.99 * layout["dot_height"] <= h <= layout["dot_height"], (
-                f"A raised dot stands {h:.4f} mm proud; Option B is {layout['dot_height']} mm. "
-                "Single-sided at the 0.4mm preset would be 1.0 mm."
+                f"A raised dot stands {h:.4f} mm proud; the active package is "
+                f"{layout['dot_height']} mm."
             )
+
+
+class TestPackage03Geometry:
+    """paper_thickness_preset \"0.3mm\" renders the Option B package."""
+
+    @pytest.fixture(scope="class")
+    def features_03(self, ds_runner, _trimesh, layout, tmp_path_factory):
+        tmp_path = tmp_path_factory.mktemp("ds_package_03")
+        stl_path, output = _render(
+            ds_runner,
+            tmp_path,
+            _ds_params(paper_thickness_preset="0.3mm"),
+            "package_03",
+        )
+        assert "ERROR:" not in output, f"Render reported an error:\n{output[:800]}"
+        return _Features(_trimesh, stl_path, layout)
+
+    def test_dot_height_is_option_b(self, features_03, layout):
+        pkg = PACKAGES["0.3mm"]
+        heights = [
+            c["r_max"] - layout["radius"]
+            for c in features_03.clusters(features_03.away_from_seam(features_03.raised))
+        ]
+        assert heights, "No raised dots found on the 0.3-package render."
+        for h in heights:
+            assert 0.99 * pkg["dot_height"] <= h <= pkg["dot_height"], (
+                f"A raised dot stands {h:.4f} mm proud; the 0.3 package (Option B) "
+                f"is {pkg['dot_height']} mm."
+            )
+
+    def test_bowl_cut_depth_is_option_b(self, features_03, layout):
+        pkg = PACKAGES["0.3mm"]
+        depths = [
+            layout["radius"] - c["r_min"]
+            for c in features_03.clusters(features_03.recessed)
+        ]
+        assert depths, "No bowls found on the 0.3-package render."
+        measured = max(depths)
+        assert abs(measured - pkg["measured_bowl"]) <= BOWL_DEPTH_TOL_MM, (
+            f"The 0.3-package bowl cuts {measured:.4f} mm deep, not the "
+            f"{pkg['measured_bowl']} mm this file documents."
+        )
+
+    def test_positions_are_unchanged_by_the_package(self, features_03, layout):
+        """Both preset tables share the same spacing, so only sizes may move."""
+        clusters = features_03.clusters(features_03.recessed)
+        _match(clusters, _back_placements(layout, BACK_TEXT), "back bowls (0.3 package)")
 
 
 class TestForcedTactile:
@@ -640,10 +706,20 @@ class TestSourceGuards:
             "back features crowd, was confirmed on a printed pair, and no clearance "
             "number can catch a wrong choice - both signs measure the same distances."
         )
-        assert (
-            _scad_constant("DS_DOT_BASE_H") + _scad_constant("DS_DOT_DOME_H")
-            == OPTION_B_DOT_HEIGHT_MM
-        ), "The Option B raised dot height changed; that is a tactile-readability decision."
+        for name, pkg_03, pkg_04 in (
+            ("DS_DOT_BASE_H", 0.4, 0.5),
+            ("DS_DOT_DOME_H", 0.4, 0.5),
+        ):
+            match = re.search(
+                rf"^{name}\s*=\s*ds_use_03_package\s*\?\s*([\d.]+)\s*:\s*([\d.]+)\s*;",
+                scad_source,
+                re.MULTILINE,
+            )
+            assert match, f"{name} must be keyed on ds_use_03_package"
+            assert (float(match.group(1)), float(match.group(2))) == (pkg_03, pkg_04), (
+                f"{name} changed; the package dot heights (0.8 / 1.0 mm) are "
+                "tactile-readability decisions signed off 2026-08-16 / 2026-08-20."
+            )
 
     def test_back_grid_transform_matches_interpoint_py(self, scad_source):
         """
@@ -747,6 +823,15 @@ class TestSourceGuards:
             "uses, so editing Option B moves the warning with it."
         )
         assert re.search(
-            r"ds_dots_too_close\s*=\s*ds_on\s*&&\s*\(ds_same_surface_gap\s*<\s*DS_GAP_RELIABLE\)",
+            r"ds_dots_too_close\s*=\s*ds_on\s*&&\s*\(ds_same_surface_gap\s*<\s*DS_GAP_ACCEPTED\)",
             scad_source,
+        )
+        assert re.search(
+            r"DS_GAP_ACCEPTED\s*=\s*ds_use_03_package\s*\?\s*DS_GAP_RELIABLE\s*:\s*DS_GAP_FLOOR\s*;",
+            scad_source,
+        ), (
+            "The physical DOTS TOO CLOSE warning must accept the 0.4 package's "
+            "designed 0.468 mm gap (printed ridge measured clean 2026-08-20) and "
+            "fire only below the floor there; the 0.3 package keeps the reliable "
+            "line. The threshold split awaits Phase 12 ratification."
         )

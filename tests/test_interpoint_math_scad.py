@@ -53,9 +53,16 @@ TOLERANCE_MM = 0.001
 #   lattice_1_25_0     the same offset with no axial step: the diagonal collapses
 #                      onto the circumferential pitch and the distance drops to
 #                      the bare 1.25 mm. This is why the offset is diagonal.
-#   gap_option_b       same_surface_min_gap for the shipped double-sided
-#                      footprints (dot 1.2, bowl 1.3). Above the 0.50 mm
+#   gap_package_03     same_surface_min_gap for the 0.3-preset package
+#                      (Option B: dot 1.2, bowl 1.3). Above the 0.50 mm
 #                      reliable threshold - comfortably printable.
+#   gap_package_04     the 0.4-preset package (Q2: dot 1.2, bowl 1.4).
+#                      Below the reliable line BY DESIGN - the printed
+#                      0.428 mm ridge was measured clean 2026-08-20 - and
+#                      above the 0.34 mm floor.
+#   gap_active         the same gap for the ACTIVE preset's package; the
+#                      shipped default preset is 0.4mm, so this equals
+#                      gap_package_04.
 #   gap_single_sided   the same gap for the web app's single-sided sizes
 #                      (dot 1.5, bowl 1.8). The documented failure case: below
 #                      the 0.34 mm floor a 0.4 mm nozzle can hold.
@@ -64,7 +71,9 @@ TOLERANCE_MM = 0.001
 EXPECTED_MM = {
     "lattice_1_25_1_25": 1.767767,
     "lattice_1_25_0": 1.250,
-    "gap_option_b": 0.518,
+    "gap_package_03": 0.518,
+    "gap_package_04": 0.468,
+    "gap_active": 0.468,
     "gap_single_sided": 0.118,
     "gap_legacy_cone": -0.032,
 }
@@ -169,13 +178,16 @@ class TestSelfCheckValues:
             < self_check_values["lattice_1_25_1_25"]
         )
 
-    def test_option_b_clears_the_floor_and_the_others_do_not(self, self_check_values):
+    def test_both_packages_clear_the_floor_and_the_others_do_not(self, self_check_values):
         """
         The reason double-sided mode ships its own smaller footprints: at the
         single-sided sizes the same-surface gap falls under the 0.34 mm a 0.4 mm
-        nozzle can print, and the legacy cone sizes overlap outright.
+        nozzle can print, and the legacy cone sizes overlap outright. The 0.3
+        package clears the RELIABLE line; the 0.4 package is marginal by design
+        but clears the floor.
         """
-        assert self_check_values["gap_option_b"] >= 0.34
+        assert self_check_values["gap_package_03"] >= 0.50
+        assert self_check_values["gap_package_04"] >= 0.34
         assert self_check_values["gap_single_sided"] < 0.34
         assert self_check_values["gap_legacy_cone"] < 0
 
@@ -233,14 +245,12 @@ class TestSourceGuards:
     @pytest.mark.parametrize(
         "name,value",
         [
-            # D2 "Option B" footprints, signed off 2026-08-16 and shipped fixed.
-            # Tactile geometry is the accessibility feature: these move only by
-            # a deliberate, approved decision, never as a side effect.
+            # Footprint values SHARED by both preset-keyed packages (FD-8/FD-9,
+            # 2026-08-20). The four per-package values are guarded by
+            # test_keyed_footprint_holds_both_packages below. Tactile geometry
+            # is the accessibility feature: these move only by a deliberate,
+            # approved decision, never as a side effect.
             ("DS_DOT_BASE_DIA", 1.2),
-            ("DS_DOT_BASE_H", 0.4),
-            ("DS_DOT_DOME_DIA", 0.8),
-            ("DS_DOT_DOME_H", 0.4),
-            ("DS_BOWL_DIA", 1.3),
             ("DS_BOWL_DEPTH", 0.5),
             # D1 offset range, and the printability thresholds behind the guard.
             ("DS_OFFSET_MIN_MM", 1.15),
@@ -261,6 +271,33 @@ class TestSourceGuards:
             "signed off in the 2026-08-16 interpoint research; change it only "
             "with an approved decision, and update the specs in the same change."
         )
+
+    @pytest.mark.parametrize(
+        ("name", "package_03", "package_04"),
+        [
+            ("DS_DOT_BASE_H", 0.4, 0.5),
+            ("DS_DOT_DOME_DIA", 0.8, 1.0),
+            ("DS_DOT_DOME_H", 0.4, 0.5),
+            ("DS_BOWL_DIA", 1.3, 1.4),
+        ],
+    )
+    def test_keyed_footprint_holds_both_packages(
+        self, scad_source, name, package_03, package_04
+    ):
+        """
+        FD-8/FD-9 (2026-08-20): two fixed packages keyed to
+        paper_thickness_preset - "0.3mm" is Option B, anything else the Q2
+        print-matrix winner. Tactile geometry is the accessibility feature:
+        these move only by a deliberate, approved decision.
+        """
+        match = re.search(
+            rf"^{name}\s*=\s*ds_use_03_package\s*\?\s*(-?[\d.]+)\s*:\s*(-?[\d.]+)\s*;",
+            scad_source,
+            re.MULTILINE,
+        )
+        assert match, f"{name} is not keyed on ds_use_03_package at the top level"
+        assert float(match.group(1)) == pytest.approx(package_03)
+        assert float(match.group(2)) == pytest.approx(package_04)
 
     def test_double_sided_defaults_off(self, scad_source):
         """Toggle-off behavior is the single-sided behavior, so Off is the default."""

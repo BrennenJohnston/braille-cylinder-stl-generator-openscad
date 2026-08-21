@@ -289,14 +289,26 @@ DS_BACK_DIRECTION = 1;
 // Double-sided needs smaller dots than single-sided, because raised dots and
 // recesses now share one surface. At the shipped single-sided sizes only
 // 0.118 mm of material is left between neighbours - below the 0.34 mm a 0.4 mm
-// nozzle can print. Option B leaves 0.518 mm. Single-sided keeps today's sizes.
-// These ship FIXED, with no Customizer dials, by decision (2026-08-16).
-DS_DOT_BASE_DIA = 1.2;    // raised dot base diameter, mm
-DS_DOT_BASE_H   = 0.4;    // raised dot base height, mm
-DS_DOT_DOME_DIA = 0.8;    // dome diameter where it meets the base, mm
-DS_DOT_DOME_H   = 0.4;    // dome height, mm - total double-sided dot height 0.8 mm
-DS_BOWL_DIA     = 1.3;    // paired recess (bowl) opening diameter, mm
-DS_BOWL_DEPTH   = 0.5;    // paired recess depth, mm
+// nozzle can print. Single-sided keeps today's sizes.
+//
+// These ship FIXED - no Customizer dials (2026-08-16) - as TWO packages keyed
+// to paper_thickness_preset (Brennen 2026-08-20, research memory FD-8/FD-9):
+// the print matrix showed one footprint cannot serve both card stocks. "0.3mm"
+// is Option B, validated on 0.3 mm stock 2026-08-17 (nominal gap 0.518);
+// anything else - the "0.4mm" default, and "Custom", which has no
+// double-sided meaning - is Q2, the matrix winner validated on 0.4 mm stock
+// 2026-08-20 (nominal gap 0.468, below the 0.50 reliable line BY DESIGN: the
+// printed 0.428 mm ridge was measured printing clean). Keep in lockstep with
+// the web repo's app/geometry/interpoint.py DS_FOOTPRINTS_BY_PRESET; the
+// tests here pin both packages. Die heights above 1.0 mm scrape the
+// embosser's cylinder-holder housing - never raise them without Brennen.
+ds_use_03_package = (paper_thickness_preset == "0.3mm");
+DS_DOT_BASE_DIA = 1.2;                            // both packages, mm
+DS_DOT_BASE_H   = ds_use_03_package ? 0.4 : 0.5;  // raised dot base height, mm
+DS_DOT_DOME_DIA = ds_use_03_package ? 0.8 : 1.0;  // dome diameter at the base, mm
+DS_DOT_DOME_H   = ds_use_03_package ? 0.4 : 0.5;  // dome height, mm - total dot 0.8 / 1.0
+DS_BOWL_DIA     = ds_use_03_package ? 1.3 : 1.4;  // paired recess opening diameter, mm
+DS_BOWL_DEPTH   = 0.5;                            // both packages, mm
 
 // Derived from the six numbers above, so editing one of them moves the geometry
 // with it and no size is ever written twice.
@@ -318,7 +330,8 @@ DS_BOWL_R     = ((DS_BOWL_DIA / 2) * (DS_BOWL_DIA / 2) + DS_BOWL_DEPTH * DS_BOWL
 //     printed depth = DS_BOWL_R          (NOT DS_BOWL_DEPTH)
 //     printed mouth = 2 * DS_BOWL_R      (NOT DS_BOWL_DIA)
 //
-// At the shipped 1.3 / 0.5 that is 0.6725 mm deep and 1.345 mm across. DS_BOWL_DIA
+// At the 0.3 package's 1.3 / 0.5 that is 0.6725 mm deep and 1.345 mm across; at
+// the 0.4 package's 1.4 / 0.5 it is 0.7400 mm deep and 1.480 mm across. DS_BOWL_DIA
 // and DS_BOWL_DEPTH are shape inputs to DS_BOWL_R above and nothing more; any sum
 // computed from them directly is wrong. Note DS_BOWL_R is MINIMISED at
 // DS_BOWL_DEPTH = DS_BOWL_DIA / 2, so over part of the range raising the depth
@@ -338,6 +351,16 @@ DS_BOWL_R     = ((DS_BOWL_DIA / 2) * (DS_BOWL_DIA / 2) + DS_BOWL_DEPTH * DS_BOWL
 // 0.1 mm entirely).
 DS_GAP_RELIABLE = 0.50;   // comfortably printable, mm
 DS_GAP_FLOOR    = 0.34;   // hard minimum, enforced by the guard below, mm
+
+// The crowding line the PHYSICAL "DOTS TOO CLOSE" text (past the sync marker)
+// fires at. The 0.3 package was validated ABOVE the reliable line, so falling
+// below it there is a real regression. The 0.4 package sits below the reliable
+// line BY DESIGN (0.468 nominal; printed ridge 0.428, measured clean
+// 2026-08-20), so for it the physical warning would only apply below the
+// floor - where the guard assert already stops the render first. In effect the
+// 0.4 package never renders the text; the self-check echoes still report the
+// gap. This threshold split is on Phase 12's warning sign-off list.
+DS_GAP_ACCEPTED = ds_use_03_package ? DS_GAP_RELIABLE : DS_GAP_FLOOR;
 
 // Axial step between the front rows and the back rows: back rows sit 1.25 mm
 // higher than front rows. Same number as the interpoint_offset_y_mm default, and
@@ -428,13 +451,16 @@ function ds_same_surface_min_gap(dot_dia, recess_dia, offx, offy,
 // -----------------------------------------------------------------------------
 // SELF-CHECKS
 // -----------------------------------------------------------------------------
-// Five values with known answers, so a change to the maths above is caught at
+// Values with known answers, so a change to the maths above is caught at
 // once instead of silently shifting every clearance. Printed only when
 // ds_self_check is true, and independent of double_sided - the functions are
 // pure, so they can be checked with the feature Off.
 // tests/test_interpoint_math_scad.py renders with -D ds_self_check=true and
-// asserts all five to +/-0.001 mm.
-//   gap_option_b      the shipped double-sided footprints - comfortably printable
+// asserts every expected key to +/-0.001 mm.
+//   gap_package_03    Option B (dot 1.2, bowl 1.3) - above the reliable line
+//   gap_package_04    Q2 (dot 1.2, bowl 1.4) - marginal BY DESIGN; the printed
+//                     0.428 mm ridge was measured clean 2026-08-20
+//   gap_active        the same gap for the ACTIVE preset's package
 //   gap_single_sided  the web app's single-sided sizes - the documented failure
 //                     case, below the 0.34 mm floor
 //   gap_legacy_cone   the legacy cone footprints - negative, i.e. overlapping
@@ -445,7 +471,9 @@ if (ds_self_check) {
     echo("DS_SELFCHECK: every value below is mm");
     echo(str("DS_SELFCHECK lattice_1_25_1_25=", ds_lattice_min_center_distance(1.25, 1.25)));
     echo(str("DS_SELFCHECK lattice_1_25_0=",    ds_lattice_min_center_distance(1.25, 0)));
-    echo(str("DS_SELFCHECK gap_option_b=",      ds_same_surface_min_gap(DS_DOT_BASE_DIA, DS_BOWL_DIA, 1.25, 1.25)));
+    echo(str("DS_SELFCHECK gap_package_03=",    ds_same_surface_min_gap(1.2, 1.3, 1.25, 1.25)));
+    echo(str("DS_SELFCHECK gap_package_04=",    ds_same_surface_min_gap(1.2, 1.4, 1.25, 1.25)));
+    echo(str("DS_SELFCHECK gap_active=",        ds_same_surface_min_gap(DS_DOT_BASE_DIA, DS_BOWL_DIA, 1.25, 1.25)));
     echo(str("DS_SELFCHECK gap_single_sided=",  ds_same_surface_min_gap(1.5, 1.8, 1.25, 1.25)));
     echo(str("DS_SELFCHECK gap_legacy_cone=",   ds_same_surface_min_gap(1.8, 1.8, 1.25, 1.25)));
     echo(str("DS_SELFCHECK dot_height=",         DS_DOT_HEIGHT));
@@ -535,8 +563,11 @@ ds_same_surface_gap = ds_on
                               interpoint_offset_x_mm, interpoint_offset_y_mm)
     : 0;
 // Below DS_GAP_FLOOR the guard in the DOUBLE-SIDED MATH section has already
-// stopped the render; this is the printable-but-marginal band above it.
-ds_dots_too_close = ds_on && (ds_same_surface_gap < DS_GAP_RELIABLE);
+// stopped the render. DS_GAP_ACCEPTED is the reliable line for the 0.3 package
+// but only the floor for the 0.4 package, whose marginal gap is design-accepted
+// (see the DOUBLE-SIDED MATH section) - so with the 0.4 package this text is
+// effectively retired: below the floor the assert fires first.
+ds_dots_too_close = ds_on && (ds_same_surface_gap < DS_GAP_ACCEPTED);
 
 // Map render quality to segment counts (support both UI and test system)
 quality_fn = (hemisphere_quality == "low" || render_quality == "Low") ? 24 :
