@@ -7,6 +7,170 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-08-21
+
+Ports the web app's double-sided (interpoint) beta to OpenSCAD, so a single pass
+between the two cylinders can emboss braille on **both** faces of one card.
+
+Two of the changes below reach **single-sided Tactile renders as well**: the two
+tactile indicator defaults now match the web app, and a new wall guard reports a
+printability problem that has been latent in Tactile mode since 2.4.0. Visual
+mode — the shipped default — renders byte-identically to 2.5.0 either way.
+
+### Added
+
+- **Double-Sided Card (BETA).** `double_sided = "On"` turns the existing pair of
+  plates into partners that each carry raised dots *and* recesses:
+  - **Cylinder A** (the Embossing Plate) — the FRONT text as raised dots, plus
+    one recessed seat for every BACK dot the other cylinder raises.
+  - **Cylinder B** (the Counter Plate) — the BACK text as raised dots, plus one
+    recessed seat for every FRONT dot Cylinder A raises.
+
+  Two things change in this mode. There is **no universal recess grid**: every
+  recess is the 1:1 partner of an actual dot, so a seat can never sit under this
+  plate's own raised dot. And **row indicators are always Tactile** (the raised
+  seam arrows), because the paired seats occupy the ground the Visual marker
+  columns would stand on, and a blind user needs the arrow to tell the two
+  cylinders apart. Choosing Visual while `double_sided` is On is overridden, and
+  the model says so on the console and in red text above the cylinder.
+
+  The two faces are offset from each other by the **interpoint offsets**,
+  `interpoint_offset_x_mm` and `interpoint_offset_y_mm`, both defaulting to
+  1.25 mm and adjustable over 1.15–1.35 mm. Clearance between a dot and its
+  neighbouring recess is widest at 1.25 mm and falls off symmetrically toward
+  both ends of that range, so "back toward 1.25 mm" is always the fix — never
+  "larger" or "smaller".
+
+  **Back-of-card text** goes in `Back_Line_1` – `Back_Line_10`. As on the front,
+  this is **pre-translated Unicode braille only** — translation stays a web-app
+  feature and is not ported (OpenSCAD has no liblouis). Translate the back the
+  same way as the front: Branah, same grade, Unicode Braille output.
+
+  **Double-sided dot and bowl footprints are fixed** — no Customizer dials —
+  and **keyed to `paper_thickness_preset`**, which is the card-stock thickness
+  being embossed:
+
+  | `paper_thickness_preset` | raised dot | paired recess (nominal) | recess as printed |
+  |---|---|---|---|
+  | `0.3mm` | ⌀1.2 mm, 0.4 mm base + ⌀0.8 mm dome 0.4 mm high (total 0.8 mm) | ⌀1.3 × 0.5 mm | ⌀1.345 × 0.6725 mm deep |
+  | `0.4mm` (default) | ⌀1.2 mm, 0.5 mm base + ⌀1.0 mm dome 0.5 mm high (total 1.0 mm) | ⌀1.4 × 0.5 mm | ⌀1.480 × 0.740 mm deep |
+
+  Both packages were chosen by physical embossing tests on a Bambu Lab X1C with
+  a 0.4 mm nozzle during 2026-08, not by calculation: the `0.3mm` package
+  embossed legible braille on both sides of 0.3 mm card stock, and the `0.4mm`
+  package is the only one in the test matrix that came out clean on 0.4 mm
+  stock. Total dot height is capped at 1.0 mm because taller dies scrape the
+  embosser's cylinder-holder housing.
+
+  The port is **cross-validated against the web generator's committed
+  double-sided golden STL pair**: all 26 double-sided features on both plates
+  land within 0.0068 mm of arc and 0.0024 mm of height of their golden partners,
+  and the A-minus-B volume (in which the shell cancels exactly) agrees to
+  0.168 mm³, or 0.157%. Because the goldens were generated with the `0.3mm`
+  package, that comparison renders this program at
+  `paper_thickness_preset = "0.3mm"`.
+
+- **`[Double-Sided Card (BETA)]` Customizer tab.** It holds the `double_sided`
+  gate, all ten `Back_Line_N` fields, and both interpoint offset sliders
+  (`[1.15:0.01:1.35]`, the same range the render's own assert enforces). All ten
+  back lines sit in the one tab — there is no back-side counterpart to the
+  front's `[More Braille Lines (Advanced)]` tab — and the footprints above are
+  deliberately absent, so there is nothing there to hunt for.
+
+- **Back lines are covered by the existing text warnings.** This is the
+  user-visible half of the tab. Until now, untranslated text in a back line
+  rendered an all-zero dot pattern and left the back of the card **silently
+  blank**. `INVALID CHARACTERS`, `TEXT TOO LONG` and `TOO MANY LINES` all count
+  the back lines whenever `double_sided` is On, and each console message names
+  the `Back_Line` that actually overflowed.
+
+- **A suggested export filename** is echoed on every double-sided render —
+  `Cylinder_A_…` for the Embossing Plate, `Cylinder_B_…` for the Counter Plate —
+  so the pair does not get mixed up between two renders.
+
+- **Tactile seam-recess wall guard — this affects single-sided renders too.**
+  The counter plate's arrow recess cuts inward toward the polygonal cutout, and
+  nothing stopped a user thinning the wall between them past what an FDM printer
+  can hold. When `indicator_mode` is Tactile and a polygonal cutout is present,
+  the generator now checks that wall against a 1.2 mm minimum; below it, the
+  console echoes a `WARNING:` naming the measured thickness and red
+  `TACTILE WALL TOO THIN: <n> mm` text renders above the cylinder for the
+  MakerWorld preview, which has no console. It **warns only** — the STL is still
+  written, on the same reasoning as `TACTILE GAP TOO SMALL`: this is a wall an
+  informed user may have a reason to thin.
+
+  At the shipped defaults the wall measures **1.224 mm** and is clear. The
+  pre-2.6.0 `tactile_indicator_raise` of 0.8 mm left **0.924 mm** — already
+  under the printable minimum, which is what the guard was written to catch.
+
+### Changed
+
+- **`tactile_indicator_length` 5.0 → 10.0 mm** and **`tactile_indicator_raise`
+  0.8 → 0.5 mm**, aligning both with the web app, which has carried these values
+  since it ported tactile mode. These were the only two numeric drifts in a
+  46-parameter audit against the web schema.
+
+  **This is a behavior change for existing users, in Tactile indicator mode
+  only** — Visual-mode renders are byte-identical to 2.5.0. The arrow is now
+  twice as long along the cylinder axis (at the 10 mm default `line_spacing`,
+  each row's arrow meets the base of the one above) and stands 0.3 mm lower.
+  The safety consequence, measured off real STLs rather than assumed: on the
+  counter plate the seam recess is now 0.7 mm deep instead of 1.0 mm, which
+  takes the wall out to the polygonal cutout from 0.924 mm to **1.224 mm** —
+  the old value was below the 1.2 mm minimum FDM wall.
+
+- **`INVALID CHARACTERS` is now shown on the Counter Plate as well as the
+  Embossing Plate — this affects single-sided renders too.** Before, a counter
+  plate rendered from untranslated text said nothing at all, even though its
+  paired embossing plate would come out blank. This follows the precedent set by
+  `TACTILE GAP TOO SMALL`, which has always appeared on both plates because the
+  pair is printed from one set of settings.
+
+- **The double-sided printability guard now measures the recess's PRINTED mouth
+  rather than its nominal diameter.** The recess is cut as a hemisphere centred
+  on the shell surface, so its mouth comes out wider than the number typed into
+  it — ⌀1.480 mm printed against a ⌀1.4 mm nominal on the `0.4mm` package — and
+  the old guard let through a ridge the printer cannot hold.
+
+  Consequence worth knowing before you move a slider: with the `0.4mm` package
+  the renderable interpoint-offset band is **1.19–1.31 mm**, not the slider's
+  full 1.15–1.35 mm; the `0.3mm` package accepts the whole range. Clearance
+  peaks at 1.25 mm and falls off symmetrically toward both ends, so the guard's
+  message points back to 1.25 mm rather than telling you to increase or decrease
+  anything. The `DOTS TOO CLOSE` warning deliberately still reports the
+  **nominal** figure, so it keeps quoting the same number as the web app's live
+  warning.
+
+- `tests/parameter_mapping.json` is bumped to mapping version 2.6.0 — 13 new
+  entries, for 59 parameters and 31 slider ranges.
+
+### Notes for maintainers
+
+- **The MakerWorld v2 variant is synced, and it has no geometry or default
+  divergences from the canonical file at all.** With identical `-D` arguments
+  the two builds now produce **byte-identical** double-sided STLs on both
+  plates. Only three **presentation** differences remain above the sync marker:
+  the MakerWorld single-file header block, the three-line `dot_shape` comment
+  explaining the flattened build's Rounded default, and `presets.scad` inlined
+  in place of `include <presets.scad>;`. All three double-sided asserts were
+  copied across verbatim rather than swapped for rendered red text, so the two
+  builds agree about what is printable.
+- The MakerWorld sync guard in `tests/test_makerworld_sync.py` now compares
+  **parameter defaults and slider ranges** across 89 top-level declarations —
+  every Customizer parameter, all twenty text fields, and every `DS_*` constant
+  — plus the inlined `presets.scad` block, not just the geometry body. The
+  earlier body-only guard is what let the two tactile defaults above drift apart
+  in the first place.
+- MakerWorld users receive the double-sided beta **and** the two tactile default
+  changes in this one release; desktop users on 2.5.x already had neither.
+- `makerworld/README.md`'s re-flatten procedure gained the step it was missing:
+  the `DOUBLE-SIDED (INTERPOINT) MATH` section must be copied into the variant's
+  header **after** the inlined-presets `END` sentinel, because `ds_use_03_package`
+  reads `paper_thickness_preset` and `ds_printed_ridge_mm` reads both offset
+  sliders, and OpenSCAD evaluates top-level assignments in source order.
+- The SCAD hashes move with this release. The web app repo vendors the MakerWorld
+  build and pins it by hash, so it needs a re-vendor against this tag.
+
 ## [2.5.0] - 2026-08-01
 
 Closes the gap between how many braille rows the generator can render and how

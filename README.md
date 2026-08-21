@@ -94,6 +94,9 @@ it by `tests/test_makerworld_sync.py`.
 
 - **Cylinder Emboss Plate**: Raised braille dots on cylindrical surface
 - **Cylinder Counter Plate**: Recessed support for embossing cylindrical objects
+- **Double-Sided Card (BETA)**: the same two plates, paired so that one pass
+  embosses braille on **both** faces of a card — see
+  [Double-Sided Cards (BETA)](#-double-sided-cards-beta)
 
 ## 🎯 Features
 
@@ -123,7 +126,7 @@ surface features change.
   paired cylinders
 - The arrow **points at the cylinder top**, so you can feel which end is up on
   either plate; raised-vs-recessed tells you which cylinder is the embosser
-- **Crush-safe**: the 0.8 mm default raise sits below the 1.0 mm braille dot
+- **Crush-safe**: the 0.5 mm default raise sits below the 1.0 mm braille dot
   height, so the dots — not the indicator — carry the rolling pressure
 - **No marker cells**, so up to 14 text cells fit the default cylinder. The
   Indicator Letters toggle is ignored in this mode
@@ -132,6 +135,15 @@ surface features change.
   plate's fit
 
 Text capacity always stays at `grid_columns` in every mode.
+
+### Double-Sided Card (BETA)
+
+`double_sided` pairs the two plates so one pass embosses braille on **both**
+faces of a card. Each plate then carries raised dots *and* recesses, every
+recess is the 1:1 partner of an actual dot, and the row indicators are forced to
+Tactile. Back-of-card text goes in `Back_Line_1` – `Back_Line_10`, still as
+pre-translated Unicode braille. Full workflow:
+[Double-Sided Cards (BETA)](#-double-sided-cards-beta).
 
 ### Paper Thickness Presets
 - **0.4mm Preset** (default): Optimized for thicker paper, larger dots
@@ -190,6 +202,91 @@ dropdown still offers `Cone`):
 - Base diameter: 1.9mm
 - Height: 0.7mm
 - Flat hat diameter: 1.0mm
+
+---
+
+## 🧩 Double-Sided Cards (BETA)
+
+Set `double_sided` to `On` to emboss braille on **both** faces of one card in a
+single pass between the two cylinders. The same two plates take on paired jobs,
+and each one then carries raised dots **and** recesses:
+
+- **Cylinder A** = the **Embossing Plate**. The front text as raised dots, plus
+  one recessed seat for every back dot the other cylinder raises.
+- **Cylinder B** = the **Counter Plate**. The back text as raised dots, plus one
+  recessed seat for every front dot Cylinder A raises.
+
+Two things change in this mode. There is **no universal recess grid** — every
+recess is the 1:1 partner of an actual dot, so a seat can never sit under this
+plate's own raised dot. And the row indicators are always **Tactile** (the
+raised seam arrows), because the paired seats occupy the ground the Visual
+marker columns would stand on, and a blind user needs the arrow to tell the two
+cylinders apart. Choosing Visual while `double_sided` is On is overridden, and
+the model says so on the console and in red text above the cylinder.
+
+### Workflow
+
+1. **Translate both sides** at
+   [Branah](https://www.branah.com/braille-translator) — same site, same
+   grade, **Unicode Braille** output (not ASCII). The back of the card is
+   translated exactly like the front; this version still has no automatic
+   translation.
+2. Paste the front braille into `Line_1`, `Line_2`, … as usual.
+3. Open the **`[Double-Sided Card (BETA)]`** tab, set `double_sided` to `On`,
+   and paste the back braille into `Back_Line_1` – `Back_Line_10`. **All ten
+   back-line fields are in that one tab** — there is no back-side counterpart to
+   the front's `[More Braille Lines (Advanced)]` tab.
+4. Check `paper_thickness_preset` matches the card stock you will emboss (see
+   the footprint table below).
+5. **Render each `plate_type` once.** Export the Embossing Plate as
+   `Cylinder_A_<your name>.stl` and the Counter Plate as
+   `Cylinder_B_<your name>.stl`; the console prints the suggested name for
+   whichever plate you are rendering. Both plates must use identical settings —
+   they are a matched pair.
+
+Back lines obey the same rules as the front — pre-translated Unicode braille
+only, same cell capacity per row, same row limit — and the same
+`INVALID CHARACTERS`, `TEXT TOO LONG` and `TOO MANY LINES` warnings cover them,
+naming the `Back_Line` that overflowed.
+
+### Interpoint offsets
+
+The two faces are offset from each other so a dot on one side never lands on a
+dot on the other. `interpoint_offset_x_mm` and `interpoint_offset_y_mm` both
+default to **1.25 mm** and are adjustable over **1.15–1.35 mm**.
+
+Clearance between a raised dot and its neighbouring recess is **widest at
+1.25 mm and falls off symmetrically toward both ends** of that range — so if a
+guard complains, move both offsets *back toward 1.25 mm*. Increasing or
+decreasing is not the fix; 1.15 and 1.35 are equally tight.
+
+### Dot and recess footprints (fixed — no dials)
+
+The double-sided dot and recess sizes are **not adjustable**, and there are no
+Customizer dials for them. They are keyed to `paper_thickness_preset`, which is
+the thickness of the card stock being embossed:
+
+| `paper_thickness_preset` | raised dot | paired recess (nominal) | recess as printed |
+|---|---|---|---|
+| `0.3mm` | ⌀1.2 mm, 0.4 mm base + ⌀0.8 mm dome 0.4 mm high (total **0.8 mm**) | ⌀1.3 × 0.5 mm | ⌀1.345 × 0.6725 mm deep |
+| `0.4mm` (default) | ⌀1.2 mm, 0.5 mm base + ⌀1.0 mm dome 0.5 mm high (total **1.0 mm**) | ⌀1.4 × 0.5 mm | ⌀1.480 × 0.740 mm deep |
+
+Both packages were settled by physical embossing tests on a Bambu Lab X1C with
+a 0.4 mm nozzle during 2026-08, not by calculation. Total dot height is capped
+at 1.0 mm because taller dies scrape the embosser's cylinder-holder housing.
+
+The recess is cut as a hemisphere **centred on the shell surface**, which is why
+it prints wider and deeper than the nominal figures: `⌀1.4 × 0.5` describes the
+shape input, not the hole. The printability guard measures that printed mouth.
+On the `0.4mm` package this leaves a renderable offset band of **1.19–1.31 mm**
+rather than the slider's full range; the `0.3mm` package accepts all of it.
+
+### Beta status
+
+Double-sided is a **beta**. It has been printed and embossed successfully, and
+the geometry is cross-validated against the web app's generator, but it has far
+less field use than the single-sided workflow. Report anything odd on the
+[issue tracker](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad/issues).
 
 ---
 
@@ -334,7 +431,7 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
 
 ### Tactile Indicator Binds or Gets Crushed
 - The arrow should nest into the counter recess, never bottom out. At defaults
-  the arrow tip sits at radius 16.2 mm and the recess floor at 14.4 mm, leaving
+  the arrow tip sits at radius 15.9 mm and the recess floor at 14.7 mm, leaving
   0.2 mm of radial slack plus a 0.2 mm outline margin
 - If the plates bind, raise `tactile_recess_clearance` (outline) or
   `tactile_recess_extra_depth` (depth)
@@ -342,7 +439,34 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
   `tactile_indicator_raise` — it must stay below the braille dot height so the
   dots carry the rolling pressure
 - Deep recesses thin the wall over the polygonal cutout. At defaults that wall
-  is ~0.93 mm; increasing `tactile_recess_extra_depth` eats into it directly
+  is 1.224 mm; increasing `tactile_recess_extra_depth` eats into it directly,
+  and the `TACTILE WALL TOO THIN` warning below reports when it goes under spec
+
+### "TACTILE WALL TOO THIN" Warning
+- Tactile indicator mode with a polygonal cutout only: the wall left between the
+  counter plate's arrow recess and the cutout has fallen below the **1.2 mm**
+  FDM printable minimum
+- A red `TACTILE WALL TOO THIN: <n> mm` extrusion renders above the cylinder,
+  and the console prints the measured thickness and the minimum
+- This one **warns without stopping the render** — an STL is still written, on
+  the same reasoning as `TACTILE GAP TOO SMALL`: an informed user may have a
+  reason to thin that wall. Print it and it may split along the cutout
+- At defaults the wall is 1.224 mm and clear. It is `tactile_indicator_raise`,
+  `tactile_recess_extra_depth` and `polygon_cutout_radius_mm` that eat into it
+- Solutions: lower `tactile_indicator_raise` or `tactile_recess_extra_depth`,
+  or reduce `polygon_cutout_radius_mm`
+
+### "DOUBLE-SIDED REQUIRES TACTILE" / "DOTS TOO CLOSE" Warnings
+- Double-sided only. The first says `indicator_mode` was left on Visual while
+  `double_sided` is On; the mode is overridden to Tactile and the render
+  continues, so this is a notice rather than a fault
+- `DOTS TOO CLOSE: <n> mm` reports the ridge left between a raised dot and its
+  neighbouring recess on the same surface. Move **both** interpoint offsets back
+  toward **1.25 mm**, where the clearance is widest — 1.15 and 1.35 are equally
+  tight, so raising or lowering is not in itself the fix
+- If instead the render **stops** with a message about the printable minimum,
+  the ridge is under 0.34 mm and no STL can be written. Same fix: back toward
+  1.25 mm on both offsets
 
 ---
 
@@ -388,5 +512,5 @@ For general braille embossing questions, see the [web app](https://braille-cylin
 
 ---
 
-**Version**: 2.4.1  
-**Last Updated**: 2026-07-29
+**Version**: 2.6.0  
+**Last Updated**: 2026-08-21
