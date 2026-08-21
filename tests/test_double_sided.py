@@ -48,7 +48,9 @@ numbers (0.6693 / 0.7364 mm).
 License: PolyForm Noncommercial 1.0.0
 """
 
+import json
 import math
+import os
 import re
 import sys
 from pathlib import Path
@@ -113,13 +115,13 @@ Z_TOL_MM = 0.01
 BOWL_DEPTH_TOL_MM = 0.002
 
 
-def _preset_value(key):
-    """Pull a numeric value out of the shipped 0.4mm preset table."""
+def _preset_value(key, table="PRESET_04"):
+    """Pull a numeric value out of a paper-thickness preset table."""
     text = PRESETS_FILE.read_text(encoding="utf-8")
-    block = text[text.index("PRESET_04 = [") :]
+    block = text[text.index(f"{table} = [") :]
     block = block[: block.index("];")]
     m = re.search(rf'\["{re.escape(key)}",\s*([0-9.+\-]+)\]', block)
-    assert m, f"`{key}` is not in the PRESET_04 table"
+    assert m, f"`{key}` is not in the {table} table"
     return float(m.group(1))
 
 
@@ -128,19 +130,18 @@ def scad_source():
     return SCAD_FILE.read_text(encoding="utf-8")
 
 
-@pytest.fixture(scope="module")
-def layout():
+def _layout_from(radius, cols, rows, package, height=None, table="PRESET_04"):
     """
-    The shipped-default cylinder layout, re-derived from the preset table and
-    the sliders rather than copied out of the geometry code under test.
+    A cylinder layout, re-derived from the preset table and the sliders rather
+    than copied out of the geometry code under test.
+
+    Phase 13 calls this with the golden pair's grid and radius as well as the
+    shipped defaults, so both configurations are built by one set of formulas.
     """
-    radius = _preset_value("cylinder_diameter_mm") / 2
-    height = _preset_value("cylinder_height_mm")
-    cell = _preset_value("cell_spacing")
-    line = _preset_value("line_spacing")
-    dot = _preset_value("dot_spacing")
-    cols = _scad_constant("grid_columns")
-    rows = _scad_constant("grid_rows")
+    height = _preset_value("cylinder_height_mm", table=table) if height is None else height
+    cell = _preset_value("cell_spacing", table=table)
+    line = _preset_value("line_spacing", table=table)
+    dot = _preset_value("dot_spacing", table=table)
 
     return {
         "radius": radius,
@@ -157,13 +158,24 @@ def layout():
         "offset_x": _scad_constant("interpoint_offset_x_mm"),
         "offset_y": _scad_constant("interpoint_offset_y_mm"),
         "back_dir": BACK_DIRECTION,
-        "bowl_dia": PACKAGES[DEFAULT_PACKAGE]["bowl_dia"],
+        "bowl_dia": PACKAGES[package]["bowl_dia"],
         "bowl_depth": _scad_constant("DS_BOWL_DEPTH"),
-        "dot_height": PACKAGES[DEFAULT_PACKAGE]["dot_height"],
+        "dot_height": PACKAGES[package]["dot_height"],
         "arrow_raise": _scad_constant("tactile_indicator_raise"),
         "arrow_length": _scad_constant("tactile_indicator_length"),
         "arrow_extra_depth": _scad_constant("tactile_recess_extra_depth"),
     }
+
+
+@pytest.fixture(scope="module")
+def layout():
+    """The shipped-default cylinder layout."""
+    return _layout_from(
+        radius=_preset_value("cylinder_diameter_mm") / 2,
+        cols=_scad_constant("grid_columns"),
+        rows=_scad_constant("grid_rows"),
+        package=DEFAULT_PACKAGE,
+    )
 
 
 def _row_y(layout, row):
@@ -1333,4 +1345,886 @@ class TestBackLineWarningsRender:
         assert "DS_PAIR A back_recess" in output, (
             "double_sided='on' did not reach the back-grid walk.\n"
             f"output (truncated): {output[:800]}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Phase 13: cross-validation against the web repo's double-sided golden pair
+# ---------------------------------------------------------------------------
+#
+# The web repo owns `tests/fixtures/ds_cylinderA_golden.stl` / `...B...` and
+# their `.json` input records. They are NOT copied here - a second copy would
+# drift - so everything below skips when that repo is not on disk beside this
+# one. Point BRAILLE_WEB_REPO at it to run these from anywhere.
+#
+# WHAT THE TWO GENERATORS CAN AND CANNOT SHARE, measured 2026-08-21.
+# The golden pair is a SCHEMA-DEFAULT configuration: a solid shell of diameter
+# 30.75 mm carrying the Option B footprints. This generator reaches Option B
+# only through `paper_thickness_preset = "0.3mm"`, and that preset table also
+# carries `cylinder_diameter_mm = 30.8` and `polygon_cutout_radius_mm = 13`,
+# which `preset_value()` applies OVER any -D override. So the scad renders the
+# same braille on a 0.025 mm larger radius, with a 12-sided mounting bore.
+# That is not a defect on either side: the web app's own THICKNESS_PRESETS
+# carry the same two numbers, so the preset tables agree; the goldens simply
+# predate presets, being cut straight from the schema defaults.
+# TestGoldenConfigurationParity pins both halves so neither drifts quietly.
+#
+# The consequence shapes every comparison below. A different radius turns the
+# same ARC into a different ANGLE (6.5 mm of cell spacing is 24.183 deg at
+# r=15.4 and 24.222 deg at r=15.375), so positions are compared as SIGNED ARC
+# LENGTH, theta * radius, which is what both generators actually lay out. And
+# volumes are compared only after each generator's own shell and bore are
+# removed, measured from its own top cap so no tessellation constant is assumed.
+
+WEB_REPO_ENV = "BRAILLE_WEB_REPO"
+GOLDEN_STEM = {"positive": "ds_cylinderA_golden", "negative": "ds_cylinderB_golden"}
+GOLDEN_LABEL = {"positive": "Cylinder A", "negative": "Cylinder B"}
+GOLDEN_PACKAGE = "0.3mm"  # the only preset that renders the goldens' Option B dies
+
+# ---- tolerances -----------------------------------------------------------
+# Every number here was MEASURED on 2026-08-21 (OpenSCAD 2026.01.03 Manifold,
+# trimesh 4.10.1) and is set just wide enough to cover the measurement, with
+# each contribution named. Widening one to turn a red test green would throw
+# away the only end-to-end parity proof the two generators have.
+
+# POSITIONS. Worst measured arc deviation 0.0068 mm, worst axial 0.0024 mm.
+# Both are cluster-centroid noise: the golden's icosphere-3 dome has no vertex
+# ring symmetric about the dot axis where OpenSCAD's $fn=32 sphere does, so the
+# two vertex clouds have slightly different centres of mass. The smallest
+# placement error that could mean anything is the 1.25 mm interpoint step, and
+# the tightest spacing in the layout is 2.5 mm, so these sit two to three
+# orders of magnitude clear of a real fault.
+GOLDEN_ARC_TOL_MM = 0.02
+GOLDEN_Z_TOL_MM = 0.01
+
+# FOOTPRINTS. Both generators aim at the same nominal numbers and land just
+# under them, because a tessellated dome is inscribed in the ideal one:
+#   raised dot proud   scad 0.7981   golden 0.8000   nominal DS_DOT_HEIGHT 0.8
+#   bowl cut depth     scad 0.6693   golden 0.6725   nominal DS_BOWL_R  0.6725
+# The golden reaches nominal on both because icosphere-3 puts a vertex exactly
+# at the pole; OpenSCAD's $fn=32 sphere puts its deepest ring at 84.375 deg of
+# latitude and so falls 0.0019 / 0.0032 mm short. 0.005 mm covers that with
+# room, and is still far inside the +/-0.1 mm the printer contributes.
+GOLDEN_FOOTPRINT_TOL_MM = 0.005
+
+# VOLUMES, after each generator's own shell and bore are removed:
+#   Cylinder A features   scad +37.3912   golden +37.7371   delta -0.3459
+#   Cylinder B features   scad -69.4277   golden -69.2498   delta -0.1779
+# Measured contributions to the Cylinder A delta:
+#   -0.1132  5 raised dots, 0.02263 mm^3 each. This generator builds the
+#            frustum at cone_segments = 16 and the dome at $fn = 32; the golden
+#            uses 48-section frusta and an icosphere at subdivision 3. Both
+#            inscribe the ideal solid, the coarser one more deeply.
+#   +0.0543  8 bowls, 0.00678 mm^3 each - the same sphere difference with the
+#            opposite sign, because a coarser cutter removes less.
+#   -0.2447  4 raised seam arrows. The golden generator grows the RAISED arrow
+#            outline by 5 um (`_DS_ARROW_WELD_MM`) so the arrow apex cannot weld
+#            into the next arrow's base as a non-manifold pinch edge. This
+#            generator has no such growth and needs none. Recessed arrows, which
+#            neither generator grows, agree to 0.00003 mm^3 once the row-to-row
+#            overlap at 10 mm arrows on 10 mm line spacing is accounted for.
+#   -0.0422  residue: the golden is quantised to float32 and re-welded on
+#            export, and adjacent features overlap slightly on both plates.
+# 0.45 mm^3 covers the worse of the two plates with about 30% margin.
+GOLDEN_FEATURE_VOLUME_TOL_MM3 = 0.45
+# A minus B cancels the shell and the bore EXACTLY - both plates are carved from
+# the same solid - leaving 3 dots, 3 bowls and the arrow weld:
+#   scad 106.8190   golden 106.9870   delta -0.1680 (-0.157%)
+GOLDEN_AB_VOLUME_TOL_MM3 = 0.25
+
+
+def _web_fixtures_dir():
+    """The web repo's fixtures directory, or None when it is not on disk."""
+    root = os.environ.get(WEB_REPO_ENV)
+    root = Path(root) if root else PROJECT_ROOT.parent / "braille-cylinder-stl-generator"
+    fixtures = root / "tests" / "fixtures"
+    return fixtures if (fixtures / f"{GOLDEN_STEM['positive']}.stl").exists() else None
+
+
+@pytest.fixture(scope="module")
+def web_fixtures():
+    fixtures = _web_fixtures_dir()
+    if fixtures is None:
+        pytest.skip(
+            "The web repo's double-sided goldens were not found. Clone "
+            "braille-cylinder-stl-generator beside this repo, or set "
+            f"{WEB_REPO_ENV} to it, to run the cross-validation."
+        )
+    return fixtures
+
+
+@pytest.fixture(scope="module")
+def golden_config(web_fixtures):
+    """
+    The generation record the two plates share, read first-hand from the
+    fixtures' own .json - never from this repo's idea of what they hold.
+    """
+    records = {
+        plate_type: json.loads((web_fixtures / f"{stem}.json").read_text(encoding="utf-8"))
+        for plate_type, stem in GOLDEN_STEM.items()
+    }
+    a = records["positive"]["generation"]
+    b = records["negative"]["generation"]
+    for key in ("front_lines", "back_lines", "settings", "cylinder_params", "generated"):
+        assert a[key] == b[key], (
+            f"The golden pair disagrees about `{key}`. A and B must be two sides "
+            "of ONE configuration or nothing below is a comparison."
+        )
+    return a
+
+
+@pytest.fixture(scope="module")
+def golden_meshes(_trimesh, web_fixtures):
+    return {
+        plate_type: _trimesh.load(web_fixtures / f"{stem}.stl")
+        for plate_type, stem in GOLDEN_STEM.items()
+    }
+
+
+@pytest.fixture(scope="module")
+def golden_scad_stls(ds_runner, golden_config, tmp_path_factory):
+    """This generator's answer to the goldens' inputs, both plates."""
+    tmp_path = tmp_path_factory.mktemp("ds_cross_validation")
+    settings = golden_config["settings"]
+    out = {}
+    for plate_type in GOLDEN_STEM:
+        stl_path, output = _render(
+            ds_runner,
+            tmp_path,
+            _ds_params(
+                plate_type=plate_type,
+                paper_thickness_preset=GOLDEN_PACKAGE,
+                grid_columns=settings["grid_columns"],
+                grid_rows=settings["grid_rows"],
+                interpoint_offset_x_mm=settings["interpoint_offset_x"],
+                interpoint_offset_y_mm=settings["interpoint_offset_y"],
+            ),
+            f"golden_config_{plate_type}",
+        )
+        assert "WARNING:" not in output and "ERROR:" not in output, (
+            f"The golden configuration did not render clean on "
+            f"{GOLDEN_LABEL[plate_type]}; the Option B package is meant to be "
+            f"silent.\noutput (truncated): {output[:800]}"
+        )
+        out[plate_type] = stl_path
+    return out
+
+
+@pytest.fixture(scope="module")
+def golden_scad_layout(golden_config):
+    """The layout this generator actually renders at, on ITS preset radius."""
+    settings = golden_config["settings"]
+    return _layout_from(
+        radius=_preset_value("cylinder_diameter_mm", table="PRESET_03") / 2,
+        cols=settings["grid_columns"],
+        rows=settings["grid_rows"],
+        package=GOLDEN_PACKAGE,
+        table="PRESET_03",
+    )
+
+
+@pytest.fixture(scope="module")
+def golden_web_layout(golden_config):
+    """The layout the goldens were cut at, on the schema radius."""
+    settings = golden_config["settings"]
+    return _layout_from(
+        radius=golden_config["cylinder_params"]["diameter"] / 2,
+        cols=settings["grid_columns"],
+        rows=settings["grid_rows"],
+        package=GOLDEN_PACKAGE,
+        height=golden_config["cylinder_params"]["height"],
+        table="PRESET_03",
+    )
+
+
+@pytest.fixture(scope="module")
+def golden_features(_trimesh, golden_scad_stls, web_fixtures,
+                    golden_scad_layout, golden_web_layout):
+    """Vertex clusters for all four meshes, keyed (source, plate_type)."""
+    out = {}
+    for plate_type, stem in GOLDEN_STEM.items():
+        out[("scad", plate_type)] = _Features(
+            _trimesh, golden_scad_stls[plate_type], golden_scad_layout
+        )
+        out[("golden", plate_type)] = _Features(
+            _trimesh, web_fixtures / f"{stem}.stl", golden_web_layout
+        )
+    return out
+
+
+def _layout_for(source, scad_layout, web_layout):
+    return scad_layout if source == "scad" else web_layout
+
+
+def _expected_places(layout, plate_type, kind, source):
+    """
+    Where the interpoint maths puts each feature, in one generator's frame.
+
+    Cylinder A raises the front text and sinks the back grid; Cylinder B is A's
+    angle-negation mirror, so it raises the back grid and sinks the front. The
+    web generator then mirrors the whole layout again about the seam plane
+    (its cylindrical transform runs theta the other way), which is the final
+    negation.
+    """
+    if plate_type == "positive":
+        places = (
+            _front_placements(layout, FRONT_TEXT)
+            if kind == "raised"
+            else _back_placements(layout, BACK_TEXT)
+        )
+    else:
+        places = (
+            _negated(_back_placements(layout, BACK_TEXT))
+            if kind == "raised"
+            else _negated(_front_placements(layout, FRONT_TEXT))
+        )
+    return _negated(places) if source == "golden" else places
+
+
+def _arcs(features, mask, layout):
+    """(signed arc length mm, height mm) of every feature in `mask`."""
+    return [
+        (math.radians(c["theta"]) * layout["radius"], c["z"])
+        for c in features.clusters(mask)
+    ]
+
+
+def _mirrored_arcs(arcs):
+    """The seam-plane mirror, in arc-length terms - see `_expected_places`."""
+    return [(-arc, z) for arc, z in arcs]
+
+
+def _pair_arcs(scad_arcs, golden_arcs, label):
+    """
+    Pair each scad feature with its nearest golden partner, one to one, and
+    return the worst arc and height deviation over the whole set.
+    """
+    assert len(scad_arcs) == len(golden_arcs), (
+        f"{label}: this generator rendered {len(scad_arcs)} features, the golden "
+        f"holds {len(golden_arcs)}.\n"
+        f"scad:   {[(round(a, 3), round(z, 3)) for a, z in sorted(scad_arcs)]}\n"
+        f"golden: {[(round(a, 3), round(z, 3)) for a, z in sorted(golden_arcs)]}"
+    )
+    remaining = list(golden_arcs)
+    worst_arc = worst_z = 0.0
+    for arc, z in scad_arcs:
+        partner = min(remaining, key=lambda g: (arc - g[0]) ** 2 + (z - g[1]) ** 2)
+        remaining.remove(partner)
+        worst_arc = max(worst_arc, abs(arc - partner[0]))
+        worst_z = max(worst_z, abs(z - partner[1]))
+    assert worst_arc <= GOLDEN_ARC_TOL_MM and worst_z <= GOLDEN_Z_TOL_MM, (
+        f"{label}: worst arc deviation {worst_arc:.5f} mm (limit "
+        f"{GOLDEN_ARC_TOL_MM}), worst height deviation {worst_z:.5f} mm (limit "
+        f"{GOLDEN_Z_TOL_MM}). The two generators place this feature set "
+        "differently - a layout fault, not a tolerance to widen."
+    )
+    return worst_arc, worst_z
+
+
+def _prism_volume_from_top_cap(mesh, height, tol=1e-6):
+    """
+    The volume of the plain shell this mesh was carved from, measured off its
+    own top cap.
+
+    Every double-sided feature sits on the curved side, so the flat cap is
+    untouched: cap area * height is exactly the shell, less the mounting bore
+    where one is cut. Taking it from the mesh means no comparison has to assume
+    either generator's segment count.
+    """
+    import numpy as np
+
+    on_cap = np.abs(mesh.vertices[:, 2] - height) < tol
+    faces = on_cap[mesh.faces].all(axis=1)
+    assert faces.any(), f"No flat top cap found at z={height}."
+    return float(mesh.area_faces[faces].sum()) * height
+
+
+def _feature_volume(mesh, height):
+    """Everything the double-sided pass added to, or took out of, the shell."""
+    return float(mesh.volume) - _prism_volume_from_top_cap(mesh, height)
+
+
+class TestGoldenFixtureRecord:
+    """
+    The tolerances above were measured against ONE version of the golden pair.
+    These read its record first-hand and fail loudly if it is regenerated on
+    different inputs, rather than letting a stale tolerance quietly pass.
+    """
+
+    def test_the_pair_holds_the_option_b_package(self, golden_config):
+        settings = golden_config["settings"]
+        expected = {
+            "ds_dot_base_diameter": 1.2,
+            "ds_dot_base_height": 0.4,
+            "ds_dot_dome_diameter": 0.8,
+            "ds_dot_dome_height": 0.4,
+            "ds_bowl_base_diameter": PACKAGES[GOLDEN_PACKAGE]["bowl_dia"],
+            "ds_bowl_depth": _scad_constant("DS_BOWL_DEPTH"),
+        }
+        actual = {key: settings[key] for key in expected}
+        assert actual == expected, (
+            f"The golden pair no longer holds the Option B footprints: {actual}. "
+            "This repo can only render Option B through paper_thickness_preset "
+            f'"{GOLDEN_PACKAGE}", so a pair re-cut on the Q2 package needs the '
+            "cross-validation re-pointed and every tolerance re-measured."
+        )
+
+    def test_the_bowls_are_cut_centre_on_surface(self, golden_config):
+        """
+        FD-7(b), 2026-08-19: the browser worker centres the bowl sphere ON the
+        shell, so the cut is a hemisphere of radius DS_BOWL_R and ds_bowl_depth
+        sets neither the depth nor the mouth. The goldens were regenerated on
+        that convention 2026-08-20; on the older exact-depth convention every
+        bowl would be 0.17 mm shallower and the footprint tests below would be
+        comparing two different parts.
+        """
+        assert "centre-on-surface" in golden_config["note"], (
+            "The golden pair's generation note no longer says the bowls are cut "
+            f"centre-on-surface:\n{golden_config['note']}"
+        )
+        assert golden_config["generated"] >= "2026-08-20", (
+            f"The goldens are dated {golden_config['generated']}, before the "
+            "2026-08-20 regeneration that put them on the centre-on-surface "
+            "bowl convention."
+        )
+
+    def test_the_pair_is_the_double_sided_reference_model(self, golden_config):
+        settings = golden_config["settings"]
+        assert golden_config["front_lines"][0] == FRONT_TEXT
+        assert golden_config["back_lines"][0] == BACK_TEXT
+        assert settings["indicator_mode"] == "tactile"
+        assert settings["double_sided_enabled"] == 1
+        assert (settings["interpoint_offset_x"], settings["interpoint_offset_y"]) == (
+            _scad_constant("interpoint_offset_x_mm"),
+            _scad_constant("interpoint_offset_y_mm"),
+        ), "The goldens were cut at a different interpoint offset than this repo defaults to."
+
+    def test_the_goldens_are_solid_shells(self, golden_config, golden_meshes):
+        """
+        The web renderer refuses a polygonal cutout for these fixtures, so the
+        goldens carry no mounting bore. `_prism_volume_from_top_cap` handles
+        either case, but the volume figures quoted above assume this one.
+        """
+        import numpy as np
+
+        radius = golden_config["cylinder_params"]["diameter"] / 2
+        height = golden_config["cylinder_params"]["height"]
+        for plate_type, mesh in golden_meshes.items():
+            v = mesh.vertices
+            on_cap = np.abs(v[:, 2] - height) < 1e-6
+            r = np.hypot(v[on_cap, 0], v[on_cap, 1])
+            assert r.min() < 1e-6, (
+                f"The golden {GOLDEN_LABEL[plate_type]} has a hole in its top cap - "
+                "it has grown a mounting bore and the volume figures are stale."
+            )
+            assert r.max() <= radius + 1e-6
+
+
+class TestGoldenConfigurationParity:
+    """
+    Which of the goldens' inputs this generator can mirror, and which two it
+    cannot. Both halves are pinned: the first so a regression shows up as a
+    failure, the second so the divergence stays a recorded fact with a reason
+    rather than a surprise inside someone's volume comparison.
+    """
+
+    def test_the_preset_carries_its_own_cylinder(self, golden_config):
+        """
+        `preset_value()` returns the preset table's number whenever the table
+        holds the key, so a preset render cannot be talked out of its own
+        cylinder. That matches the web app, whose THICKNESS_PRESETS carry the
+        same two values; the goldens predate presets entirely.
+        """
+        assert _preset_value("cylinder_diameter_mm", table="PRESET_03") == 30.8
+        assert _preset_value("polygon_cutout_radius_mm", table="PRESET_03") == 13.0
+        assert golden_config["cylinder_params"]["diameter"] == 30.75, (
+            "The goldens moved off the schema diameter; re-measure the volume "
+            "figures, which are quoted for a 0.025 mm radius difference."
+        )
+
+    @pytest.mark.slow
+    def test_the_overrides_really_are_ignored(self, ds_runner, tmp_path):
+        """
+        Measured, not assumed: passing both overrides changes nothing, which is
+        why the cross-validation fixtures do not bother passing them.
+        """
+        params = _ds_params(paper_thickness_preset=GOLDEN_PACKAGE)
+        plain, _ = _render(ds_runner, tmp_path, params, "preset_plain")
+        overridden, _ = _render(
+            ds_runner,
+            tmp_path,
+            dict(params, cylinder_diameter_mm=30.75, polygon_cutout_radius_mm=0),
+            "preset_overridden",
+        )
+        assert plain.read_bytes() == overridden.read_bytes(), (
+            "cylinder_diameter_mm / polygon_cutout_radius_mm now reach a preset "
+            "render. That is a behaviour change in preset_value(); the golden "
+            "cross-validation could then mirror the fixture exactly, and this "
+            "test - with the tolerances it explains - should be revisited."
+        )
+
+    def test_the_two_layouts_differ_only_in_radius(
+        self, golden_config, golden_scad_layout, golden_web_layout
+    ):
+        settings = golden_config["settings"]
+        assert golden_scad_layout["rows"] == settings["grid_rows"]
+        assert golden_scad_layout["height"] == golden_web_layout["height"]
+        assert golden_scad_layout["line"] == golden_web_layout["line"]
+        assert golden_scad_layout["top_margin"] == golden_web_layout["top_margin"]
+        assert golden_scad_layout["radius"] != golden_web_layout["radius"], (
+            "The two configurations now share a radius. Good news, but the "
+            "arc-length comparison and its tolerances were written for a "
+            "0.025 mm difference and should be revisited."
+        )
+        assert (
+            abs(golden_scad_layout["start_angle"] * golden_scad_layout["radius"]
+                - golden_web_layout["start_angle"] * golden_web_layout["radius"])
+            < 1e-9
+        ), "The two grids start at different ARC positions, not just different angles."
+
+
+class TestGoldenPositionParity:
+    """
+    The parity proof. Every double-sided feature on both plates lands at the
+    same arc and the same height in both generators, mirrored about the seam
+    plane - the whole claim of the port, and the one thing no clearance number
+    or volume total can catch.
+    """
+
+    @pytest.mark.parametrize(
+        ("plate_type", "kind"),
+        [("positive", "raised"), ("positive", "recessed"),
+         ("negative", "raised"), ("negative", "recessed")],
+    )
+    def test_features_land_at_the_same_arc(
+        self, golden_features, golden_scad_layout, golden_web_layout, plate_type, kind
+    ):
+        scad = golden_features[("scad", plate_type)]
+        gold = golden_features[("golden", plate_type)]
+        worst_arc, worst_z = _pair_arcs(
+            _arcs(scad, scad.away_from_seam(getattr(scad, kind)), golden_scad_layout),
+            _mirrored_arcs(
+                _arcs(gold, gold.away_from_seam(getattr(gold, kind)), golden_web_layout)
+            ),
+            f"{GOLDEN_LABEL[plate_type]} {kind} features",
+        )
+        print(
+            f"\n{GOLDEN_LABEL[plate_type]} {kind}: worst arc {worst_arc:.5f} mm, "
+            f"worst height {worst_z:.5f} mm"
+        )
+
+    @pytest.mark.parametrize(
+        ("plate_type", "kind"),
+        [("positive", "raised"), ("positive", "recessed"),
+         ("negative", "raised"), ("negative", "recessed")],
+    )
+    def test_the_rendered_features_sit_where_the_maths_puts_them(
+        self, golden_features, golden_scad_layout, golden_web_layout, plate_type, kind
+    ):
+        """
+        Both meshes are checked against the SAME interpoint walk, each in its
+        own frame. Without this the arc comparison could only say the two
+        generators agree - including agreeing on a shared mistake.
+        """
+        for source in ("scad", "golden"):
+            layout = _layout_for(source, golden_scad_layout, golden_web_layout)
+            features = golden_features[(source, plate_type)]
+            _pair_arcs(
+                _arcs(features, features.away_from_seam(getattr(features, kind)), layout),
+                [
+                    (angle * layout["radius"], z)
+                    for angle, z in _expected_places(layout, plate_type, kind, source)
+                ],
+                f"{source} {GOLDEN_LABEL[plate_type]} {kind} vs the interpoint maths",
+            )
+
+    @pytest.mark.parametrize("plate_type", list(GOLDEN_STEM))
+    def test_the_two_generators_mirror_each_other(self, golden_features, plate_type):
+        """
+        The mirror is not a free parameter chosen to make the arcs line up: the
+        web generator's cylindrical transform runs theta the other way, so a
+        feature this generator puts left of the seam the golden puts right of
+        it. If the two ever agreed on sign WITHOUT a code change, the back text
+        would read backwards on the paper.
+        """
+        for kind in ("raised", "recessed"):
+            scad = golden_features[("scad", plate_type)]
+            gold = golden_features[("golden", plate_type)]
+            scad_side = {
+                c["theta"] > 0
+                for c in scad.clusters(scad.away_from_seam(getattr(scad, kind)))
+            }
+            gold_side = {
+                c["theta"] > 0
+                for c in gold.clusters(gold.away_from_seam(getattr(gold, kind)))
+            }
+            assert len(scad_side) == 1 and len(gold_side) == 1, (
+                f"{GOLDEN_LABEL[plate_type]} {kind}: features straddle the seam plane. "
+                "The reference model is deliberately one-sided so this cannot happen."
+            )
+            assert scad_side != gold_side, (
+                f"{GOLDEN_LABEL[plate_type]} {kind}: both generators put these features "
+                "on the SAME side of the seam. One of the two cylindrical transforms "
+                "has changed sign and the back text will read mirrored."
+            )
+
+
+class TestGoldenFootprintParity:
+    """
+    The dot stands as proud and the bowl cuts as deep in both generators. These
+    are the tactile numbers, which are the accessibility feature.
+    """
+
+    @pytest.mark.parametrize("plate_type", list(GOLDEN_STEM))
+    def test_raised_dots_stand_the_same_height(
+        self, golden_features, golden_scad_layout, golden_web_layout, plate_type
+    ):
+        nominal = PACKAGES[GOLDEN_PACKAGE]["dot_height"]
+        proud = {}
+        for source in ("scad", "golden"):
+            layout = _layout_for(source, golden_scad_layout, golden_web_layout)
+            features = golden_features[(source, plate_type)]
+            heights = [
+                c["r_max"] - layout["radius"]
+                for c in features.clusters(features.away_from_seam(features.raised))
+            ]
+            assert heights, f"No raised dots on the {source} {GOLDEN_LABEL[plate_type]}."
+            proud[source] = max(heights)
+            assert nominal - GOLDEN_FOOTPRINT_TOL_MM <= min(heights) <= nominal + 1e-9, (
+                f"A {source} dot stands {min(heights):.4f} mm proud against a "
+                f"{nominal} mm Option B die."
+            )
+        print(
+            f"\n{GOLDEN_LABEL[plate_type]} dot proud: scad {proud['scad']:.4f} mm, "
+            f"golden {proud['golden']:.4f} mm"
+        )
+        assert abs(proud["scad"] - proud["golden"]) <= GOLDEN_FOOTPRINT_TOL_MM
+
+    @pytest.mark.parametrize("plate_type", list(GOLDEN_STEM))
+    def test_bowls_cut_the_same_hemisphere(
+        self, golden_features, golden_scad_layout, golden_web_layout, plate_type
+    ):
+        """
+        The number FD-7(b) turned on. Both generators must cut a hemisphere of
+        radius DS_BOWL_R - deeper than DS_BOWL_DEPTH, not equal to it - or they
+        are making different parts from one spec.
+        """
+        bowl_r = (
+            (golden_scad_layout["bowl_dia"] / 2) ** 2 + golden_scad_layout["bowl_depth"] ** 2
+        ) / (2 * golden_scad_layout["bowl_depth"])
+        cut = {}
+        for source in ("scad", "golden"):
+            layout = _layout_for(source, golden_scad_layout, golden_web_layout)
+            features = golden_features[(source, plate_type)]
+            depths = [
+                layout["radius"] - c["r_min"]
+                for c in features.clusters(features.away_from_seam(features.recessed))
+            ]
+            assert depths, f"No bowls on the {source} {GOLDEN_LABEL[plate_type]}."
+            cut[source] = max(depths)
+            assert layout["bowl_depth"] < cut[source] <= bowl_r + 1e-9, (
+                f"The {source} bowl cuts {cut[source]:.4f} mm, outside "
+                f"({layout['bowl_depth']}, {bowl_r:.4f}]. A cut no deeper than "
+                "DS_BOWL_DEPTH means the sphere is no longer centred on the surface."
+            )
+        print(
+            f"\n{GOLDEN_LABEL[plate_type]} bowl cut: scad {cut['scad']:.4f} mm, "
+            f"golden {cut['golden']:.4f} mm (hemisphere radius {bowl_r:.4f})"
+        )
+        assert abs(cut["scad"] - cut["golden"]) <= GOLDEN_FOOTPRINT_TOL_MM
+
+    def test_the_seam_arrows_match(
+        self, golden_features, golden_scad_layout, golden_web_layout
+    ):
+        """
+        The goldens' record does not list the tactile numbers, so they are
+        measured off the meshes rather than assumed: the raised arrow stands
+        `tactile_indicator_raise` proud on Cylinder A and the recess cuts
+        raise + extra depth into Cylinder B, in both generators.
+        """
+        raise_mm = golden_scad_layout["arrow_raise"]
+        recess = raise_mm + golden_scad_layout["arrow_extra_depth"]
+        for source in ("scad", "golden"):
+            layout = _layout_for(source, golden_scad_layout, golden_web_layout)
+            emboss = golden_features[(source, "positive")]
+            counter = golden_features[(source, "negative")]
+            np = emboss.np
+            seam_a = emboss.raised & (np.abs(np.abs(emboss.theta) - 180.0) < 10.0)
+            seam_b = counter.recessed & (np.abs(np.abs(counter.theta) - 180.0) < 10.0)
+            assert seam_a.any() and seam_b.any(), f"{source}: the seam arrows are missing."
+            assert abs(emboss.r[seam_a].max() - (layout["radius"] + raise_mm)) <= 0.01, (
+                f"{source}: the raised arrow does not stand {raise_mm} mm proud."
+            )
+            depth = layout["radius"] - counter.r[seam_b].min()
+            assert recess - 0.01 <= depth <= recess + 0.02, (
+                f"{source}: the arrow recess cuts {depth:.3f} mm, not {recess} mm."
+            )
+
+
+class TestGoldenContainmentProbes:
+    """
+    Position and size agree; this asks the meshes the physical question
+    directly - is there material where a die must push, and air where the paper
+    must form? Probe points come from the interpoint maths, not from either
+    mesh, so both generators are asked the same question independently.
+
+    Every scad mesh here is MULTI-BODY: a raised dot's flat base sits at the
+    ideal radius while the 64-gon shell facet under it dips up to 0.0185 mm
+    inside, so each dot is its own connected component. That is pre-existing,
+    reported in Phase 10, unrelated to double-sided, and owned by its own phase
+    after Phase 15. Containment is therefore asked of every body in turn, which
+    is correct whether the mesh is one body or seven.
+    """
+
+    @staticmethod
+    def _solid_at(bodies, layout, arc, z, radial):
+        """Is the point `radial` mm from the axis, over this feature, material?"""
+        import numpy as np
+
+        theta = arc / layout["radius"]
+        point = np.array(
+            [[radial * math.cos(theta), radial * math.sin(theta), z + layout["height"] / 2.0]]
+        )
+        return any(bool(body.contains(point)[0]) for body in bodies)
+
+    @pytest.fixture(scope="class")
+    def bodies(self, _trimesh, golden_meshes, golden_scad_stls):
+        out = {}
+        for plate_type in GOLDEN_STEM:
+            out[("golden", plate_type)] = golden_meshes[plate_type].split(only_watertight=False)
+            out[("scad", plate_type)] = _trimesh.load(
+                golden_scad_stls[plate_type]
+            ).split(only_watertight=False)
+        return out
+
+    @pytest.mark.parametrize("source", ["scad", "golden"])
+    @pytest.mark.parametrize("plate_type", list(GOLDEN_STEM))
+    def test_every_raised_dot_is_solid_and_ends(
+        self, bodies, golden_scad_layout, golden_web_layout, source, plate_type
+    ):
+        layout = _layout_for(source, golden_scad_layout, golden_web_layout)
+        height = layout["dot_height"]
+        for angle, z in _expected_places(layout, plate_type, "raised", source):
+            arc = angle * layout["radius"]
+            assert self._solid_at(
+                bodies[(source, plate_type)], layout, arc, z,
+                layout["radius"] + 0.75 * height,
+            ), (
+                f"{source} {GOLDEN_LABEL[plate_type]}: no material at 75% of the die "
+                f"height over the dot at arc {arc:.3f} mm, z {z:.3f} mm."
+            )
+            assert not self._solid_at(
+                bodies[(source, plate_type)], layout, arc, z,
+                layout["radius"] + 1.15 * height,
+            ), (
+                f"{source} {GOLDEN_LABEL[plate_type]}: the dot at arc {arc:.3f} mm has "
+                f"not ended by {1.15 * height:.3f} mm - it is taller than the die."
+            )
+
+    @pytest.mark.parametrize("source", ["scad", "golden"])
+    @pytest.mark.parametrize("plate_type", list(GOLDEN_STEM))
+    def test_every_bowl_is_hollow_with_a_floor_under_it(
+        self, bodies, golden_scad_layout, golden_web_layout, source, plate_type
+    ):
+        layout = _layout_for(source, golden_scad_layout, golden_web_layout)
+        bowl_r = ((layout["bowl_dia"] / 2) ** 2 + layout["bowl_depth"] ** 2) / (
+            2 * layout["bowl_depth"]
+        )
+        for angle, z in _expected_places(layout, plate_type, "recessed", source):
+            arc = angle * layout["radius"]
+            assert not self._solid_at(
+                bodies[(source, plate_type)], layout, arc, z,
+                layout["radius"] - 0.5 * bowl_r,
+            ), (
+                f"{source} {GOLDEN_LABEL[plate_type]}: solid at half the bowl depth over "
+                f"the recess at arc {arc:.3f} mm, z {z:.3f} mm - the bowl was not cut, "
+                "or a later union filled it back in."
+            )
+            assert self._solid_at(
+                bodies[(source, plate_type)], layout, arc, z,
+                layout["radius"] - bowl_r - 0.15,
+            ), (
+                f"{source} {GOLDEN_LABEL[plate_type]}: no material under the bowl floor "
+                f"at arc {arc:.3f} mm - the recess has cut through the wall."
+            )
+
+    @pytest.mark.parametrize("source", ["scad", "golden"])
+    def test_the_seam_arrows_probe_both_ways(
+        self, bodies, golden_scad_layout, golden_web_layout, source
+    ):
+        layout = _layout_for(source, golden_scad_layout, golden_web_layout)
+        raise_mm = layout["arrow_raise"]
+        recess = raise_mm + layout["arrow_extra_depth"]
+        seam_arc = math.pi * layout["radius"]
+        for row in range(int(layout["rows"])):
+            z = _row_y(layout, row)
+            assert self._solid_at(
+                bodies[(source, "positive")], layout, seam_arc, z,
+                layout["radius"] + 0.5 * raise_mm,
+            ), f"{source} Cylinder A: row {row}'s raised arrow is hollow at half its raise."
+            assert not self._solid_at(
+                bodies[(source, "positive")], layout, seam_arc, z,
+                layout["radius"] + raise_mm + 0.1,
+            ), f"{source} Cylinder A: row {row}'s arrow stands taller than {raise_mm} mm."
+            assert not self._solid_at(
+                bodies[(source, "negative")], layout, seam_arc, z,
+                layout["radius"] - 0.5 * recess,
+            ), f"{source} Cylinder B: row {row}'s arrow recess is solid at half depth."
+            assert self._solid_at(
+                bodies[(source, "negative")], layout, seam_arc, z,
+                layout["radius"] - recess - 0.15,
+            ), f"{source} Cylinder B: row {row}'s arrow recess has cut through the wall."
+
+
+class TestGoldenVolumeParity:
+    """
+    Whole-mesh volumes, once each generator's own shell and mounting bore are
+    removed. The tolerance block above lists every measured contribution and
+    where it comes from.
+    """
+
+    @pytest.mark.parametrize("plate_type", list(GOLDEN_STEM))
+    def test_feature_volume_matches(
+        self, _trimesh, golden_scad_stls, golden_meshes, golden_config,
+        golden_scad_layout, plate_type
+    ):
+        height = golden_config["cylinder_params"]["height"]
+        assert height == golden_scad_layout["height"], (
+            "The two configurations no longer share a cylinder height; the top-cap "
+            "shell measurement assumes they do."
+        )
+        scad = _feature_volume(_trimesh.load(golden_scad_stls[plate_type]), height)
+        gold = _feature_volume(golden_meshes[plate_type], height)
+        print(
+            f"\n{GOLDEN_LABEL[plate_type]} feature volume: scad {scad:+.4f} mm^3, "
+            f"golden {gold:+.4f} mm^3, delta {scad - gold:+.4f} mm^3"
+        )
+        assert abs(scad - gold) <= GOLDEN_FEATURE_VOLUME_TOL_MM3, (
+            f"{GOLDEN_LABEL[plate_type]}: the double-sided features differ by "
+            f"{scad - gold:+.4f} mm^3, past the {GOLDEN_FEATURE_VOLUME_TOL_MM3} mm^3 "
+            "that the measured tessellation and weld differences account for. "
+            "Something geometric has moved - do not widen this without re-measuring "
+            "the contributions listed above it."
+        )
+
+    def test_the_a_minus_b_difference_matches(
+        self, _trimesh, golden_scad_stls, golden_meshes
+    ):
+        """
+        The tightest volume check available, because it needs no shell figure at
+        all: both plates are carved from the SAME solid, so subtracting one from
+        the other cancels the shell and the mounting bore exactly and leaves
+        3 dots, 3 bowls and the arrow weld.
+        """
+        scad = float(_trimesh.load(golden_scad_stls["positive"]).volume) - float(
+            _trimesh.load(golden_scad_stls["negative"]).volume
+        )
+        gold = float(golden_meshes["positive"].volume) - float(
+            golden_meshes["negative"].volume
+        )
+        print(
+            f"\nA - B: scad {scad:.4f} mm^3, golden {gold:.4f} mm^3, "
+            f"delta {scad - gold:+.4f} mm^3"
+        )
+        assert abs(scad - gold) <= GOLDEN_AB_VOLUME_TOL_MM3, (
+            f"A minus B differs by {scad - gold:+.4f} mm^3 between the generators, "
+            f"past the {GOLDEN_AB_VOLUME_TOL_MM3} mm^3 tessellation accounts for. "
+            "The shell cancels out of this figure, so the fault is in the features."
+        )
+
+
+class TestGoldenTopology:
+    """
+    What the meshes are made of. Watertightness is RECORDED for Cylinder A
+    rather than asserted: the web worker's raised-arrow output is known to carry
+    pinch edges at the seam where an arrow apex meets the next arrow's base, so
+    a red bar there would report a known upstream condition rather than a fault
+    in this port. Measured 2026-08-21: all four meshes come out watertight - the
+    goldens because their generator grows the raised outline by 5 um and rewelds
+    on export, this generator because it never creates the tangency.
+    """
+
+    def test_cylinder_b_and_both_goldens_are_watertight(
+        self, _trimesh, golden_scad_stls, golden_meshes
+    ):
+        for plate_type, mesh in golden_meshes.items():
+            assert mesh.is_watertight, (
+                f"The golden {GOLDEN_LABEL[plate_type]} is not watertight; the "
+                "fixture itself is damaged."
+            )
+        counter = _trimesh.load(golden_scad_stls["negative"])
+        assert counter.is_watertight, (
+            "Cylinder B stopped being watertight. It has no raised arrows, so it "
+            "has no excuse - this is a real regression."
+        )
+        emboss = _trimesh.load(golden_scad_stls["positive"])
+        print(f"\nCylinder A watertight (recorded, not asserted): {emboss.is_watertight}")
+
+    def test_the_scad_dots_are_still_separate_bodies(
+        self, _trimesh, golden_scad_stls, golden_meshes
+    ):
+        """
+        Pins the known floating-dot artefact so its eventual fix is visible
+        rather than silent: one shell plus one body per RAISED dot - 5 front
+        dots on Cylinder A, 8 back dots on Cylinder B. The goldens are single
+        bodies because their generator sinks a 0.05 mm skirt into the shell.
+        """
+        for plate_type, raised in (("positive", EXPECTED_FRONT_DOTS),
+                                   ("negative", EXPECTED_BACK_BOWLS)):
+            bodies = _trimesh.load(golden_scad_stls[plate_type]).split(only_watertight=False)
+            assert len(bodies) == 1 + raised, (
+                f"{GOLDEN_LABEL[plate_type]} split into {len(bodies)} bodies, not the "
+                f"{1 + raised} the floating-dot artefact produces (1 shell + {raised} "
+                "raised dots). If the dots have been sunk into the shell, that is the "
+                "fix landing and this count should become 1."
+            )
+            assert len(golden_meshes[plate_type].split(only_watertight=False)) == 1
+
+
+BACKWARD_COMPAT_CASES = (
+    "cylinder_rounded_emboss_indicators_on",
+    "cylinder_rounded_counter_indicators_on",
+)
+
+
+def _cross_platform_params(fixtures_dir, case_name):
+    cases = json.loads((fixtures_dir / "test_cases.json").read_text(encoding="utf-8"))
+    for case in cases["test_cases"]:
+        if case["name"] == case_name:
+            return case["parameters"]
+    raise AssertionError(f"No cross-platform test case named {case_name}")
+
+
+class TestBackwardCompatWithDoubleSidedOff:
+    """
+    With the gate Off the single-sided plates still match the committed
+    web-generator reference meshes, at this repo's own comparison level
+    (tests/compare_config.json).
+
+    TestDoubleSidedOffIsInert proves that toggling the gate off is
+    byte-identical to never having had the feature. This is the other half of
+    that claim: what BOTH of those render is still the geometry the
+    cross-platform fixtures were cut from. It drives the same fixture
+    parameters as tests/cross_platform_validation.py, which pytest never
+    collects - that file is not named test_*.py - so until now nothing in the
+    default suite compared a render against a reference mesh.
+    """
+
+    @pytest.mark.slow
+    @pytest.mark.parametrize("case_name", BACKWARD_COMPAT_CASES)
+    def test_matches_the_reference_fixture(
+        self, case_name, ds_runner, mesh_comparator, fixtures_dir, tmp_path
+    ):
+        reference = fixtures_dir / case_name / "reference.stl"
+        if not reference.exists():
+            pytest.skip(f"Reference fixture not found: {reference}")
+        params = dict(_cross_platform_params(fixtures_dir, case_name), double_sided="Off")
+        stl_path, output = _render(ds_runner, tmp_path, params, case_name)
+        assert "WARNING:" not in output and "ERROR:" not in output, (
+            f"{case_name} no longer renders clean.\noutput (truncated): {output[:800]}"
+        )
+        result = mesh_comparator.compare(reference, stl_path)
+        assert result.passed, (
+            f"{case_name} no longer matches its reference mesh with double_sided "
+            "Off:\n  " + "\n  ".join(result.failures)
         )
