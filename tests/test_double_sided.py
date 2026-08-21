@@ -160,6 +160,7 @@ def layout():
         "dot_height": PACKAGES[DEFAULT_PACKAGE]["dot_height"],
         "arrow_raise": _scad_constant("tactile_indicator_raise"),
         "arrow_length": _scad_constant("tactile_indicator_length"),
+        "arrow_extra_depth": _scad_constant("tactile_recess_extra_depth"),
     }
 
 
@@ -204,6 +205,11 @@ def _back_placements(layout, line, row=0):
         )
         for angle, y in _front_placements(layout, line, row)
     ]
+
+
+def _negated(placements):
+    """The counter plate's angle-negation mirror, applied to planar placements."""
+    return [(-angle, y) for angle, y in placements]
 
 
 def _ang_diff(a_deg, b_deg):
@@ -585,6 +591,183 @@ class TestPackage03Geometry:
         _match(clusters, _back_placements(layout, BACK_TEXT), "back bowls (0.3 package)")
 
 
+@pytest.fixture(scope="module")
+def ds_b_features(ds_runner, _trimesh, layout, tmp_path_factory):
+    """Cylinder B - the counter plate - on the same reference model."""
+    tmp_path = tmp_path_factory.mktemp("double_sided_b")
+    stl_path, output = _render(
+        ds_runner, tmp_path, _ds_params(plate_type="negative"), "cylinder_b"
+    )
+    assert "ERROR:" not in output, f"Render reported an error:\n{output[:800]}"
+    return _Features(_trimesh, stl_path, layout)
+
+
+class TestCylinderBGeometry:
+    """
+    The counter plate in double-sided mode: 8 raised back-text dots, 5 front
+    bowls (one per ACTUAL front dot - the universal grid is gone), 4 recessed
+    seam arrows. Every feature sits at exactly minus its Cylinder A partner's
+    angle with the same height, because this plate is A's angle-negation
+    mirror.
+    """
+
+    def test_raised_back_dots_at_the_negated_back_grid(self, ds_b_features, layout):
+        clusters = ds_b_features.clusters(
+            ds_b_features.away_from_seam(ds_b_features.raised)
+        )
+        pairs = _match(
+            clusters, _negated(_back_placements(layout, BACK_TEXT)), "B raised back dots"
+        )
+        assert len(pairs) == EXPECTED_BACK_BOWLS
+
+    def test_back_dots_use_the_active_package_height(self, ds_b_features, layout):
+        heights = [
+            c["r_max"] - layout["radius"]
+            for c in ds_b_features.clusters(
+                ds_b_features.away_from_seam(ds_b_features.raised)
+            )
+        ]
+        assert heights, "No raised back dots found on Cylinder B."
+        for h in heights:
+            assert 0.99 * layout["dot_height"] <= h <= layout["dot_height"], (
+                f"A raised back dot stands {h:.4f} mm proud; the active package "
+                f"is {layout['dot_height']} mm."
+            )
+
+    def test_front_bowls_are_one_per_actual_front_dot(self, ds_b_features, layout):
+        """
+        1:1 with the FRONT text, at the mirrored positions - and only 5 of
+        them, which is also the proof the universal grid is gone: a universal
+        field would put a recess at all 6 positions of all 13 cells of all 4
+        rows.
+        """
+        clusters = ds_b_features.clusters(
+            ds_b_features.away_from_seam(ds_b_features.recessed)
+        )
+        pairs = _match(
+            clusters, _negated(_front_placements(layout, FRONT_TEXT)), "B front bowls"
+        )
+        assert len(pairs) == EXPECTED_FRONT_DOTS
+
+    def test_front_bowl_cut_depth_matches_cylinder_a(self, ds_b_features, layout):
+        """Both plates call the same ds_counter_recess(), so the same measured
+        hemisphere cut - the number Phase 13's tolerances cite."""
+        depths = [
+            layout["radius"] - c["r_min"]
+            for c in ds_b_features.clusters(
+                ds_b_features.away_from_seam(ds_b_features.recessed)
+            )
+        ]
+        assert depths, "No front bowls found on Cylinder B."
+        measured = max(depths)
+        expected_bowl = PACKAGES[DEFAULT_PACKAGE]["measured_bowl"]
+        assert abs(measured - expected_bowl) <= BOWL_DEPTH_TOL_MM, (
+            f"Cylinder B's bowls cut {measured:.4f} mm deep, not the "
+            f"{expected_bowl} mm this file documents for the active package."
+        )
+
+    def test_recessed_arrows_one_per_row(self, ds_b_features, layout):
+        """
+        The tactile arrows are RECESSED on this plate, one per row, cut
+        raise + extra depth below the surface (the floor is a 64-gon band, so
+        CSG vertices may sit up to the face sagitta deeper than nominal).
+        """
+        np = ds_b_features.np
+        seam = ds_b_features.recessed & (
+            np.abs(np.abs(ds_b_features.theta) - 180.0) < 10.0
+        )
+        assert seam.any(), "No recessed material at the seam: the arrow recesses are missing."
+
+        half = layout["arrow_length"] / 2.0
+        for row in range(layout["rows"]):
+            y = _row_y(layout, row)
+            here = seam & (np.abs(ds_b_features.z - y) < half - 0.5)
+            assert here.any(), f"Row {row} (z={y:.1f} mm) has no arrow recess at the seam."
+
+        depth = layout["radius"] - ds_b_features.r[seam].min()
+        nominal = layout["arrow_raise"] + layout["arrow_extra_depth"]
+        assert nominal - 0.01 <= depth <= nominal + 0.02, (
+            f"The arrow recess cuts {depth:.3f} mm below the surface; nominal "
+            f"is {nominal} mm (raise + extra depth)."
+        )
+
+
+_DS_PAIR_RE = re.compile(
+    r"DS_PAIR (A|B) (front_dot|back_recess|front_bowl|back_dot) "
+    r"deg=(-?\d+\.\d{6}) y=(-?\d+\.\d{6})"
+)
+
+
+@pytest.fixture(scope="module")
+def pairing_echoes(ds_runner, tmp_path_factory):
+    """DS_PAIR rows echoed by both plates' actual placement code."""
+    tmp_path = tmp_path_factory.mktemp("ds_pairing")
+    _, out_a = _render(ds_runner, tmp_path, _ds_params(ds_self_check=True), "pair_a")
+    _, out_b = _render(
+        ds_runner,
+        tmp_path,
+        _ds_params(ds_self_check=True, plate_type="negative"),
+        "pair_b",
+    )
+
+    def rows_of(output, plate):
+        rows = {}
+        for match in _DS_PAIR_RE.finditer(output):
+            assert match.group(1) == plate, (
+                f"A DS_PAIR row for plate {match.group(1)} appeared in the "
+                f"plate-{plate} render: {match.group(0)}"
+            )
+            rows.setdefault(match.group(2), []).append((match.group(3), match.group(4)))
+        return rows
+
+    return rows_of(out_a, "A"), rows_of(out_b, "B")
+
+
+class TestPairingCrossCheck:
+    """
+    The heart of the phase: every Cylinder A feature and its Cylinder B partner
+    sit at EXACT angle negation with the same height. The rows come from the
+    placement code itself (ds_fmt_e6 rounds to 1e-6 and prints all six
+    decimals), and both plates walk the text in the same order, so partners are
+    compared row for row and string for string - a drifted walk echoes a
+    different row, with no mesh tolerance to hide behind.
+    """
+
+    @staticmethod
+    def _assert_partners(a_rows, b_rows, label):
+        assert len(a_rows) == len(b_rows), (
+            f"{label}: A placed {len(a_rows)} features, B placed {len(b_rows)} - "
+            "the two plates disagree about the text."
+        )
+        for (deg_a, y_a), (deg_b, y_b) in zip(a_rows, b_rows):
+            assert y_a == y_b, f"{label}: partner heights differ, {y_a} vs {y_b} mm."
+            assert deg_a.lstrip("-") == deg_b.lstrip("-"), (
+                f"{label}: partner angles are not the same magnitude after the "
+                f"same 1e-6 rounding, {deg_a} vs {deg_b} deg."
+            )
+            assert abs(float(deg_a) + float(deg_b)) <= 1e-6, (
+                f"{label}: partner angles are not negations, {deg_a} vs {deg_b} deg."
+            )
+
+    def test_every_front_dot_has_a_bowl_partner(self, pairing_echoes):
+        a, b = pairing_echoes
+        assert len(a.get("front_dot", [])) == EXPECTED_FRONT_DOTS, (
+            "Cylinder A did not echo one DS_PAIR row per front dot."
+        )
+        self._assert_partners(
+            a["front_dot"], b.get("front_bowl", []), "front dot vs front bowl"
+        )
+
+    def test_every_back_recess_has_a_raised_dot_partner(self, pairing_echoes):
+        a, b = pairing_echoes
+        assert len(a.get("back_recess", [])) == EXPECTED_BACK_BOWLS, (
+            "Cylinder A did not echo one DS_PAIR row per back recess."
+        )
+        self._assert_partners(
+            a["back_recess"], b.get("back_dot", []), "back recess vs back dot"
+        )
+
+
 class TestForcedTactile:
     """Visual + double-sided renders tactile anyway, and says so."""
 
@@ -835,3 +1018,59 @@ class TestSourceGuards:
             "fire only below the floor there; the 0.3 package keeps the reliable "
             "line. The threshold split awaits Phase 12 ratification."
         )
+
+    def test_universal_grid_is_gated_off_in_ds_mode(self, scad_source):
+        """
+        In double-sided mode every recess is the 1:1 partner of an actual dot;
+        the "recesses for ALL possible dot positions" loop runs only when NOT
+        ds_on, exactly as the web generator's Cylinder B branch skips it.
+        """
+        body = scad_source[scad_source.index("module cylinder_counter_plate()") :]
+        assert "if (!ds_on)" in body, (
+            "The counter plate's universal recess grid must be gated on !ds_on."
+        )
+        assert body.index("if (!ds_on)") < body.index("counter_last_col"), (
+            "The !ds_on gate must wrap the universal grid loop, not follow it."
+        )
+        assert re.search(r"if \(ds_on\) \{\s*ds_front_recesses\(\);", body), (
+            "cylinder_counter_plate() must subtract ds_front_recesses() - the 1:1 "
+            "bowls for Cylinder A's actual front dots - when ds_on."
+        )
+
+    def test_counter_back_dots_are_unioned_before_the_bowls_are_subtracted(
+        self, scad_source
+    ):
+        """
+        Shell -> union raised -> subtract recesses on this plate too, the web
+        manifold worker's order. Reversing it buries a bowl under a
+        neighbouring raised back dot.
+        """
+        body = scad_source[scad_source.index("module cylinder_counter_plate()") :]
+        assert re.search(r"if \(ds_on\) \{\s*ds_back_raised_dots\(\);", body), (
+            "cylinder_counter_plate() must union ds_back_raised_dots() when ds_on."
+        )
+        assert body.index("cylinder_shell") < body.index("ds_back_raised_dots()") < body.index(
+            "ds_front_recesses()"
+        ), (
+            "The raised back dots must be unioned with the shell before the "
+            "front bowls are subtracted."
+        )
+
+    def test_both_plates_share_the_back_walk(self, scad_source):
+        """
+        One placement module drives BOTH plates' back grids - the emboss bowls
+        at angle_sign +1 and the counter plate's raised dots at -1 - so the two
+        walks cannot drift apart. That shared walk is what makes the pairing
+        cross-check exact rather than merely close.
+        """
+        assert re.search(
+            r'module ds_back_recesses\(\)\s*\{\s*'
+            r'ds_back_placements\(1,\s*0,\s*"A back_recess"\)\s*ds_counter_recess\(\);',
+            scad_source,
+        ), "ds_back_recesses() must be a thin wrapper over ds_back_placements()."
+        assert re.search(
+            r'module ds_back_raised_dots\(\)\s*\{\s*'
+            r'ds_back_placements\(-1,\s*DS_DOT_HEIGHT\s*/\s*2,\s*"B back_dot"\)\s*'
+            r'ds_braille_dot_centered\(\);',
+            scad_source,
+        ), "ds_back_raised_dots() must be a thin wrapper over ds_back_placements()."

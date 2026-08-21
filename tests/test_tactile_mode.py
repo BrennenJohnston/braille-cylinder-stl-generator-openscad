@@ -19,6 +19,7 @@ They cover the three things most likely to silently break the feature:
 License: PolyForm Noncommercial 1.0.0
 """
 
+import math
 import re
 from pathlib import Path
 
@@ -50,12 +51,14 @@ MAKERWORLD_PENDING_REFLATTEN = {
 }
 
 # How many braille-cell walks read the shared column-shift expression. Two plate
-# modules, plus - in the canonical file since the double-sided phase -
-# ds_back_recesses(), which walks the back text through the same expression so
-# the back layout cannot drift from the front. The MakerWorld build is
-# re-flattened in its own phase and still carries only the two. Raise its entry
-# to match the canonical one in the same change that re-flattens the variant.
-COLUMN_SHIFT_WALKS = {CANONICAL: 3, MAKERWORLD: 2}
+# modules, plus - in the canonical file since the double-sided phases -
+# ds_back_placements(), which walks the back text through the same expression
+# for BOTH plates so the back layout cannot drift from the front, and
+# ds_front_recesses(), the counter plate's 1:1 front-bowl walk. The MakerWorld
+# build is re-flattened in its own phase and still carries only the two. Raise
+# its entry to match the canonical one in the same change that re-flattens the
+# variant.
+COLUMN_SHIFT_WALKS = {CANONICAL: 4, MAKERWORLD: 2}
 
 BOTH_BUILDS = pytest.mark.parametrize(
     "scad_path", [CANONICAL, MAKERWORLD], ids=["canonical", "makerworld"]
@@ -249,6 +252,90 @@ def test_constants_are_declared_before_the_values_that_use_them(scad_path):
         "TACTILE_MIN_GAP_MARGIN must be declared before tactile_gap_too_small "
         "uses it — OpenSCAD assignments are sequential, so a forward reference "
         "evaluates to undef and the seam-gap warning silently never fires."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Tactile seam-recess wall guard (canonical only; the MakerWorld variant is
+# re-flattened in its own phase)
+# ---------------------------------------------------------------------------
+
+
+def test_seam_wall_guard_is_declared_with_the_measured_geometry():
+    """
+    The counter plate's arrow recess cuts inward toward the polygonal cutout,
+    and nothing else stops the wall between them going below the 1.2 mm FDM
+    printable minimum. The guard must use the AS-PRINTED radii measured in
+    Phase 08: the recess floor dips by the 64-gon face sagitta, and the cutout
+    parameter is treated as the INSCRIBED radius, so its vertices reach
+    r / cos(180 / points).
+    """
+    scad = _read(CANONICAL)
+    assert "TACTILE_SEAM_WALL_MIN = 1.2;" in scad, (
+        "The 1.2 mm printable minimum wall constant is missing."
+    )
+    assert re.search(
+        r"tactile_seam_wall_mm\s*=\s*"
+        r"\(radius - tactile_indicator_raise - tactile_recess_extra_depth\)\s*"
+        r"\*\s*cos\(180 / CYLINDER_SHELL_FN\)\s*"
+        r"-\s*\(active_polygon_cutout_radius_mm / cos\(180 / active_polygon_cutout_points\)\)",
+        scad,
+    ), (
+        "The wall must be the recess floor's FACE radius (sagitta included) "
+        "minus the cutout's VERTEX radius - the two as-printed extremes."
+    )
+    assert re.search(
+        r"tactile_seam_wall_too_thin\s*=\s*tactile_on\s*&&\s*"
+        r"\(active_polygon_cutout_radius_mm > 0\)\s*"
+        r"&&\s*\(tactile_seam_wall_mm < TACTILE_SEAM_WALL_MIN\)",
+        scad,
+    ), "The guard must be gated on tactile mode and an actual cutout."
+    decl = scad.index("CYLINDER_SHELL_FN = ")
+    use = scad.index("tactile_seam_wall_mm =")
+    assert decl < use, (
+        "tactile_seam_wall_mm must be declared after CYLINDER_SHELL_FN - "
+        "top-level assignments evaluate in source order, and an early "
+        "reference is undef, so the guard would silently never fire."
+    )
+
+
+def test_seam_wall_guard_warns_on_console_and_in_3d():
+    """Same pattern as tactile_gap_warning: an echoed WARNING for desktop
+    users, red 3D text for the MakerWorld preview, and both plates render it -
+    the pair prints from one set of settings."""
+    scad = _read(CANONICAL)
+    start = scad.index("tactile_seam_wall_too_thin =")
+    assert 'echo(str("WARNING: only "' in scad[start : start + 1200], (
+        "The wall guard must echo a WARNING line quoting the wall thickness."
+    )
+    assert '"TACTILE WALL TOO THIN: "' in scad
+    assert "INVALID_TEXT_Z_OFFSET + 6 * INVALID_TEXT_STACK_GAP" in scad, (
+        "The wall warning should stack one step above DOTS TOO CLOSE, "
+        "reusing the shared INVALID_TEXT_* placement constants."
+    )
+    assert scad.count("tactile_seam_wall_warning();") == 2, (
+        "Both plate modules must call tactile_seam_wall_warning()."
+    )
+
+
+def test_seam_wall_is_clear_at_the_shipped_defaults():
+    """
+    The numeric canary, hardcoded like the other signed-off physical numbers:
+    radius 15.4 mm, raise 0.5, extra depth 0.2, cutout 13.0 inscribed with 12
+    points, 64-segment shell. Phase 08 measured this wall at 1.224 mm - just
+    above the 1.2 mm minimum (the pre-2026-08-18 raise of 0.8 mm left
+    0.924 mm, already under spec). If a slider or preset change eats the
+    margin, this fails as a decision to make, not silently.
+    """
+    wall = (15.4 - 0.5 - 0.2) * math.cos(math.radians(180 / 64)) - 13.0 / math.cos(
+        math.radians(180 / 12)
+    )
+    assert abs(wall - 1.224) < 0.0005, (
+        f"The documented 1.224 mm default wall now computes to {wall:.4f} mm."
+    )
+    assert wall >= 1.2, (
+        f"The shipped defaults leave {wall:.3f} mm of wall - under the 1.2 mm "
+        "printable minimum."
     )
 
 

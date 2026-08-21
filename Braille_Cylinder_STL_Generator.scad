@@ -864,9 +864,43 @@ INVALID_TEXT_Z_OFFSET   = 5;   // mm above the cylinder top
 INVALID_TEXT_SIZE       = 5;   // text() font size in mm
 INVALID_TEXT_DEPTH      = 2;   // linear_extrude height in mm
 // Pitch of the warning stack above INVALID CHARACTERS, one step per warning:
-// TEXT TOO LONG, TACTILE GAP TOO SMALL, TOO MANY LINES, then the two
-// double-sided ones - DOUBLE-SIDED REQUIRES TACTILE and DOTS TOO CLOSE.
+// TEXT TOO LONG, TACTILE GAP TOO SMALL, TOO MANY LINES, the two double-sided
+// ones - DOUBLE-SIDED REQUIRES TACTILE and DOTS TOO CLOSE - then TACTILE WALL
+// TOO THIN.
 INVALID_TEXT_STACK_GAP  = 8;   // mm
+
+// -----------------------------------------------------------------------------
+// TACTILE SEAM-RECESS WALL GUARD
+// -----------------------------------------------------------------------------
+// The counter plate's arrow recess cuts inward toward the polygonal cutout, and
+// nothing else stops a user thinning the wall between them below the 1.2 mm FDM
+// printable minimum. The measured facts (Phase 08, taken off real STLs): the
+// recess floor is the shell band's inner prism, whose faces dip to
+// (radius - raise - extra depth) * cos(180 / CYLINDER_SHELL_FN); the cutout's
+// VERTICES reach polygon_cutout_radius_mm / cos(180 / polygon_cutout_points),
+// because the code treats that parameter as the INSCRIBED radius (see
+// cylinder_shell). At the shipped defaults the wall is 14.682 - 13.459 =
+// 1.224 mm - just clear; the pre-2026-08-18 raise of 0.8 mm left 0.924 mm,
+// already under spec. Declared here, after CYLINDER_SHELL_FN: top-level
+// assignments evaluate in source order, and an earlier reference would be
+// undef and the guard would silently never fire.
+TACTILE_SEAM_WALL_MIN = 1.2;   // FDM minimum printable wall, mm
+
+tactile_seam_wall_mm =
+    (radius - tactile_indicator_raise - tactile_recess_extra_depth)
+        * cos(180 / CYLINDER_SHELL_FN)
+    - (active_polygon_cutout_radius_mm / cos(180 / active_polygon_cutout_points));
+
+tactile_seam_wall_too_thin = tactile_on && (active_polygon_cutout_radius_mm > 0)
+    && (tactile_seam_wall_mm < TACTILE_SEAM_WALL_MIN);
+
+// WORDING NOT YET SIGNED OFF - draft string pending review (REVIEW-BRENNEN).
+if (tactile_seam_wall_too_thin)
+    echo(str("WARNING: only ", round(tactile_seam_wall_mm * 1000) / 1000,
+             " mm of wall is left between the tactile arrow recess and the ",
+             "polygonal cutout; the printable minimum is ", TACTILE_SEAM_WALL_MIN,
+             " mm. Lower tactile_indicator_raise or tactile_recess_extra_depth, ",
+             "or reduce polygon_cutout_radius_mm."));
 
 module indicator_triangle_2d(rotate_180 = false) {
     // Isosceles triangle with vertical base on LEFT, apex RIGHT (default).
@@ -1018,6 +1052,21 @@ module tactile_gap_warning() {
         color("red")
         linear_extrude(height = INVALID_TEXT_DEPTH)
         text(str("TACTILE GAP TOO SMALL: ", round(seam_gap_mm * 10) / 10, "mm"),
+             size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
+    }
+}
+
+// Wall between the arrow recess floor and the polygonal cutout too thin to
+// print: warn in 3D, same reasons and same pattern as tactile_gap_warning
+// above. The counter plate is the one that cuts the recess, but both plates
+// call this - the pair is printed from one set of settings.
+// WORDING NOT YET SIGNED OFF - draft string pending review (REVIEW-BRENNEN).
+module tactile_seam_wall_warning() {
+    if (tactile_seam_wall_too_thin) {
+        translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + 6 * INVALID_TEXT_STACK_GAP])
+        color("red")
+        linear_extrude(height = INVALID_TEXT_DEPTH)
+        text(str("TACTILE WALL TOO THIN: ", round(tactile_seam_wall_mm * 1000) / 1000, " mm"),
              size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
     }
 }
@@ -1196,9 +1245,25 @@ module cylinder_shell(cutout_rotate_deg = 0) {
     }
 }
 
-// Double-sided: one bowl per ACTUAL back-text dot, never a universal grid.
-// Subtracted from THIS cylinder, it is the seat the opposing cylinder's raised
-// back dot drops into at the nip, so the two must be built from the same walk.
+// Fixed-point decimal for the DS_PAIR self-check echoes below: the value
+// rounded to 1e-6 (micro-units) and printed with all six decimals. str()
+// alone formats a number to 6 SIGNIFICANT digits, which cannot show 1e-6
+// agreement on a three-digit angle. Two plates that place a partner pair
+// correctly therefore echo the identical string, apart from the sign.
+function ds_pad3(n) = n < 10 ? str("00", n) : n < 100 ? str("0", n) : str(n);
+function ds_fmt_e6(v) =
+    let (t = round(abs(v) * 1e6),
+         whole = floor(t / 1e6),
+         frac = t - whole * 1e6,
+         hi = floor(frac / 1000))
+    str(v < 0 ? "-" : "", whole, ".", ds_pad3(hi), ds_pad3(frac - hi * 1000));
+
+// Double-sided back-grid placements, shared by BOTH plates so the two walks
+// cannot drift: the emboss plate (Cylinder A) cuts a bowl at each position
+// (angle_sign +1), and the counter plate (Cylinder B) raises the matching
+// back-text dot at the same planar position run through its angle-negation
+// mirror (angle_sign -1). A back dot and its recess are therefore partners at
+// exact angle negation, same height, by construction.
 //
 // Where a back dot lands, in two steps, both taken in the planar (pre-seam)
 // frame the emboss plate places its own dots in:
@@ -1214,7 +1279,11 @@ module cylinder_shell(cutout_rotate_deg = 0) {
 //
 // Ported from the web generator's back_grid_transform() in
 // app/geometry/interpoint.py, which stays the authoritative implementation.
-module ds_back_recesses() {
+//
+// radial_offset lifts the child's origin off the shell surface: 0 for the
+// bowl, whose sphere is centred ON the surface, and half the dot height for
+// the raised dot, whose solid is centred at its own origin.
+module ds_back_placements(angle_sign, radial_offset, pair_label) {
     for (row = [0 : min(active_grid_rows - 1, len(_all_back_lines) - 1)]) {
         if (len(_all_back_lines[row]) > 0) {
             y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
@@ -1241,13 +1310,83 @@ module ds_back_recesses() {
                                          + DS_BACK_DIRECTION * (interpoint_offset_x_mm / radius);
                         back_dot_y     = front_dot_y
                                          + DS_BACK_DIRECTION * interpoint_offset_y_mm;
-                        back_angle_deg = back_angle_rad * 180 / PI;
+                        back_angle_deg = angle_sign * (back_angle_rad * 180 / PI);
 
-                        x = radius * cos(back_angle_deg);
-                        y = radius * sin(back_angle_deg);
+                        if (ds_self_check)
+                            echo(str("DS_PAIR ", pair_label,
+                                     " deg=", ds_fmt_e6(back_angle_deg),
+                                     " y=", ds_fmt_e6(back_dot_y)));
+
+                        x = (radius + radial_offset) * cos(back_angle_deg);
+                        y = (radius + radial_offset) * sin(back_angle_deg);
 
                         translate([x, y, back_dot_y])
                             rotate([0, 90, back_angle_deg])
+                                children();
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Double-sided, Cylinder A: one bowl per ACTUAL back-text dot, never a
+// universal grid. Subtracted from the emboss plate, it is the seat the
+// opposing cylinder's raised back dot drops into at the nip.
+module ds_back_recesses() {
+    ds_back_placements(1, 0, "A back_recess") ds_counter_recess();
+}
+
+// Double-sided, Cylinder B: the raised BACK-text dots this cylinder embosses.
+// The same walk and interpoint transform as ds_back_recesses(), run through
+// this plate's angle-negation mirror, so each raised dot lands exactly
+// opposite the recess Cylinder A carries for it.
+module ds_back_raised_dots() {
+    ds_back_placements(-1, DS_DOT_HEIGHT / 2, "B back_dot") ds_braille_dot_centered();
+}
+
+// Double-sided, Cylinder B: one bowl per ACTUAL front-text dot - the seat
+// Cylinder A's raised front dot drops into at the nip. Replaces the universal
+// grid, which double-sided skips entirely: every recess is the 1:1 partner of
+// a real dot. The walk is the emboss plate's front-dot walk; the only
+// difference is this plate's angle-negation mirror (the same convention the
+// universal grid used), so each bowl sits at exactly minus its partner dot's
+// angle, same height.
+module ds_front_recesses() {
+    for (row = [0 : min(active_grid_rows - 1, len(_all_lines) - 1)]) {
+        if (len(_all_lines[row]) > 0) {
+            y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
+
+            row_last_col = (text_limit_check == "Off")
+                ? len(_all_lines[row]) - 1
+                : min(active_grid_columns - 1, len(_all_lines[row]) - 1);
+            for (col = [0 : row_last_col]) {
+                // Double-sided forces tactile, so this always resolves to col;
+                // it is written as the shared expression so this walk cannot
+                // drift from the emboss plate's front-dot walk.
+                actual_col = tactile_on ? col :
+                             indicator_on ? (col + 2) : (col + 1);
+                angle_rad = start_angle + (actual_col * cell_spacing_angle);
+                dots = get_dot_pattern(_all_lines[row][col]);
+
+                for (i = [0:5]) {
+                    if (dots[i] == 1) {
+                        dot_pos = dot_positions[i];
+                        front_angle_rad = angle_rad + dot_col_angle_offsets[dot_pos[1]];
+                        front_dot_y     = y_pos + dot_row_offsets[dot_pos[0]];
+
+                        bowl_angle_deg = -(front_angle_rad * 180 / PI);
+
+                        if (ds_self_check)
+                            echo(str("DS_PAIR B front_bowl",
+                                     " deg=", ds_fmt_e6(bowl_angle_deg),
+                                     " y=", ds_fmt_e6(front_dot_y)));
+
+                        x = radius * cos(bowl_angle_deg);
+                        y = radius * sin(bowl_angle_deg);
+
+                        translate([x, y, front_dot_y])
+                            rotate([0, 90, bowl_angle_deg])
                                 ds_counter_recess();
                     }
                 }
@@ -1293,6 +1432,10 @@ module cylinder_emboss_plate() {
                 // (double-sided mode only; no-op otherwise).
                 ds_mode_warnings();
 
+                // TACTILE WALL TOO THIN warning (tactile mode with a polygonal
+                // cutout only; no-op otherwise).
+                tactile_seam_wall_warning();
+
                 // TOO MANY LINES warning (see top-level rows_used /
                 // too_many_rows). The dot loop below stops at active_grid_rows,
                 // so without this the text on the extra lines would simply not
@@ -1336,7 +1479,16 @@ module cylinder_emboss_plate() {
                                     dot_angle_rad = angle_rad + dot_col_angle_offsets[dot_pos[1]];
                                     dot_angle_deg = dot_angle_rad * 180 / PI;
                                     dot_y = y_pos + dot_row_offsets[dot_pos[0]];
-                                    
+
+                                    // Pairing self-check: Cylinder B's
+                                    // ds_front_recesses() echoes its bowls the
+                                    // same way, so the partner rows must match
+                                    // apart from the sign of the angle.
+                                    if (ds_on && ds_self_check)
+                                        echo(str("DS_PAIR A front_dot",
+                                                 " deg=", ds_fmt_e6(dot_angle_deg),
+                                                 " y=", ds_fmt_e6(dot_y)));
+
                                     x = (radius + active_emboss_height/2) * cos(dot_angle_deg);
                                     y = (radius + active_emboss_height/2) * sin(dot_angle_deg);
                                     
@@ -1378,8 +1530,19 @@ module cylinder_emboss_plate() {
 module cylinder_counter_plate() {
     translate([0, 0, active_cylinder_height_mm/2]) {
         difference() {
-            // Base cylinder
-            cylinder_shell(cutout_rotate_deg = active_seam_offset_degrees);
+            union() {
+                // Base cylinder
+                cylinder_shell(cutout_rotate_deg = active_seam_offset_degrees);
+
+                // Double-sided: this cylinder's own raised dots - the BACK
+                // text it embosses. Unioned in before any recess is subtracted
+                // (shell -> union raised -> subtract recesses, the web
+                // manifold worker's order) so a bowl that reaches a
+                // neighbouring dot cuts it rather than being buried by it.
+                if (ds_on) {
+                    ds_back_raised_dots();
+                }
+            }
 
             // Angular grid + dot-positioning constants are derived at top level;
             // see `radius`, `start_angle`, `dot_positions`, etc. above.
@@ -1409,39 +1572,51 @@ module cylinder_counter_plate() {
                 tactile_rows_recessed();
             }
 
-            // Create recesses for ALL possible dot positions. When the text limit
-            // is bypassed, also cover any extra columns the emboss plate renders
-            // so both plates stay in lockstep.
-            counter_last_col = (text_limit_check == "Off")
-                ? max(active_grid_columns, max_line_len) - 1
-                : active_grid_columns - 1;
-            for (row = [0 : active_grid_rows - 1]) {
-                y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
+            // Create recesses for ALL possible dot positions - single-sided
+            // only. Double-sided replaces this universal grid with the 1:1
+            // paired recesses below: a universal field would collide with this
+            // plate's own raised back dots, and the web generator skips it the
+            // same way. When the text limit is bypassed, also cover any extra
+            // columns the emboss plate renders so both plates stay in lockstep.
+            if (!ds_on) {
+                counter_last_col = (text_limit_check == "Off")
+                    ? max(active_grid_columns, max_line_len) - 1
+                    : active_grid_columns - 1;
+                for (row = [0 : active_grid_rows - 1]) {
+                    y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
 
-                for (col = [0 : counter_last_col]) {
-                    // Visual mode: shift past the marker columns — triangle (always)
-                    // at col 0, plus the indicator letter square at col 1 when On.
-                    // Tactile mode has no marker columns.
-                    actual_col = tactile_on ? col :
-                                 indicator_on ? (col + 2) : (col + 1);
-                    angle_rad = start_angle + (actual_col * cell_spacing_angle);
-                    angle_deg = -(angle_rad * 180 / PI);
+                    for (col = [0 : counter_last_col]) {
+                        // Visual mode: shift past the marker columns — triangle (always)
+                        // at col 0, plus the indicator letter square at col 1 when On.
+                        // Tactile mode has no marker columns.
+                        actual_col = tactile_on ? col :
+                                     indicator_on ? (col + 2) : (col + 1);
+                        angle_rad = start_angle + (actual_col * cell_spacing_angle);
+                        angle_deg = -(angle_rad * 180 / PI);
 
-                    for (i = [0:5]) {
-                        dot_pos = dot_positions[i];
-                        dot_angle_rad = angle_rad + dot_col_angle_offsets[dot_pos[1]];
-                        dot_angle_deg = -(dot_angle_rad * 180 / PI);
-                        dot_y = y_pos + dot_row_offsets[dot_pos[0]];
+                        for (i = [0:5]) {
+                            dot_pos = dot_positions[i];
+                            dot_angle_rad = angle_rad + dot_col_angle_offsets[dot_pos[1]];
+                            dot_angle_deg = -(dot_angle_rad * 180 / PI);
+                            dot_y = y_pos + dot_row_offsets[dot_pos[0]];
 
-                        recess_radius_offset = use_rounded_dots ? 0 : INDICATOR_OVERCUT;
-                        x = (radius + recess_radius_offset) * cos(dot_angle_deg);
-                        y = (radius + recess_radius_offset) * sin(dot_angle_deg);
+                            recess_radius_offset = use_rounded_dots ? 0 : INDICATOR_OVERCUT;
+                            x = (radius + recess_radius_offset) * cos(dot_angle_deg);
+                            y = (radius + recess_radius_offset) * sin(dot_angle_deg);
 
-                        translate([x, y, dot_y])
-                        rotate([0, 90, dot_angle_deg])
-                        counter_recess();
+                            translate([x, y, dot_y])
+                            rotate([0, 90, dot_angle_deg])
+                            counter_recess();
+                        }
                     }
                 }
+            }
+
+            // Double-sided: the seats for Cylinder A's front-text dots.
+            // Subtracted last, after the raised back dots are unioned in, for
+            // the same reason ds_back_recesses() is on the emboss plate.
+            if (ds_on) {
+                ds_front_recesses();
             }
         }
 
@@ -1449,6 +1624,12 @@ module cylinder_counter_plate() {
         // outside the difference() so the recess cuts can't eat it, and is shown on
         // this plate too — a MakerWorld user may generate the counter plate alone.
         tactile_gap_warning();
+
+        // DOUBLE-SIDED REQUIRES TACTILE / DOTS TOO CLOSE, and TACTILE WALL TOO
+        // THIN - shown on this plate for the same reason as tactile_gap_warning
+        // above. All no-ops unless their condition holds.
+        ds_mode_warnings();
+        tactile_seam_wall_warning();
     }
 }
 
