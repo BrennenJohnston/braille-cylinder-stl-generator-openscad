@@ -40,25 +40,14 @@ TACTILE_SLIDERS = {
     "tactile_recess_extra_depth": ("0.2", "[0:0.05:1]"),
 }
 
-# 2026-08-18: the canonical defaults were aligned to the web app (length
-# 5.0 -> 10.0 mm, raise 0.8 -> 0.5 mm). The MakerWorld build is re-flattened by
-# its own phase and still carries the old pair, so the gap is pinned here rather
-# than left to make the guard quietly wrong. Delete these two entries in the same
-# change that re-flattens the variant.
-MAKERWORLD_PENDING_REFLATTEN = {
-    "tactile_indicator_length": "5.0",
-    "tactile_indicator_raise": "0.8",
-}
-
-# How many braille-cell walks read the shared column-shift expression. Two plate
-# modules, plus - in the canonical file since the double-sided phases -
-# ds_back_placements(), which walks the back text through the same expression
-# for BOTH plates so the back layout cannot drift from the front, and
-# ds_front_recesses(), the counter plate's 1:1 front-bowl walk. The MakerWorld
-# build is re-flattened in its own phase and still carries only the two. Raise
-# its entry to match the canonical one in the same change that re-flattens the
-# variant.
-COLUMN_SHIFT_WALKS = {CANONICAL: 4, MAKERWORLD: 2}
+# How many braille-cell walks read the shared column-shift expression: the two
+# plate modules, plus ds_back_placements(), which walks the back text through
+# the same expression for BOTH plates so the back layout cannot drift from the
+# front, and ds_front_recesses(), the counter plate's 1:1 front-bowl walk. One
+# number for both builds since the 2026-08-21 re-flatten; the geometry body is
+# byte-identical (tests/test_makerworld_sync.py), so the count cannot diverge
+# again without that guard failing first.
+COLUMN_SHIFT_WALKS = 4
 
 BOTH_BUILDS = pytest.mark.parametrize(
     "scad_path", [CANONICAL, MAKERWORLD], ids=["canonical", "makerworld"]
@@ -99,8 +88,6 @@ def test_indicator_mode_dropdown(scad_path):
 def test_tactile_slider_declared(scad_path, name):
     """Each tactile slider keeps its documented default and range."""
     default, rng = TACTILE_SLIDERS[name]
-    if scad_path == MAKERWORLD and name in MAKERWORLD_PENDING_REFLATTEN:
-        default = MAKERWORLD_PENDING_REFLATTEN[name]
     scad = _read(scad_path)
     expected = f"{name} = {default}; // {rng}"
     assert expected in scad, (
@@ -256,8 +243,9 @@ def test_constants_are_declared_before_the_values_that_use_them(scad_path):
 
 
 # ---------------------------------------------------------------------------
-# Tactile seam-recess wall guard (canonical only; the MakerWorld variant is
-# re-flattened in its own phase)
+# Tactile seam-recess wall guard. Canonical only, and it stays that way: the
+# guard lives BELOW the MakerWorld sync marker, so the byte-identical body check
+# in tests/test_makerworld_sync.py already carries it into the variant.
 # ---------------------------------------------------------------------------
 
 
@@ -366,7 +354,7 @@ def test_visual_marker_columns_are_gated_off_in_tactile_mode(scad_path):
 def test_column_shift_drops_the_marker_cells_in_tactile_mode(scad_path):
     """Text starts at column 0 in Tactile mode, and the grid stops widening."""
     scad = _read(scad_path)
-    expected = COLUMN_SHIFT_WALKS[scad_path]
+    expected = COLUMN_SHIFT_WALKS
     assert (
         scad.count(
             "actual_col = tactile_on ? col :\n"
