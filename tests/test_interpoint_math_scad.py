@@ -63,6 +63,16 @@ TOLERANCE_MM = 0.001
 #   gap_active         the same gap for the ACTIVE preset's package; the
 #                      shipped default preset is 0.4mm, so this equals
 #                      gap_package_04.
+#   gap_active_printed the SAME gap measured on the bowl's PRINTED mouth
+#                      (2 * DS_BOWL_R) rather than its nominal diameter. The
+#                      bowl is a hemisphere centred on the surface, so the
+#                      mouth is wider than DS_BOWL_DIA and the real ridge is
+#                      narrower than every nominal gap above - 0.428 mm at the
+#                      default preset against the nominal 0.468. Reported only:
+#                      the DOTS TOO CLOSE warning and the render guard still
+#                      measure the nominal, as all three generators do. Pinned
+#                      here so the understatement stays visible and measured
+#                      while the threshold decision is open (Phase 12 sign-off).
 #   gap_single_sided   the same gap for the web app's single-sided sizes
 #                      (dot 1.5, bowl 1.8). The documented failure case: below
 #                      the 0.34 mm floor a 0.4 mm nozzle can hold.
@@ -74,6 +84,7 @@ EXPECTED_MM = {
     "gap_package_03": 0.518,
     "gap_package_04": 0.468,
     "gap_active": 0.468,
+    "gap_active_printed": 0.428,
     "gap_single_sided": 0.118,
     "gap_legacy_cone": -0.032,
 }
@@ -190,6 +201,31 @@ class TestSelfCheckValues:
         assert self_check_values["gap_package_04"] >= 0.34
         assert self_check_values["gap_single_sided"] < 0.34
         assert self_check_values["gap_legacy_cone"] < 0
+
+    def test_the_printed_ridge_is_narrower_than_the_nominal_gap(self, self_check_values):
+        """
+        Every gap above is measured on the NOMINAL bowl diameter, but the bowl
+        is cut as a hemisphere centred on the shell surface, so its printed
+        mouth is 2 * DS_BOWL_R - wider. The nominal numbers therefore OVERSTATE
+        the material actually left between a raised dot and its neighbouring
+        recess, in all three generators alike.
+
+        This is a reported measurement, not a threshold: the printed ridge still
+        clears the 0.34 mm floor at the shipped defaults (0.428 mm, measured
+        printing clean 2026-08-20). Whether the warning should move onto it is a
+        physical decision that has to change both repos together.
+        """
+        printed = self_check_values["gap_active_printed"]
+        nominal = self_check_values["gap_active"]
+        assert printed < nominal, (
+            f"The printed ridge ({printed} mm) should be narrower than the "
+            f"nominal gap ({nominal} mm); the bowl's printed mouth is 2 * "
+            "DS_BOWL_R, which is wider than DS_BOWL_DIA."
+        )
+        assert printed >= 0.34, (
+            f"The printed ridge is {printed} mm, below the 0.34 mm a 0.4 mm "
+            "nozzle can hold. The shipped footprints would not print."
+        )
 
 
 class TestGuards:

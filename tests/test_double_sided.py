@@ -62,8 +62,10 @@ PRESETS_FILE = PROJECT_ROOT / "presets.scad"
 sys.path.insert(0, str(Path(__file__).parent))
 
 from test_text_too_long import (  # noqa: E402  (shared helpers)
+    BRAILLE_FULL_CELL,
     _resolve_openscad_path,
     _scad_constant,
+    _z_max,
 )
 
 # The reference model. Front "a b c" is 5 raised dots, back "d e f" is 8 bowls -
@@ -991,10 +993,14 @@ class TestSourceGuards:
     def test_warning_strings_are_present(self, scad_source):
         """
         DRAFT wording, pending sign-off. If these strings change, the change was
-        reviewed - update this guard in the same edit.
+        reviewed - update this guard in the same edit. The last three arrived
+        with the Customizer tab (Phase 12) and are on the same sign-off list.
         """
         assert '"DOUBLE-SIDED REQUIRES TACTILE"' in scad_source
         assert '"DOTS TOO CLOSE: "' in scad_source
+        assert '"WARNING: Back_Line_"' in scad_source
+        assert '"WARNING: back text reaches Back_Line_"' in scad_source
+        assert '"Double-sided: this render is Cylinder "' in scad_source
 
     def test_crowding_warning_uses_the_constants_not_literals(self, scad_source):
         assert re.search(
@@ -1074,3 +1080,255 @@ class TestSourceGuards:
             r'ds_braille_dot_centered\(\);',
             scad_source,
         ), "ds_back_raised_dots() must be a thin wrapper over ds_back_placements()."
+
+
+# ---------------------------------------------------------------------------
+# Phase 12: the Customizer surface, and the back-line validation it carries
+# ---------------------------------------------------------------------------
+
+DS_TAB = "/* [Double-Sided Card (BETA)] */"
+# tests/validate_parameter_schema.py stops parsing at the FIRST /* [Hidden] */,
+# and the Customizer hides everything grouped under one, so a control declared
+# below it reaches neither.
+FIRST_HIDDEN = "/* [Hidden] */"
+SYNC_MARKER = "// BACKWARD COMPATIBILITY - Test System Parameters"
+
+
+def _ds_tab_body(scad_source):
+    """Everything between the double-sided tab header and the next tab header."""
+    start = scad_source.index(DS_TAB)
+    return scad_source[start : scad_source.index("/* [", start + len(DS_TAB))]
+
+
+class TestCustomizerSurface:
+    """
+    The double-sided controls became user-facing in Phase 12. Text-only, so they
+    run in the no-OpenSCAD CI job.
+    """
+
+    def test_the_tab_exists_and_sits_above_both_markers(self, scad_source):
+        assert DS_TAB in scad_source, "The [Double-Sided Card (BETA)] tab is missing."
+        assert scad_source.index(DS_TAB) < scad_source.index(FIRST_HIDDEN), (
+            "The tab must sit above the first /* [Hidden] */ or neither the "
+            "Customizer nor the parameter-schema validator will see its controls."
+        )
+        assert scad_source.index(DS_TAB) < scad_source.index(SYNC_MARKER), (
+            "Everything from the MakerWorld sync marker to EOF is re-flattened in "
+            "its own phase, so parameters must stay above it."
+        )
+
+    def test_the_tab_holds_every_double_sided_control(self, scad_source):
+        body = _ds_tab_body(scad_source)
+        assert 'double_sided = "Off"; // [Off, On]' in body, (
+            "The gate must be a dropdown in this tab, defaulting to Off so "
+            "toggle-off behaviour stays the single-sided behaviour."
+        )
+        missing = [
+            f"Back_Line_{n}"
+            for n in range(1, 11)
+            if not re.search(rf'^Back_Line_{n}\s*=\s*""', body, re.MULTILINE)
+        ]
+        assert not missing, (
+            f"Back_Line fields outside the double-sided tab: {missing}. All ten "
+            "rows live here - the front's 8 + 2 split exists only to cap the "
+            "always-visible main text tab at eight fields."
+        )
+        for axis in ("x", "y"):
+            assert f"interpoint_offset_{axis}_mm = 1.25; // [1.15:0.01:1.35]" in body
+
+    def test_the_offset_sliders_match_the_range_the_guard_enforces(self, scad_source):
+        """
+        A slider wider than the assert lets a user pick a value that refuses to
+        render; a narrower one hides legal values. They must be the same numbers.
+        """
+        low = _scad_constant("DS_OFFSET_MIN_MM")
+        high = _scad_constant("DS_OFFSET_MAX_MM")
+        for axis in ("x", "y"):
+            match = re.search(
+                rf"^interpoint_offset_{axis}_mm\s*=\s*[\d.]+\s*;\s*//\s*"
+                r"\[([\d.]+):[\d.]+:([\d.]+)\]",
+                scad_source,
+                re.MULTILINE,
+            )
+            assert match, f"interpoint_offset_{axis}_mm is not declared as a slider"
+            assert (float(match.group(1)), float(match.group(2))) == (low, high), (
+                f"interpoint_offset_{axis}_mm slider is "
+                f"[{match.group(1)}, {match.group(2)}] but the render guard "
+                f"enforces [{low}, {high}]."
+            )
+
+    def test_ds_self_check_stays_hidden(self, scad_source):
+        """A test hook, not a user control."""
+        assert scad_source.index(FIRST_HIDDEN) < scad_source.index("ds_self_check ="), (
+            "ds_self_check must stay under a /* [Hidden] */ group; exposing it "
+            "would put a debug echo switch in front of users."
+        )
+
+    def test_the_footprints_are_not_exposed_as_dials(self, scad_source):
+        """
+        FD-8/FD-9: the ds dot and bowl ship fixed and keyed to
+        paper_thickness_preset. Tactile geometry is the accessibility feature -
+        it must not become something a user can nudge from the Customizer.
+        """
+        body = _ds_tab_body(scad_source)
+        exposed = [
+            name
+            for name in (
+                "DS_DOT_BASE_DIA",
+                "DS_DOT_BASE_H",
+                "DS_DOT_DOME_DIA",
+                "DS_DOT_DOME_H",
+                "DS_BOWL_DIA",
+                "DS_BOWL_DEPTH",
+            )
+            if name in body
+        ]
+        assert not exposed, f"Double-sided footprints exposed in the Customizer: {exposed}"
+
+
+class TestBackLineValidationSource:
+    """
+    Phase 10 wired the back text into the geometry but deliberately left the
+    warnings out, so English pasted into a Back_Line produced a silently blank
+    back side and nothing said why. These pin the fix.
+    """
+
+    def test_invalid_characters_covers_the_back_lines_on_both_plates(self, scad_source):
+        start = scad_source.index("module invalid_characters_warning()")
+        body = scad_source[start : scad_source.index("\n}\n", start)]
+        assert "_all_lines" in body and "_all_back_lines" in body, (
+            "The INVALID CHARACTERS check must read both faces' line lists."
+        )
+        assert "ds_on" in body, (
+            "The back half of the check must be gated on the double-sided gate, "
+            "so back text that is never read is never complained about."
+        )
+        assert scad_source.count("invalid_characters_warning();") == 2, (
+            "Both plates must render it. In double-sided mode the BACK text is "
+            "what the COUNTER plate raises, so a bad Back_Line blanks that plate."
+        )
+
+    def test_cell_capacity_counts_the_back_lines(self, scad_source):
+        assert (
+            "_back_max_line_len  = ds_on ? max([for (l = _all_back_lines) len(l)]) : 0;"
+            in scad_source
+        ), "The cell-capacity check must measure the back lines while ds_on."
+        assert (
+            "max_line_len = max(_front_max_line_len, _back_max_line_len);" in scad_source
+        ), "TEXT TOO LONG must fire on the widest row of EITHER face."
+
+    def test_row_capacity_counts_the_back_lines(self, scad_source):
+        assert "rows_used = max(_front_rows_used, _back_rows_used);" in scad_source, (
+            "TOO MANY LINES must fire on the deepest filled row of EITHER face."
+        )
+        assert "too_many_rows = rows_used > active_grid_rows" in scad_source
+        assert "_filled_back_row_idx = ds_on" in scad_source, (
+            "The back row scan must be gated on the double-sided gate."
+        )
+
+
+class TestBackLineWarningsRender:
+    """The warnings actually fire - and only while the gate is On."""
+
+    @pytest.fixture(scope="class")
+    def baseline_z(self, ds_runner, _trimesh, tmp_path_factory):
+        """Z-max of the reference double-sided model, which warns about nothing."""
+        tmp_path = tmp_path_factory.mktemp("ds_warn_baseline")
+        stl_path, output = _render(ds_runner, tmp_path, _ds_params(), "ds_baseline")
+        assert "WARNING:" not in output, (
+            "The reference double-sided model must render clean - scad-check.ps1 "
+            f"greps for exactly that token.\noutput (truncated): {output[:800]}"
+        )
+        return _z_max(_trimesh, stl_path)
+
+    def test_english_in_a_back_line_warns_in_3d(
+        self, ds_runner, _trimesh, tmp_path, baseline_z
+    ):
+        """
+        get_dot_pattern() returns an all-zero pattern for non-braille, so
+        untranslated back text renders no bowls at all. Without the warning the
+        export looks finished and the back of the card comes out empty.
+        """
+        stl_path, _ = _render(
+            ds_runner, tmp_path, _ds_params(Back_Line_1="hello"), "ds_back_invalid"
+        )
+        depth = _scad_constant("INVALID_TEXT_DEPTH")
+        z_max = _z_max(_trimesh, stl_path)
+        assert z_max >= baseline_z + depth, (
+            f"English in Back_Line_1 did not raise the bounding box by "
+            f"INVALID_TEXT_DEPTH ({depth} mm): baseline={baseline_z:.3f}, "
+            f"invalid={z_max:.3f}. The INVALID CHARACTERS warning did not fire, "
+            "which is the silently blank back side this check exists to prevent."
+        )
+
+    def test_the_gate_keeps_the_back_check_quiet(
+        self, ds_runner, _trimesh, tmp_path, baseline_z
+    ):
+        """Off must not complain about back text it never reads."""
+        stl_path, _ = _render(
+            ds_runner,
+            tmp_path,
+            _ds_params(double_sided="Off", Back_Line_1="hello"),
+            "off_back_invalid",
+        )
+        assert _z_max(_trimesh, stl_path) < baseline_z + 1.0, (
+            "double_sided Off rendered an INVALID CHARACTERS warning for back "
+            "text that never reaches the geometry."
+        )
+
+    def test_an_over_capacity_back_line_names_the_field(self, ds_runner, tmp_path):
+        capacity = _scad_constant("grid_columns")
+        _, output = _render(
+            ds_runner,
+            tmp_path,
+            _ds_params(Back_Line_1=BRAILLE_FULL_CELL * (capacity + 2)),
+            "back_too_long",
+        )
+        assert "WARNING: Back_Line_1 uses" in output, (
+            "An over-capacity back line must name Back_Line_1, not send the user "
+            f"hunting through the front text.\noutput (truncated): {output[:800]}"
+        )
+
+    def test_a_back_line_past_the_grid_names_the_field(self, ds_runner, tmp_path):
+        rows = _scad_constant("grid_rows")
+        _, output = _render(
+            ds_runner,
+            tmp_path,
+            _ds_params(**{f"Back_Line_{rows + 1}": BACK_TEXT}),
+            "back_too_many_rows",
+        )
+        assert f"WARNING: back text reaches Back_Line_{rows + 1}" in output, (
+            "A back line past grid_rows must say so; those rows cannot be drawn "
+            f"under any setting.\noutput (truncated): {output[:800]}"
+        )
+
+    def test_the_export_hint_names_the_right_cylinder(self, ds_runner, tmp_path):
+        """
+        Double-sided renders come in pairs and the two STLs have to be told
+        apart after export. Deliberately NOT a WARNING line - scad-check.ps1
+        treats that token as a failure.
+        """
+        _, a_out = _render(ds_runner, tmp_path, _ds_params(), "hint_a")
+        _, b_out = _render(
+            ds_runner, tmp_path, _ds_params(plate_type="negative"), "hint_b"
+        )
+        assert "this render is Cylinder A" in a_out and "Cylinder_A_" in a_out
+        assert "this render is Cylinder B" in b_out and "Cylinder_B_" in b_out
+        assert "WARNING:" not in a_out and "WARNING:" not in b_out
+
+    def test_the_lowercase_gate_reaches_the_geometry(self, ds_runner, tmp_path):
+        """
+        The test system passes -D double_sided='"on"'. It must switch the mode
+        on exactly like the Customizer's "On", the way plate_type accepts
+        "positive" beside "Embossing Plate".
+        """
+        _, output = _render(
+            ds_runner,
+            tmp_path,
+            _ds_params(double_sided="on", ds_self_check=True),
+            "lowercase_gate",
+        )
+        assert "DS_PAIR A back_recess" in output, (
+            "double_sided='on' did not reach the back-grid walk.\n"
+            f"output (truncated): {output[:800]}"
+        )

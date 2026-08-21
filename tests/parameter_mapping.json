@@ -2,8 +2,8 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "OpenSCAD to Web API Parameter Mapping",
   "description": "Machine-readable mapping between OpenSCAD customizer variables and web API parameters. Source of truth for cross-platform validation.",
-  "version": "2.5.0",
-  "last_updated": "2026-08-18",
+  "version": "2.6.0",
+  "last_updated": "2026-08-20",
   "documentation": "See docs/PARAMETER_MAPPING.md for human-readable version",
   
   "ui_parameter_format": {
@@ -126,6 +126,143 @@
       "note": "OpenSCAD-only toggle; the web app validates cell counts before generation instead"
     },
     {
+      "openscad_name": "double_sided",
+      "web_api_name": "double_sided_enabled",
+      "web_ui_label": "Double-Sided Card (BETA)",
+      "type": "enum",
+      "default": "Off",
+      "values": ["Off", "On"],
+      "test_system_values": ["off", "on"],
+      "value_mapping": {
+        "off": "Off",
+        "on": "On",
+        "Off": "Off",
+        "On": "On"
+      },
+      "section": "Double-Sided Card (BETA)",
+      "description": "BETA: emboss BOTH faces of one card in a single pass. On forces Tactile row indicators, replaces the counter plate's universal recess grid with 1:1 paired seats, and turns the two plates into Cylinder A (Embossing Plate) and Cylinder B (Counter Plate).",
+      "note": "Web schema home: double_sided.enabled; on the wire it is the flat integer double_sided_enabled (0/1), and it is never sent for cards. OpenSCAD normalizes both the Customizer's On/Off and the lowercase on/off the test system passes with -D."
+    },
+    {
+      "openscad_name": "Back_Line_1",
+      "web_api_name": "back_lines[0]",
+      "web_ui_label": "Back of Card, Line 1",
+      "type": "string",
+      "default": "",
+      "section": "Double-Sided Card (BETA)",
+      "description": "First line of BACK-of-card braille text (Unicode braille characters); read only while double_sided is On",
+      "note": "COMPOSITE MAPPING. OpenSCAD needs one fixed field per row because the Customizer cannot add fields on demand; the web app carries the whole back face as ONE top-level array, `back_lines`, sent beside `lines`. So Back_Line_1..Back_Line_10 map onto back_lines[0]..back_lines[9] as a group, exactly as Line_1..Line_10 map onto the front `lines` array. The settings-file spelling is text.back_lines and the Python keyword is back_lines=.",
+      "validation": {
+        "pattern": "^[\\u2800-\\u28FF]*$"
+      }
+    },
+    {
+      "openscad_name": "Back_Line_2",
+      "web_api_name": "back_lines[1]",
+      "web_ui_label": "Back of Card, Line 2",
+      "type": "string",
+      "default": "",
+      "section": "Double-Sided Card (BETA)",
+      "description": "Second line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "Back_Line_3",
+      "web_api_name": "back_lines[2]",
+      "web_ui_label": "Back of Card, Line 3",
+      "type": "string",
+      "default": "",
+      "section": "Double-Sided Card (BETA)",
+      "description": "Third line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "Back_Line_4",
+      "web_api_name": "back_lines[3]",
+      "web_ui_label": "Back of Card, Line 4",
+      "type": "string",
+      "default": "",
+      "section": "Double-Sided Card (BETA)",
+      "description": "Fourth line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "Back_Line_5",
+      "web_api_name": "back_lines[4]",
+      "web_ui_label": "Back of Card, Line 5",
+      "type": "string",
+      "default": "",
+      "section": "Double-Sided Card (BETA)",
+      "description": "Fifth line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "Back_Line_6",
+      "web_api_name": "back_lines[5]",
+      "web_ui_label": "Back of Card, Line 6",
+      "type": "string",
+      "default": "",
+      "section": "Double-Sided Card (BETA)",
+      "description": "Sixth line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "Back_Line_7",
+      "web_api_name": "back_lines[6]",
+      "web_ui_label": "Back of Card, Line 7",
+      "type": "string",
+      "default": "",
+      "section": "Double-Sided Card (BETA)",
+      "description": "Seventh line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "Back_Line_8",
+      "web_api_name": "back_lines[7]",
+      "web_ui_label": "Back of Card, Line 8",
+      "type": "string",
+      "default": "",
+      "section": "Double-Sided Card (BETA)",
+      "description": "Eighth line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "Back_Line_9",
+      "web_api_name": "back_lines[8]",
+      "web_ui_label": "Back of Card, Line 9",
+      "type": "string",
+      "default": "",
+      "section": "Double-Sided Card (BETA)",
+      "description": "Ninth line of back-of-card braille text",
+      "note": "All ten back rows stay in this one tab, unlike the front's Line_1-8 / Line_9-10 split. That split exists only to keep the always-visible main text tab at eight fields; this tab is opt-in, so splitting it would send a double-sided user to a second tab - one that also holds single-sided fields - to finish one job."
+    },
+    {
+      "openscad_name": "Back_Line_10",
+      "web_api_name": "back_lines[9]",
+      "web_ui_label": "Back of Card, Line 10",
+      "type": "string",
+      "default": "",
+      "section": "Double-Sided Card (BETA)",
+      "description": "Tenth line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "interpoint_offset_x_mm",
+      "web_api_name": "interpoint_offset_x",
+      "web_ui_label": "Interpoint Offset (around the cylinder)",
+      "type": "float",
+      "default": 1.25,
+      "range": [1.15, 1.35],
+      "unit": "mm",
+      "section": "Double-Sided Card (BETA)",
+      "description": "Circumferential half of the diagonal shift between the front and back grids, measured around the cylinder",
+      "note": "Web schema home: double_sided.interpoint_offset_x_mm, flattened to the runtime name interpoint_offset_x. The 1.15-1.35 range is enforced by an assert in the .scad, so a value outside it stops the render rather than exporting an unprintable pair."
+    },
+    {
+      "openscad_name": "interpoint_offset_y_mm",
+      "web_api_name": "interpoint_offset_y",
+      "web_ui_label": "Interpoint Offset (along the axis)",
+      "type": "float",
+      "default": 1.25,
+      "range": [1.15, 1.35],
+      "unit": "mm",
+      "section": "Double-Sided Card (BETA)",
+      "description": "Axial half of the same diagonal shift, measured along the cylinder: back rows sit this far above the front rows",
+      "note": "Web schema home: double_sided.interpoint_offset_y_mm, flattened to interpoint_offset_y; the web repo's app/geometry/interpoint.py calls this same number offset_z. Range enforced by the same assert as the X offset."
+    },
+    {
       "openscad_name": "plate_type",
       "web_api_name": "plate_type",
       "web_ui_label": "Select Plate to Generate",
@@ -140,7 +277,8 @@
         "Counter Plate": "Counter Plate"
       },
       "section": "Plate Selection",
-      "description": "Which plate to generate"
+      "description": "Which plate to generate",
+      "note": "In double-sided (BETA) mode the two labels take on the paired roles the web app uses: \"Embossing Plate\" IS Cylinder A and \"Counter Plate\" IS Cylinder B, exported as Cylinder_A_*.stl / Cylinder_B_*.stl. Single-sided labels and filenames are never renamed."
     },
     {
       "openscad_name": "indicator_mode",
@@ -603,6 +741,7 @@
     "Version 2.0.0: Card support removed, cylinder-only operation",
     "Version 2.1.0: Paper thickness preset system added, defaults updated to match web app 0.4mm preset",
     "Version 2.2.0: Aggressive customizer polish (file rename, preset routing extraction, magic-number naming, $fn policy doc), TEXT TOO LONG warning geometry, expanded test coverage (presets/backward-compat/text-too-long suites, 3 new cross-platform fixtures, slider-range schema validator), split-repo cleanup (Plug Puller + CAD-to-OpenSCAD methodology extracted to sibling repos)",
+    "Version 2.6.0: Double-sided (interpoint) BETA reaches the Customizer. New '[Double-Sided Card (BETA)]' tab with the double_sided gate, Back_Line_1 - Back_Line_10, and the two interpoint offset sliders (1.15-1.35 mm each, assert-enforced). The double-sided footprints are deliberately NOT exposed: they ship fixed and keyed to paper_thickness_preset. ds_self_check stays hidden - it is a test hook, not a user control",
     "Version 2.5.0: Cross-repo parity audit (Phase 08). The only two numeric drifts in the 46-parameter surface were aligned to the web app: tactile_indicator_length 5.0 -> 10.0 mm and tactile_indicator_raise 0.8 -> 0.5 mm. The MakerWorld variant still carries the old pair until its own re-flatten phase",
     "Version 2.4.0: Line_5 - Line_10 added so the Customizer exposes every row grid_rows allows; Line_9 and Line_10 sit in the 'More Braille Lines (Advanced)' section because the Customizer cannot add fields on demand",
     "This mapping is the source of truth for cross-platform validation",
@@ -615,6 +754,8 @@
     "Web UI label 'Card Thickness' is NOT card geometry—it's a parametric memory system for known-good values",
     "Rendering quality parameters affect mesh resolution, not actual geometry dimensions",
     "All spatial units are millimeters (mm)",
-    "All angular units are degrees (°)"
+    "All angular units are degrees (°)",
+    "Back_Line_1..Back_Line_10 are a COMPOSITE mapping onto the web app's single top-level back_lines array (settings-file spelling text.back_lines, Python keyword back_lines=), the same way Line_1..Line_10 map onto lines. OpenSCAD needs one fixed field per row because the Customizer cannot add fields on demand",
+    "Double-sided dot and bowl footprints have no Customizer entry ON PURPOSE. They are fixed and keyed to paper_thickness_preset: '0.3mm' renders Option B, anything else renders Q2 (research memory FD-8/FD-9, 2026-08-20). Keep them in lockstep with app/geometry/interpoint.py DS_FOOTPRINTS_BY_PRESET in the web repo"
   ]
 }

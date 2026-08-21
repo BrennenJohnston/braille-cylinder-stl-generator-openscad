@@ -7,6 +7,22 @@
 //  • Cylinder Emboss Plate (Raised Dots) — dots on outer cylinder surface
 //  • Cylinder Counter Plate (Hemispherical Recesses) — recesses on outer surface
 //
+//  DOUBLE-SIDED CARD (BETA) — set double_sided = On to emboss BOTH faces of one
+//  card in a single pass between the two cylinders. The same two plates take on
+//  paired jobs, and each one then carries raised dots AND recesses:
+//  • Cylinder A = the Embossing Plate. The FRONT text as raised dots, plus one
+//    recessed seat for every BACK dot the other cylinder raises.
+//  • Cylinder B = the Counter Plate. The BACK text as raised dots, plus one
+//    recessed seat for every FRONT dot Cylinder A raises.
+//  Two things change in this mode. There is NO universal recess grid — every
+//  recess is the 1:1 partner of an actual dot, so a seat can never sit under
+//  this plate's own raised dot. And the row indicators are always TACTILE (the
+//  raised seam arrows), because the paired seats occupy the ground the Visual
+//  marker columns would stand on, and a blind user needs the arrow to tell the
+//  two cylinders apart. Choosing Visual while double_sided is On is overridden,
+//  and the model says so on the console and in red text above the cylinder.
+//  WORDING NOT YET SIGNED OFF - draft text pending review (REVIEW-BRENNEN).
+//
 // =============================================================================
 // BEFORE YOU START
 // =============================================================================
@@ -28,9 +44,16 @@
 //  4. Type your English text in the left box
 //  5. Copy the braille output (right box showing characters like ⠓⠑⠇⠇⠕)
 //  6. In OpenSCAD's Customizer, paste into the Line_1, Line_2, etc. fields
+//  7. DOUBLE-SIDED (BETA) only — the back of the card is translated exactly the
+//     same way: same site, same grade, Unicode Braille output. Paste that
+//     output into the Back_Line_1, Back_Line_2, … fields under the
+//     [Double-Sided Card (BETA)] tab. Back lines obey the same rules as the
+//     front — pre-translated Unicode braille only, same cell capacity per row,
+//     same row limit — and the same warnings cover them.
 //
 //  IMPORTANT: If you paste ordinary English letters or see "INVALID CHARACTERS"
 //  warning, re-translate on Branah and ensure Unicode Braille is selected.
+//  WORDING NOT YET SIGNED OFF - draft text pending review (REVIEW-BRENNEN).
 //
 // =============================================================================
 // QUICK START GUIDE
@@ -45,6 +68,12 @@
 //  5. Choose dot_shape: Rounded or Cone (affects both plates)
 //  6. Adjust dimensions in Expert Mode if needed
 //  7. Render (F6) → File → Export → STL
+//  8. DOUBLE-SIDED (BETA): turn double_sided On, fill the Back_Line fields,
+//     then render each plate_type once — export the Embossing Plate as
+//     Cylinder_A_<your name>.stl and the Counter Plate as
+//     Cylinder_B_<your name>.stl. The console prints the suggested name for
+//     whichever plate you are rendering.
+//     WORDING NOT YET SIGNED OFF - draft text pending review (REVIEW-BRENNEN).
 //
 // =============================================================================
 // PARAMETER ORGANIZATION
@@ -54,6 +83,8 @@
 //  MAIN CONTROLS (always visible):
 //  • Text Input - Pre-Translated Braille (Line_1 - Line_8)
 //  • More Braille Lines (Advanced) (Line_9 - Line_10, the grid_rows maximum)
+//  • Double-Sided Card (BETA) (the double_sided gate, Back_Line_1 -
+//    Back_Line_10, and the two interpoint offsets)
 //  • Plate Selection
 //
 //  EXPERT MODE (expandable submenus matching web UI):
@@ -109,8 +140,53 @@ text_limit_check = "On"; // [On, Off]
 Line_9 = ""; // Ninth line of braille text
 Line_10 = ""; // Tenth line of braille text
 
+/* [Double-Sided Card (BETA)] */
+// BETA - emboss BOTH faces of one card in a single pass. On turns the two
+// plates into a matched pair: the Embossing Plate becomes Cylinder A (front
+// text raised, one seat per back dot) and the Counter Plate becomes Cylinder B
+// (back text raised, one seat per front dot). Row indicators are forced to
+// Tactile and the counter plate's universal recess grid is replaced by 1:1
+// paired seats. Off is the normal single-sided workflow, unchanged.
+// WORDING NOT YET SIGNED OFF - draft text pending review (REVIEW-BRENNEN).
+double_sided = "Off"; // [Off, On]
+
+// The BACK face's braille, one field per row, in the same row order as
+// Line_1..Line_10 above. Pre-translated Unicode braille, translated exactly the
+// way the front is (see BRANAH WORKFLOW at the top of this file). Read only
+// while double_sided is On, so filling these changes nothing until you do.
+//
+// All ten rows live in this tab, unlike the front's 8 + 2 split. That split
+// exists to keep the always-visible main text tab at eight fields; this tab is
+// opt-in, so splitting it would only send a double-sided user to a second tab -
+// one that also holds single-sided fields - to finish one job.
+Back_Line_1 = ""; // First line of back-of-card braille text
+Back_Line_2 = ""; // Second line of back-of-card braille text
+Back_Line_3 = ""; // Third line of back-of-card braille text
+Back_Line_4 = ""; // Fourth line of back-of-card braille text
+Back_Line_5 = ""; // Fifth line of back-of-card braille text
+Back_Line_6 = ""; // Sixth line of back-of-card braille text
+Back_Line_7 = ""; // Seventh line of back-of-card braille text
+Back_Line_8 = ""; // Eighth line of back-of-card braille text
+Back_Line_9 = ""; // Ninth line of back-of-card braille text
+Back_Line_10 = ""; // Tenth line of back-of-card braille text
+
+// How far the back grid is shifted from the front grid, so a front dot and a
+// back dot never land on the same patch of paper and flatten each other. The
+// shift is diagonal: this is the part measured AROUND the cylinder (mm). The
+// 1.25 / 1.25 default is the industry interpoint offset and the value the
+// printed pairs were validated at; the 1.15-1.35 range is enforced, and a
+// value outside it stops the render.
+interpoint_offset_x_mm = 1.25; // [1.15:0.01:1.35]
+// The other half of the same diagonal shift, measured ALONG the cylinder axis
+// (mm) - back rows sit this far above the front rows.
+interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
+
 /* [Plate Selection] */
-// Choose which plate to generate
+// Choose which plate to generate. In DOUBLE-SIDED (BETA) mode the two names
+// take on the paired roles the web app uses: "Embossing Plate" IS Cylinder A
+// and "Counter Plate" IS Cylinder B, exported as Cylinder_A_*.stl and
+// Cylinder_B_*.stl. Single-sided keeps these names exactly as they are.
+// WORDING NOT YET SIGNED OFF - draft text pending review (REVIEW-BRENNEN).
 plate_type = "Embossing Plate"; // [Embossing Plate, Counter Plate]
 
 /* [Indicator Mode] */
@@ -120,7 +196,7 @@ indicator_mode = "Visual"; // [Visual, Tactile]
 tactile_indicator_width = 4.0; // [2:0.1:10]
 // Tactile only: indicator length measured along the cylinder axis (mm). The default is long enough for a fingertip to read the direction of the point in one pass; at the 10 mm default line_spacing it also means each row's arrow meets the base of the one above.
 tactile_indicator_length = 10.0; // [2:0.1:15]
-// Tactile only: how far the embossing plate's arrow stands proud of the surface (mm). Keep this BELOW the braille dot height so the dots — not the indicator — carry the rolling pressure.
+// Tactile only: how far the embossing plate's arrow stands proud of the surface (mm). Keep this BELOW the braille dot height so the dots — not the indicator — carry the rolling pressure. It also sets the wall: a deeper raise means a deeper counter-plate recess, and the material left between that recess floor and the polygonal cutout gets thinner. 1.2 mm is the printable floor, and the model warns on the console and in red 3D text below it. WORDING NOT YET SIGNED OFF (REVIEW-BRENNEN).
 tactile_indicator_raise = 0.5; // [0:0.1:2]
 // Tactile only: outline margin added around the counter plate's recess (mm), so the arrow still enters the recess when the two cylinders are slightly misaligned.
 tactile_recess_clearance = 0.2; // [0:0.05:1]
@@ -197,7 +273,7 @@ PI = 3.14159265359;
 include <presets.scad>;
 
 // =============================================================================
-// DOUBLE-SIDED (INTERPOINT) MATH  -  BETA, hidden until a later phase
+// DOUBLE-SIDED (INTERPOINT) MATH  -  BETA
 // =============================================================================
 //
 // Double-sided ("interpoint") mode embosses BOTH faces of one card in a single
@@ -207,10 +283,13 @@ include <presets.scad>;
 // "interpoint" offset - so a front dot and a back dot never land on the same
 // patch of paper and flatten each other.
 //
-// This section is MATH ONLY: constants, pure functions, self-checks and range
-// guards. No geometry reads it yet - the paired dot/recess placement arrives in
-// a later phase. `double_sided` is hidden and defaults to "Off", and with it Off
-// nothing here changes a single byte of the rendered model.
+// This section is the MATH: constants, pure functions, self-checks and range
+// guards. The geometry that reads them lives further down, in
+// ds_back_placements() and the two plate modules. The user-facing controls -
+// `double_sided`, `Back_Line_1..10` and the two interpoint offsets - are in the
+// [Double-Sided Card (BETA)] Customizer tab near the top of this file; the gate
+// defaults to "Off", and with it Off nothing here changes a single byte of the
+// rendered model.
 //
 // Ported from the web generator's app/geometry/interpoint.py, which stays the
 // authoritative implementation. The numbers are the approved 2026-08-16
@@ -219,41 +298,22 @@ include <presets.scad>;
 // PLACEMENT: this block sits ABOVE the BACKWARD COMPATIBILITY marker on purpose.
 // Everything from that marker to EOF must stay byte-identical to the MakerWorld
 // flattened build (tests/test_makerworld_sync.py), and that build is re-flattened
-// in its own phase. Anything added below the marker breaks that guard.
+// in its own phase. Anything added below the marker breaks that guard - which is
+// also why the Customizer tab above holds the parameters, and this block holds
+// only what derives from them.
 
 /* [Hidden] */
-// Master gate for double-sided mode. Accepts "On"/"Off" and the lowercase
-// "on"/"off" the test system uses, the same way plate_type and dot_shape accept
-// both the Customizer label and a lowercase form. Promoted to a visible
-// dropdown, with the offsets below, in a later phase.
-double_sided = "Off";
 // Print the self-check echoes below. Off in normal renders so scripts\scad-check.ps1
-// stays quiet; tests/test_interpoint_math_scad.py renders with this On.
+// stays quiet; tests/test_interpoint_math_scad.py renders with this On. A test
+// hook, not a user control, so it stays out of the Customizer.
 ds_self_check = false;
-// The interpoint offset actually used, in mm - how far the back grid is shifted
-// from the front grid. Hidden now; promoted with sliders limited to
-// DS_OFFSET_MIN_MM..DS_OFFSET_MAX_MM in a later phase.
-interpoint_offset_x_mm = 1.25; // circumferential, measured around the cylinder
-interpoint_offset_y_mm = 1.25; // axial, measured along the cylinder
 
-// The BACK face's braille, one field per row, in the same row order as
-// Line_1..Line_10. Hidden and empty for now; the Customizer tab that exposes
-// them - and the INVALID CHARACTERS / capacity warnings that must cover them -
-// arrive with the double-sided UI phase. Until then tests fill them with -D.
-// Read only when ds_on, so an empty set changes nothing.
-Back_Line_1 = "";
-Back_Line_2 = "";
-Back_Line_3 = "";
-Back_Line_4 = "";
-Back_Line_5 = "";
-Back_Line_6 = "";
-Back_Line_7 = "";
-Back_Line_8 = "";
-Back_Line_9 = "";
-Back_Line_10 = "";
-
-// Normalized gate. Declared here rather than beside is_emboss_plate / tactile_on
-// in CALCULATED VALUES because that section lives past the MakerWorld sync marker.
+// Normalized gate for the `double_sided` dropdown declared in the
+// [Double-Sided Card (BETA)] tab. Accepts the Customizer's "On"/"Off" and the
+// lowercase "on"/"off" the test system passes with -D, the same way plate_type
+// and dot_shape accept both the label and a lowercase form. Declared here rather
+// than beside is_emboss_plate / tactile_on in CALCULATED VALUES because that
+// section lives past the MakerWorld sync marker.
 ds_on = (double_sided == "On") || (double_sided == "on");
 
 // Back-face counterpart of _all_lines, under the same contract: the single
@@ -302,6 +362,13 @@ DS_BACK_DIRECTION = 1;
 // the web repo's app/geometry/interpoint.py DS_FOOTPRINTS_BY_PRESET; the
 // tests here pin both packages. Die heights above 1.0 mm scrape the
 // embosser's cylinder-holder housing - never raise them without Brennen.
+//
+// There is deliberately NO dial and NO fallback switch. The rejected
+// alternative, "Option A" (dot base dia 1.5 with the 1.3 bowl), leaves a
+// 0.368 mm ridge - under the 0.50 mm reliable line and close to the 0.34 mm
+// floor - and survives only as documented history in the web repo's
+// docs/specifications/INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md. Reviving it
+// would be a new decision, not a setting.
 ds_use_03_package = (paper_thickness_preset == "0.3mm");
 DS_DOT_BASE_DIA = 1.2;                            // both packages, mm
 DS_DOT_BASE_H   = ds_use_03_package ? 0.4 : 0.5;  // raised dot base height, mm
@@ -461,6 +528,20 @@ function ds_same_surface_min_gap(dot_dia, recess_dia, offx, offy,
 //   gap_package_04    Q2 (dot 1.2, bowl 1.4) - marginal BY DESIGN; the printed
 //                     0.428 mm ridge was measured clean 2026-08-20
 //   gap_active        the same gap for the ACTIVE preset's package
+//   gap_active_printed  the SAME gap measured on the bowl's PRINTED mouth
+//                     (2 * DS_BOWL_R) instead of its nominal diameter. The bowl
+//                     is cut as a hemisphere centred on the surface, so its
+//                     mouth is wider than DS_BOWL_DIA and the real ridge is
+//                     narrower than every gap above it: 0.495 mm for the 0.3
+//                     package where the nominal says 0.518, and 0.428 mm for
+//                     the 0.4 package where the nominal says 0.468. REPORTED
+//                     ONLY - the DOTS TOO CLOSE text and the render guard both
+//                     still measure the nominal, exactly as the web app's
+//                     checkDoubleSidedGap and app/geometry_spec.py do. Moving
+//                     all three onto this number is a physical-threshold
+//                     decision that has to change both repos together; it is on
+//                     Phase 12's sign-off list, with the printed 0.428 mm ridge
+//                     already measured printing clean (2026-08-20).
 //   gap_single_sided  the web app's single-sided sizes - the documented failure
 //                     case, below the 0.34 mm floor
 //   gap_legacy_cone   the legacy cone footprints - negative, i.e. overlapping
@@ -474,6 +555,7 @@ if (ds_self_check) {
     echo(str("DS_SELFCHECK gap_package_03=",    ds_same_surface_min_gap(1.2, 1.3, 1.25, 1.25)));
     echo(str("DS_SELFCHECK gap_package_04=",    ds_same_surface_min_gap(1.2, 1.4, 1.25, 1.25)));
     echo(str("DS_SELFCHECK gap_active=",        ds_same_surface_min_gap(DS_DOT_BASE_DIA, DS_BOWL_DIA, 1.25, 1.25)));
+    echo(str("DS_SELFCHECK gap_active_printed=", ds_same_surface_min_gap(DS_DOT_BASE_DIA, 2 * DS_BOWL_R, 1.25, 1.25)));
     echo(str("DS_SELFCHECK gap_single_sided=",  ds_same_surface_min_gap(1.5, 1.8, 1.25, 1.25)));
     echo(str("DS_SELFCHECK gap_legacy_cone=",   ds_same_surface_min_gap(1.8, 1.8, 1.25, 1.25)));
     echo(str("DS_SELFCHECK dot_height=",         DS_DOT_HEIGHT));
@@ -554,6 +636,18 @@ if (ds_forced_tactile)
     echo(str("WARNING: double_sided is On, so indicator_mode \"", indicator_mode,
              "\" has been overridden and this plate renders with tactile seam ",
              "arrows. Set indicator_mode = Tactile to clear this."));
+
+// Double-sided renders come in pairs, and the two STLs have to be told apart
+// after export. The names match the web app's double-sided flow, whose downloads
+// are Cylinder_A_*.stl and Cylinder_B_*.stl; single-sided filenames are never
+// renamed. Deliberately not a WARNING: it is a hint, and scripts\scad-check.ps1
+// treats that token as a failure.
+// WORDING NOT YET SIGNED OFF - draft string pending review (REVIEW-BRENNEN).
+if (ds_on)
+    echo(str("Double-sided: this render is Cylinder ", is_emboss_plate ? "A" : "B",
+             " (the ", is_emboss_plate ? "Embossing Plate" : "Counter Plate",
+             "). Suggested export filename: Cylinder_", is_emboss_plate ? "A" : "B",
+             "_<your name>.stl"));
 
 // Material left between a raised dot and its nearest neighbouring recess, both
 // of which share this surface in double-sided mode. The 336-point lattice sweep
@@ -712,7 +806,15 @@ _all_lines = [Line_1, Line_2, Line_3, Line_4, Line_5,
 // unchanged in every case. The check (and row clipping) can be bypassed with
 // text_limit_check = "Off", which renders every pasted cell — rows may then crowd
 // the seam.
-max_line_len = max([for (l = _all_lines) len(l)]);
+//
+// Double-sided: ds_back_placements() clips back columns to active_grid_columns
+// and back rows to active_grid_rows exactly as the front walk does, so the back
+// lines are measured by the same two checks and the WIDEST row on either face
+// decides. With the gate Off the back lines are never read and both numbers are
+// the front's, unchanged.
+_front_max_line_len = max([for (l = _all_lines) len(l)]);
+_back_max_line_len  = ds_on ? max([for (l = _all_back_lines) len(l)]) : 0;
+max_line_len = max(_front_max_line_len, _back_max_line_len);
 text_too_long = (text_limit_check == "On") && (max_line_len > active_grid_columns);
 
 // Row-capacity check. Only the first active_grid_rows rows are ever rendered, so
@@ -720,23 +822,44 @@ text_too_long = (text_limit_check == "On") && (max_line_len > active_grid_column
 // rows_used is the index of the last non-empty line + 1, which preserves blank
 // rows deliberately left between filled ones. Unlike the cell-capacity check this
 // is not gated on text_limit_check: extra rows cannot be rendered anyway, there is
-// no "draw it regardless" option to opt into.
+// no "draw it regardless" option to opt into. The DEEPEST row on either face wins.
 _filled_row_idx = [for (i = [0 : len(_all_lines) - 1]) if (len(_all_lines[i]) > 0) i];
-rows_used = len(_filled_row_idx) == 0 ? 0 : _filled_row_idx[len(_filled_row_idx) - 1] + 1;
+_front_rows_used = len(_filled_row_idx) == 0 ? 0 : _filled_row_idx[len(_filled_row_idx) - 1] + 1;
+_filled_back_row_idx = ds_on
+    ? [for (i = [0 : len(_all_back_lines) - 1]) if (len(_all_back_lines[i]) > 0) i]
+    : [];
+_back_rows_used = len(_filled_back_row_idx) == 0
+    ? 0
+    : _filled_back_row_idx[len(_filled_back_row_idx) - 1] + 1;
+rows_used = max(_front_rows_used, _back_rows_used);
 too_many_rows = rows_used > active_grid_rows;
 
 // Console diagnostics for desktop users (the MakerWorld customizer preview
-// cannot show console output — it relies on the extruded 3D warning text).
+// cannot show console output — it relies on the extruded 3D warning text). Each
+// message names the field that actually overflowed, so a double-sided user is
+// never sent hunting through the front text for a back-line problem.
+// WORDING NOT YET SIGNED OFF - the two Back_Line drafts pending review (REVIEW-BRENNEN).
 if (text_limit_check == "On") {
     for (i = [0 : len(_all_lines) - 1])
         if (len(_all_lines[i]) > active_grid_columns)
             echo(str("WARNING: Line_", i + 1, " uses ", len(_all_lines[i]), " cells; capacity is ", active_grid_columns, ". Raise grid_columns, split across rows, or set text_limit_check = Off."));
+    if (ds_on)
+        for (i = [0 : len(_all_back_lines) - 1])
+            if (len(_all_back_lines[i]) > active_grid_columns)
+                echo(str("WARNING: Back_Line_", i + 1, " uses ", len(_all_back_lines[i]), " cells; capacity is ", active_grid_columns, ". Raise grid_columns, split across rows, or set text_limit_check = Off."));
 }
-if (too_many_rows)
-    echo(str("WARNING: text reaches Line_", rows_used, " but grid_rows is ", active_grid_rows,
-             ", so Line_", active_grid_rows + 1, " onward will not be rendered. Raise grid_rows to ",
-             rows_used, " (the cylinder needs roughly ", rows_used * active_line_spacing,
-             " mm of height to hold that many rows)."));
+if (too_many_rows) {
+    if (_front_rows_used > active_grid_rows)
+        echo(str("WARNING: text reaches Line_", _front_rows_used, " but grid_rows is ", active_grid_rows,
+                 ", so Line_", active_grid_rows + 1, " onward will not be rendered. Raise grid_rows to ",
+                 _front_rows_used, " (the cylinder needs roughly ", _front_rows_used * active_line_spacing,
+                 " mm of height to hold that many rows)."));
+    if (_back_rows_used > active_grid_rows)
+        echo(str("WARNING: back text reaches Back_Line_", _back_rows_used, " but grid_rows is ", active_grid_rows,
+                 ", so Back_Line_", active_grid_rows + 1, " onward will not be rendered. Raise grid_rows to ",
+                 _back_rows_used, " (the cylinder needs roughly ", _back_rows_used * active_line_spacing,
+                 " mm of height to hold that many rows)."));
+}
 grid_height = (active_grid_rows - 1) * active_line_spacing;
 top_margin = (active_cylinder_height_mm - grid_height) / 2;
 
@@ -1040,6 +1163,28 @@ module tactile_recess_cut(y_pos) {
                 tactile_arrow_2d(tactile_indicator_width, tactile_indicator_length);
         tactile_shell_band(radius - tactile_indicator_raise - tactile_recess_extra_depth,
                            radius + TACTILE_RECESS_OVERCUT);
+    }
+}
+
+// Anything that is not Unicode braille renders NOTHING for that cell -
+// get_dot_pattern() returns an all-zero pattern - so without this warning the
+// plate comes out silently blank exactly where the text should be.
+//
+// Both plates show it, for the same reason tactile_gap_warning() does: the pair
+// is generated from one set of settings, and a MakerWorld user may render either
+// plate alone. In double-sided mode it also has to be on both, because the BACK
+// text is what the COUNTER plate raises - a bad Back_Line blanks that plate, not
+// this one. Back lines are checked with the same is_braille_char /
+// has_invalid_chars machinery as the front, and only while the gate is On.
+module invalid_characters_warning() {
+    invalid_front = len([for (l = _all_lines) if (has_invalid_chars(l)) 1]) > 0;
+    invalid_back  = ds_on && (len([for (l = _all_back_lines) if (has_invalid_chars(l)) 1]) > 0);
+
+    if (invalid_front || invalid_back) {
+        translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET])
+        color("red")
+        linear_extrude(height = INVALID_TEXT_DEPTH)
+        text("INVALID CHARACTERS", size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
     }
 }
 
@@ -1404,15 +1549,9 @@ module cylinder_emboss_plate() {
                 // Base cylinder
                 cylinder_shell(cutout_rotate_deg = -active_seam_offset_degrees);
 
-                // Check for invalid characters
-                invalid_found = len([for (l = _all_lines) if (has_invalid_chars(l)) 1]) > 0;
-                
-                if (invalid_found) {
-                    translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET])
-                    color("red")
-                    linear_extrude(height = INVALID_TEXT_DEPTH)
-                    text("INVALID CHARACTERS", size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
-                }
+                // INVALID CHARACTERS warning — covers the back lines too while
+                // double-sided is on (see invalid_characters_warning above).
+                invalid_characters_warning();
 
                 // TEXT TOO LONG warning (see top-level max_line_len /
                 // text_too_long; bypass with text_limit_check = "Off").
@@ -1619,6 +1758,11 @@ module cylinder_counter_plate() {
                 ds_front_recesses();
             }
         }
+
+        // INVALID CHARACTERS warning. Shown on this plate too: in double-sided
+        // mode the BACK text is what THIS cylinder raises, so untranslated back
+        // text blanks this plate and nothing else would say why.
+        invalid_characters_warning();
 
         // TACTILE GAP TOO SMALL warning (Tactile mode only; no-op otherwise). Sits
         // outside the difference() so the recess cuts can't eat it, and is shown on
