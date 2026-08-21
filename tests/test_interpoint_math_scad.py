@@ -38,7 +38,10 @@ SCAD_FILE = PROJECT_ROOT / "Braille_Cylinder_STL_Generator.scad"
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from test_text_too_long import _resolve_openscad_path  # noqa: E402  (shared helper)
+from test_text_too_long import (  # noqa: E402  (shared helpers)
+    _resolve_openscad_path,
+    _scad_constant,
+)
 
 # Tolerance the phase brief sets for every self-check value, in mm. OpenSCAD's
 # echo prints 6 significant figures, so the printed number differs from the exact
@@ -265,6 +268,57 @@ class TestGuards:
         )
         assert "ERROR:" not in output, f"Render reported an error:\n{output[:800]}"
 
+    # Measured 2026-08-20. Clearance peaks at DS_OFFSET_OPTIMUM_MM and falls off
+    # SYMMETRICALLY, so both ends of the slider fail together. Since the guard
+    # measures the bowl's printed mouth (Brennen's decision, same day), the
+    # renderable band depends on which package the card-stock preset selects:
+    # the 0.4 package's wider bowl costs it the outer 0.06 mm at each end, while
+    # the 0.3 package accepts the whole slider. The one-step pairs below
+    # (1.18/1.19 and 1.31/1.32) are the point - they pin the edge itself, not
+    # just a comfortable interior value.
+    @pytest.mark.parametrize(
+        ("offset", "preset", "should_render"),
+        [
+            (1.25, "0.4mm", True),   # the shipped default
+            (1.19, "0.4mm", True),   # narrowest the 0.4 package accepts
+            (1.18, "0.4mm", False),  # one 0.01 mm step outside it
+            (1.31, "0.4mm", True),   # widest the 0.4 package accepts
+            (1.32, "0.4mm", False),  # one step outside it
+            (1.15, "0.3mm", True),   # the 0.3 package keeps the whole slider
+            (1.35, "0.3mm", True),
+        ],
+    )
+    def test_printed_ridge_guard_band(
+        self, scad_runner, tmp_path, offset, preset, should_render
+    ):
+        result, output = _render(
+            scad_runner,
+            tmp_path,
+            {
+                "double_sided": "On",
+                "interpoint_offset_x_mm": offset,
+                "interpoint_offset_y_mm": offset,
+                "paper_thickness_preset": preset,
+            },
+            f"band_{preset}_{offset}".replace(".", "_"),
+        )
+        assert result.success == should_render, (
+            f"offset {offset} mm on the {preset} package: expected "
+            f"{'a clean render' if should_render else 'the printability guard to stop the render'}, "
+            f"got success={result.success}.\noutput (truncated): {output[:800]}"
+        )
+        if not should_render:
+            assert "too close to print" in output, (
+                "The render failed, but not on the printability guard.\n"
+                f"output (truncated): {output[:800]}"
+            )
+            assert f"toward {_scad_constant('DS_OFFSET_OPTIMUM_MM')}" in output, (
+                "The guard message must tell the user which way to move the "
+                "offsets; clearance peaks in the middle of the range, so "
+                "'out of range' alone points them the wrong way half the time.\n"
+                f"output (truncated): {output[:800]}"
+            )
+
 
 class TestSourceGuards:
     """Text-only checks, so they still run in the no-OpenSCAD CI job."""
@@ -291,6 +345,10 @@ class TestSourceGuards:
             # D1 offset range, and the printability thresholds behind the guard.
             ("DS_OFFSET_MIN_MM", 1.15),
             ("DS_OFFSET_MAX_MM", 1.35),
+            # The peak of the clearance sweep and both sliders' default. The
+            # guard message tells the user to move back toward it, so it must
+            # stay equal to the declared default of interpoint_offset_x/y_mm.
+            ("DS_OFFSET_OPTIMUM_MM", 1.25),
             ("DS_GAP_RELIABLE", 0.50),
             ("DS_GAP_FLOOR", 0.34),
             ("DS_AXIAL_STEP", 1.25),
@@ -334,6 +392,39 @@ class TestSourceGuards:
         assert match, f"{name} is not keyed on ds_use_03_package at the top level"
         assert float(match.group(1)) == pytest.approx(package_03)
         assert float(match.group(2)) == pytest.approx(package_04)
+
+    def test_the_guard_measures_the_printed_ridge_and_the_warning_does_not(
+        self, scad_source
+    ):
+        """
+        Brennen's decision, 2026-08-20. The bowl is cut as a hemisphere centred
+        on the shell surface, so its PRINTED mouth is 2 * DS_BOWL_R - wider than
+        DS_BOWL_DIA - and the nominal figure overstates the ridge by 0.023 mm
+        (0.3 package) to 0.040 mm (0.4 package). The hard assert, which is what
+        stops an unprintable export, now measures the printed number.
+
+        The DOTS TOO CLOSE warning deliberately did NOT move: it keeps reporting
+        the nominal, so it stays the same figure the web app's
+        checkDoubleSidedGap and app/geometry_spec.py show, and no warning
+        threshold had to be re-decided. If a later change unifies them, that is
+        a cross-repo physical decision, not a cleanup.
+        """
+        assert re.search(
+            r"ds_printed_ridge_mm\s*=\s*ds_on\s*\?\s*ds_same_surface_min_gap\(\s*"
+            r"DS_DOT_BASE_DIA,\s*2\s*\*\s*DS_BOWL_R,",
+            scad_source,
+        ), "The guard's ridge must be measured on the bowl's printed mouth, 2 * DS_BOWL_R."
+        assert "assert(ds_printed_ridge_mm >= DS_GAP_FLOOR," in scad_source, (
+            "The printability assert must test ds_printed_ridge_mm."
+        )
+        assert re.search(
+            r"ds_same_surface_gap\s*=\s*ds_on\s*\?\s*ds_same_surface_min_gap\("
+            r"DS_DOT_BASE_DIA,\s*DS_BOWL_DIA,",
+            scad_source,
+        ), (
+            "The DOTS TOO CLOSE warning must stay on the NOMINAL bowl diameter, "
+            "so it keeps reporting the same number as the web app."
+        )
 
     def test_double_sided_defaults_off(self, scad_source):
         """Toggle-off behavior is the single-sided behavior, so Off is the default."""

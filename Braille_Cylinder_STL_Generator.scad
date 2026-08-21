@@ -21,7 +21,7 @@
 //  marker columns would stand on, and a blind user needs the arrow to tell the
 //  two cylinders apart. Choosing Visual while double_sided is On is overridden,
 //  and the model says so on the console and in red text above the cylinder.
-//  WORDING NOT YET SIGNED OFF - draft text pending review (REVIEW-BRENNEN).
+//  Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 //
 // =============================================================================
 // BEFORE YOU START
@@ -53,7 +53,7 @@
 //
 //  IMPORTANT: If you paste ordinary English letters or see "INVALID CHARACTERS"
 //  warning, re-translate on Branah and ensure Unicode Braille is selected.
-//  WORDING NOT YET SIGNED OFF - draft text pending review (REVIEW-BRENNEN).
+//  Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 //
 // =============================================================================
 // QUICK START GUIDE
@@ -73,7 +73,7 @@
 //     Cylinder_A_<your name>.stl and the Counter Plate as
 //     Cylinder_B_<your name>.stl. The console prints the suggested name for
 //     whichever plate you are rendering.
-//     WORDING NOT YET SIGNED OFF - draft text pending review (REVIEW-BRENNEN).
+//     Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 //
 // =============================================================================
 // PARAMETER ORGANIZATION
@@ -147,7 +147,7 @@ Line_10 = ""; // Tenth line of braille text
 // (back text raised, one seat per front dot). Row indicators are forced to
 // Tactile and the counter plate's universal recess grid is replaced by 1:1
 // paired seats. Off is the normal single-sided workflow, unchanged.
-// WORDING NOT YET SIGNED OFF - draft text pending review (REVIEW-BRENNEN).
+// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 double_sided = "Off"; // [Off, On]
 
 // The BACK face's braille, one field per row, in the same row order as
@@ -186,7 +186,7 @@ interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
 // take on the paired roles the web app uses: "Embossing Plate" IS Cylinder A
 // and "Counter Plate" IS Cylinder B, exported as Cylinder_A_*.stl and
 // Cylinder_B_*.stl. Single-sided keeps these names exactly as they are.
-// WORDING NOT YET SIGNED OFF - draft text pending review (REVIEW-BRENNEN).
+// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 plate_type = "Embossing Plate"; // [Embossing Plate, Counter Plate]
 
 /* [Indicator Mode] */
@@ -196,7 +196,7 @@ indicator_mode = "Visual"; // [Visual, Tactile]
 tactile_indicator_width = 4.0; // [2:0.1:10]
 // Tactile only: indicator length measured along the cylinder axis (mm). The default is long enough for a fingertip to read the direction of the point in one pass; at the 10 mm default line_spacing it also means each row's arrow meets the base of the one above.
 tactile_indicator_length = 10.0; // [2:0.1:15]
-// Tactile only: how far the embossing plate's arrow stands proud of the surface (mm). Keep this BELOW the braille dot height so the dots — not the indicator — carry the rolling pressure. It also sets the wall: a deeper raise means a deeper counter-plate recess, and the material left between that recess floor and the polygonal cutout gets thinner. 1.2 mm is the printable floor, and the model warns on the console and in red 3D text below it. WORDING NOT YET SIGNED OFF (REVIEW-BRENNEN).
+// Tactile only: how far the embossing plate's arrow stands proud of the surface (mm). Keep this BELOW the braille dot height so the dots — not the indicator — carry the rolling pressure. It also sets the wall: a deeper raise means a deeper counter-plate recess, and the material left between that recess floor and the polygonal cutout gets thinner. 1.2 mm is the printable floor, and the model warns on the console and in red 3D text below it. Wording signed off by Brennen 2026-08-20.
 tactile_indicator_raise = 0.5; // [0:0.1:2]
 // Tactile only: outline margin added around the counter plate's recess (mm), so the arrow still enters the recess when the two cylinders are slightly misaligned.
 tactile_recess_clearance = 0.2; // [0:0.05:1]
@@ -330,6 +330,12 @@ _all_back_lines = [Back_Line_1, Back_Line_2, Back_Line_3, Back_Line_4, Back_Line
 // smallest front-to-back centre distance, at 1.767767 mm.
 DS_OFFSET_MIN_MM = 1.15;  // smallest offset the guards below accept, mm
 DS_OFFSET_MAX_MM = 1.35;  // largest offset the guards below accept, mm
+// The peak of that sweep, and the default both offset sliders ship at. Clearance
+// falls off SYMMETRICALLY either side of it - 1.15 and 1.35 measure the same
+// 1.626 mm - so "move back toward this number" is the fix whichever end of the
+// range a user has strayed to. Named here so the guard message below cannot
+// drift from the value the sliders actually default to.
+DS_OFFSET_OPTIMUM_MM = 1.25;
 
 // -----------------------------------------------------------------------------
 // D3 - WHICH WAY THE BACK GRID SHIFTS (signed off 2026-08-16)
@@ -426,7 +432,10 @@ DS_GAP_FLOOR    = 0.34;   // hard minimum, enforced by the guard below, mm
 // 2026-08-20), so for it the physical warning would only apply below the
 // floor - where the guard assert already stops the render first. In effect the
 // 0.4 package never renders the text; the self-check echoes still report the
-// gap. This threshold split is on Phase 12's warning sign-off list.
+// gap. This threshold split was RATIFIED by Brennen 2026-08-20, together with
+// the decision that the assert - and only the assert - measures the printed
+// ridge instead of the nominal one. The warning stays on the nominal figure so
+// it keeps reporting the same number as the web app's checkDoubleSidedGap.
 DS_GAP_ACCEPTED = ds_use_03_package ? DS_GAP_RELIABLE : DS_GAP_FLOOR;
 
 // Axial step between the front rows and the back rows: back rows sit 1.25 mm
@@ -534,14 +543,14 @@ function ds_same_surface_min_gap(dot_dia, recess_dia, offx, offy,
 //                     mouth is wider than DS_BOWL_DIA and the real ridge is
 //                     narrower than every gap above it: 0.495 mm for the 0.3
 //                     package where the nominal says 0.518, and 0.428 mm for
-//                     the 0.4 package where the nominal says 0.468. REPORTED
-//                     ONLY - the DOTS TOO CLOSE text and the render guard both
-//                     still measure the nominal, exactly as the web app's
-//                     checkDoubleSidedGap and app/geometry_spec.py do. Moving
-//                     all three onto this number is a physical-threshold
-//                     decision that has to change both repos together; it is on
-//                     Phase 12's sign-off list, with the printed 0.428 mm ridge
-//                     already measured printing clean (2026-08-20).
+//                     the 0.4 package where the nominal says 0.468. The
+//                     printability ASSERT measures this number (Brennen's
+//                     decision 2026-08-20); the DOTS TOO CLOSE text keeps
+//                     reporting the nominal, so it stays the same figure the
+//                     web app's checkDoubleSidedGap and app/geometry_spec.py
+//                     show. Echoed at the fixed 1.25 / 1.25 reference offsets,
+//                     like every gap above it - the guard's own live value is
+//                     ds_printed_ridge_mm, further down.
 //   gap_single_sided  the web app's single-sided sizes - the documented failure
 //                     case, below the 0.34 mm floor
 //   gap_legacy_cone   the legacy cone footprints - negative, i.e. overlapping
@@ -564,12 +573,36 @@ if (ds_self_check) {
     echo(str("DS_SELFCHECK bowl_printed_mouth=",  2 * DS_BOWL_R));
 }
 
+// The ridge the printability guard measures, at the user's ACTUAL offsets: the
+// material left between a raised dot and its neighbouring recess, using the
+// bowl's PRINTED mouth (2 * DS_BOWL_R) rather than its nominal diameter.
+//
+// Brennen's decision, 2026-08-20: the hard guard measures what actually prints.
+// The bowl is cut as a hemisphere centred on the shell surface, so its mouth is
+// wider than DS_BOWL_DIA and the nominal figure OVERSTATES the ridge - by
+// 0.023 mm for the 0.3 package and 0.040 mm for the 0.4 package. That gap is
+// exactly the band where the old nominal guard let through a ridge the printer
+// cannot hold. The DOTS TOO CLOSE warning below deliberately still reports the
+// nominal, matching the web app's checkDoubleSidedGap and app/geometry_spec.py;
+// only the assert moved, so no warning threshold had to be re-decided.
+//
+// Consequence, measured: with the shipped 0.4 package the renderable offset band
+// is 1.19-1.31 mm rather than the slider's full 1.15-1.35. The 0.3 package keeps
+// the whole range (its worst case is 0.354 mm, still above the floor). Clearance
+// peaks at DS_OFFSET_OPTIMUM_MM and falls off symmetrically, so both ends fail
+// together and moving back toward the middle is always the fix.
+ds_printed_ridge_mm = ds_on
+    ? ds_same_surface_min_gap(DS_DOT_BASE_DIA, 2 * DS_BOWL_R,
+                              interpoint_offset_x_mm, interpoint_offset_y_mm)
+    : 0;
+
 // -----------------------------------------------------------------------------
 // GUARDS
 // -----------------------------------------------------------------------------
 // Active only when double_sided is On. A failed assert stops the render and
 // fails scripts\scad-check.ps1 - that is the point. A pair printed outside these
 // ranges will not register, and nothing in a rendered preview would show it.
+// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 if (ds_on) {
     assert(interpoint_offset_x_mm >= DS_OFFSET_MIN_MM &&
            interpoint_offset_x_mm <= DS_OFFSET_MAX_MM,
@@ -577,9 +610,16 @@ if (ds_on) {
     assert(interpoint_offset_y_mm >= DS_OFFSET_MIN_MM &&
            interpoint_offset_y_mm <= DS_OFFSET_MAX_MM,
            "interpoint_offset_y_mm outside 1.15-1.35 range");
-    assert(ds_same_surface_min_gap(DS_DOT_BASE_DIA, DS_BOWL_DIA,
-                                   interpoint_offset_x_mm, interpoint_offset_y_mm) >= DS_GAP_FLOOR,
-           "double-sided dots and recesses too close to print");
+    assert(ds_printed_ridge_mm >= DS_GAP_FLOOR,
+           str("double-sided dots and recesses too close to print: this offset ",
+               "leaves only ", round(ds_printed_ridge_mm * 1000) / 1000,
+               " mm of material between a raised dot and the recess beside it, ",
+               "and ", DS_GAP_FLOOR, " mm is the printable minimum. Clearance is ",
+               "widest with both interpoint offsets at ", DS_OFFSET_OPTIMUM_MM,
+               " mm and narrows toward either end of the range, so move them ",
+               "back toward ", DS_OFFSET_OPTIMUM_MM,
+               " mm - or select the 0.3mm card stock preset, which pairs the ",
+               "same dot with a smaller bowl and accepts the whole range."));
 }
 
 // =============================================================================
@@ -642,7 +682,7 @@ if (ds_forced_tactile)
 // are Cylinder_A_*.stl and Cylinder_B_*.stl; single-sided filenames are never
 // renamed. Deliberately not a WARNING: it is a hint, and scripts\scad-check.ps1
 // treats that token as a failure.
-// WORDING NOT YET SIGNED OFF - draft string pending review (REVIEW-BRENNEN).
+// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 if (ds_on)
     echo(str("Double-sided: this render is Cylinder ", is_emboss_plate ? "A" : "B",
              " (the ", is_emboss_plate ? "Embossing Plate" : "Counter Plate",
@@ -838,7 +878,7 @@ too_many_rows = rows_used > active_grid_rows;
 // cannot show console output — it relies on the extruded 3D warning text). Each
 // message names the field that actually overflowed, so a double-sided user is
 // never sent hunting through the front text for a back-line problem.
-// WORDING NOT YET SIGNED OFF - the two Back_Line drafts pending review (REVIEW-BRENNEN).
+// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 if (text_limit_check == "On") {
     for (i = [0 : len(_all_lines) - 1])
         if (len(_all_lines[i]) > active_grid_columns)
@@ -1017,7 +1057,7 @@ tactile_seam_wall_mm =
 tactile_seam_wall_too_thin = tactile_on && (active_polygon_cutout_radius_mm > 0)
     && (tactile_seam_wall_mm < TACTILE_SEAM_WALL_MIN);
 
-// WORDING NOT YET SIGNED OFF - draft string pending review (REVIEW-BRENNEN).
+// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 if (tactile_seam_wall_too_thin)
     echo(str("WARNING: only ", round(tactile_seam_wall_mm * 1000) / 1000,
              " mm of wall is left between the tactile arrow recess and the ",
@@ -1205,7 +1245,7 @@ module tactile_gap_warning() {
 // print: warn in 3D, same reasons and same pattern as tactile_gap_warning
 // above. The counter plate is the one that cuts the recess, but both plates
 // call this - the pair is printed from one set of settings.
-// WORDING NOT YET SIGNED OFF - draft string pending review (REVIEW-BRENNEN).
+// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 module tactile_seam_wall_warning() {
     if (tactile_seam_wall_too_thin) {
         translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + 6 * INVALID_TEXT_STACK_GAP])
@@ -1220,7 +1260,7 @@ module tactile_seam_wall_warning() {
 // the MakerWorld customizer preview cannot show console output. Stacked one and
 // two steps above TOO MANY LINES, reusing the same placement constants.
 //
-// WORDING NOT YET SIGNED OFF - draft strings pending review.
+// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 module ds_mode_warnings() {
     if (ds_forced_tactile) {
         translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + 4 * INVALID_TEXT_STACK_GAP])

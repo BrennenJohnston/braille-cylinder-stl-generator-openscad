@@ -992,9 +992,10 @@ class TestSourceGuards:
 
     def test_warning_strings_are_present(self, scad_source):
         """
-        DRAFT wording, pending sign-off. If these strings change, the change was
-        reviewed - update this guard in the same edit. The last three arrived
-        with the Customizer tab (Phase 12) and are on the same sign-off list.
+        SIGNED OFF by Brennen 2026-08-20, as one batch of eight (the five here
+        plus the two tactile wall-guard strings in test_tactile_mode.py and the
+        printability guard message in test_interpoint_math_scad.py). Reword only
+        with his sign-off, and update this guard in the same edit.
         """
         assert '"DOUBLE-SIDED REQUIRES TACTILE"' in scad_source
         assert '"DOTS TOO CLOSE: "' in scad_source
@@ -1022,7 +1023,8 @@ class TestSourceGuards:
             "The physical DOTS TOO CLOSE warning must accept the 0.4 package's "
             "designed 0.468 mm gap (printed ridge measured clean 2026-08-20) and "
             "fire only below the floor there; the 0.3 package keeps the reliable "
-            "line. The threshold split awaits Phase 12 ratification."
+            "line. RATIFIED by Brennen 2026-08-20, alongside the decision that "
+            "only the hard assert moved onto the printed ridge."
         )
 
     def test_universal_grid_is_gated_off_in_ds_mode(self, scad_source):

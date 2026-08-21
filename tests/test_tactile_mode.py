@@ -302,7 +302,11 @@ def test_seam_wall_guard_is_declared_with_the_measured_geometry():
 def test_seam_wall_guard_warns_on_console_and_in_3d():
     """Same pattern as tactile_gap_warning: an echoed WARNING for desktop
     users, red 3D text for the MakerWorld preview, and both plates render it -
-    the pair prints from one set of settings."""
+    the pair prints from one set of settings.
+
+    Both strings were SIGNED OFF by Brennen 2026-08-20 as part of the eight-item
+    batch; reword only with his sign-off, updating this guard in the same edit.
+    """
     scad = _read(CANONICAL)
     start = scad.index("tactile_seam_wall_too_thin =")
     assert 'echo(str("WARNING: only "' in scad[start : start + 1200], (

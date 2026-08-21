@@ -248,7 +248,7 @@
       "unit": "mm",
       "section": "Double-Sided Card (BETA)",
       "description": "Circumferential half of the diagonal shift between the front and back grids, measured around the cylinder",
-      "note": "Web schema home: double_sided.interpoint_offset_x_mm, flattened to the runtime name interpoint_offset_x. The 1.15-1.35 range is enforced by an assert in the .scad, so a value outside it stops the render rather than exporting an unprintable pair."
+      "note": "Web schema home: double_sided.interpoint_offset_x_mm, flattened to the runtime name interpoint_offset_x. The 1.15-1.35 range is enforced by an assert in the .scad, so a value outside it stops the render rather than exporting an unprintable pair. A SECOND assert then checks the printed ridge between a raised dot and its neighbouring recess against the 0.34 mm floor, and clearance peaks at 1.25 mm and falls off symmetrically - so on the 0.4mm card-stock package the renderable band is effectively 1.19-1.31 mm (measured 2026-08-20), while the 0.3mm package accepts the whole range. The slider deliberately keeps the full 1.15-1.35 because that is the web schema's range and the 0.3 package uses all of it; the guard message names 1.25 as the fix."
     },
     {
       "openscad_name": "interpoint_offset_y_mm",
