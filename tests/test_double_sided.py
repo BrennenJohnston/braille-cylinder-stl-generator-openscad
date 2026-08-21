@@ -1379,6 +1379,10 @@ class TestBackLineWarningsRender:
 WEB_REPO_ENV = "BRAILLE_WEB_REPO"
 GOLDEN_STEM = {"positive": "ds_cylinderA_golden", "negative": "ds_cylinderB_golden"}
 GOLDEN_LABEL = {"positive": "Cylinder A", "negative": "Cylinder B"}
+# A $fn sphere puts no vertex exactly on the pole, so a rendered dome always
+# lands just UNDER its nominal height. Measured 0.0019 mm on the 0.3 package at
+# the default sphere quality; 0.006 leaves room for the quality dropdown.
+DOME_TESSELLATION_SLACK_MM = 0.006
 GOLDEN_PACKAGE = "0.3mm"  # the only preset that renders the goldens' Option B dies
 
 # ---- tolerances -----------------------------------------------------------
@@ -2160,25 +2164,57 @@ class TestGoldenTopology:
         emboss = _trimesh.load(golden_scad_stls["positive"])
         print(f"\nCylinder A watertight (recorded, not asserted): {emboss.is_watertight}")
 
-    def test_the_scad_dots_are_still_separate_bodies(
+    def test_every_raised_dot_is_fused_to_the_shell(
         self, _trimesh, golden_scad_stls, golden_meshes
     ):
         """
-        Pins the known floating-dot artefact so its eventual fix is visible
-        rather than silent: one shell plus one body per RAISED dot - 5 front
-        dots on Cylinder A, 8 back dots on Cylinder B. The goldens are single
-        bodies because their generator sinks a 0.05 mm skirt into the shell.
+        Both plates are ONE connected body.
+
+        Until 2026-08-21 they were not: a raised dot's flat base sat at exactly
+        the ideal radius while the 64-sided shell facet under it dipped inside,
+        so each dot exported as its own body - 1 shell + 5 front dots on
+        Cylinder A, 1 shell + 8 back dots on Cylinder B. DOT_BASE_EMBED now
+        sinks each base below the facet dip. A count above 1 means a dot has
+        come unstuck from the shell again.
         """
-        for plate_type, raised in (("positive", EXPECTED_FRONT_DOTS),
-                                   ("negative", EXPECTED_BACK_BOWLS)):
+        for plate_type in GOLDEN_STEM:
             bodies = _trimesh.load(golden_scad_stls[plate_type]).split(only_watertight=False)
-            assert len(bodies) == 1 + raised, (
-                f"{GOLDEN_LABEL[plate_type]} split into {len(bodies)} bodies, not the "
-                f"{1 + raised} the floating-dot artefact produces (1 shell + {raised} "
-                "raised dots). If the dots have been sunk into the shell, that is the "
-                "fix landing and this count should become 1."
+            assert len(bodies) == 1, (
+                f"{GOLDEN_LABEL[plate_type]} split into {len(bodies)} connected "
+                "bodies; every raised dot is supposed to be fused to the shell by "
+                "DOT_BASE_EMBED. Body sizes (facets): "
+                f"{sorted(len(b.faces) for b in bodies)}"
             )
             assert len(golden_meshes[plate_type].split(only_watertight=False)) == 1
+
+    def test_the_embed_did_not_move_the_dots_standing_height(
+        self, _trimesh, golden_scad_stls, golden_scad_layout
+    ):
+        """
+        DOT_BASE_EMBED is only allowed to add material BELOW the shell surface,
+        so the dome apex - the furthest vertex from the axis, and the part a
+        finger actually reads - must still stand the package's full dot height
+        proud. Pinned on BOTH plates because Cylinder A carries the front dots
+        and Cylinder B the back ones.
+
+        Measured against this generator's own preset radius, not the goldens':
+        the two cut at 15.4 mm and 15.375 mm respectively, a pre-existing 0.025 mm
+        difference that has nothing to do with the embed.
+        """
+        import numpy as np
+
+        nominal = golden_scad_layout["dot_height"]
+        for plate_type in GOLDEN_STEM:
+            mesh = _trimesh.load(golden_scad_stls[plate_type])
+            apex = float(np.hypot(mesh.vertices[:, 0], mesh.vertices[:, 1]).max())
+            proud = apex - golden_scad_layout["radius"]
+            print()
+            print(f"{GOLDEN_LABEL[plate_type]} tallest dot stands {proud:.5f} mm proud")
+            assert nominal - DOME_TESSELLATION_SLACK_MM <= proud <= nominal, (
+                f"{GOLDEN_LABEL[plate_type]}'s tallest raised dot stands {proud:.5f} mm "
+                f"proud of the shell; the package die is {nominal} mm. The base embed "
+                "goes downward only - a change here is a change to what the reader feels."
+            )
 
 
 BACKWARD_COMPAT_CASES = (

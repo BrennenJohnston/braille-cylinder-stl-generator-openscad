@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.1] - 2026-08-21
+
+Fuses every raised braille dot to the cylinder shell. **No dimension changed** -
+no dot height, diameter or spacing, and no parameter, default or range - so every
+model renders the same shape it did in 2.6.0. What changed is the mesh's
+topology, and it changed on every cylinder this project has ever produced.
+
+### Fixed
+
+- **Raised dots no longer export as separate bodies.** The shell is a 64-sided
+  prism, so each facet dips inside the ideal radius at its centre - 0.0186 mm on
+  the shipped 30.8 mm cylinder. A dot's flat base sat at exactly that ideal
+  radius, spanning the dip instead of biting into it, so it touched the shell
+  only along the facet edges and exported as its own connected body. Measured
+  with trimesh: the single-sided emboss default split into **32** bodies (1 shell
+  + 31 dots), double-sided Cylinder A into **6** and Cylinder B into **9**, which
+  is where the negative Genus readings came from. All three are now **1** body,
+  and OpenSCAD reports **Genus 1** on the default where it reported -30.
+
+  The meshes were watertight before and remain so - this was a topology artefact,
+  never a hole - but a loose body can be shifted or dropped by some toolchains,
+  the gap was a real void under a tactile feature, and a negative Genus reading
+  masks any future manifoldness bug behind noise.
+
+  The fix is `DOT_BASE_EMBED`, which lengthens each dot's base frustum downward
+  along its own taper so it overlaps solid shell. Because the skirt continues the
+  same cone, the dot's radius **at** the shell surface is still the full base
+  diameter and its tip is still exactly where it was: the furthest vertex from
+  the axis is unchanged to five decimal places in every shipped configuration.
+  The tactile seam arrow already did this via `TACTILE_BASE_EMBED`; the dots
+  never got the equivalent.
+
+  `DOT_BASE_EMBED` is derived from `radius` and `CYLINDER_SHELL_FN` rather than
+  being a fixed figure, because the facet dip scales with radius: 0.0186 mm at
+  30.8 mm but 0.0602 mm at the 100 mm the diameter slider allows, so a constant
+  small enough to be tidy would leave large cylinders floating. It works out at
+  0.0371 mm on the shipped default.
+
+### Known issues
+
+- Inside every *rounded* dot the dome's base circle exactly meets the frustum's
+  top with no overlap, and the two are tessellated differently (`cone_segments`
+  16 against `quality_fn` 24). It welds today, but it is a zero-overlap tangency
+  and therefore luck, not design - a large enough base embed (0.08 mm, 0.18 mm
+  and 0.20 mm were all observed) splits the dome off as its own body. Pre-existing
+  and unrelated to the embed above; reported, not fixed.
+
 ## [2.6.0] - 2026-08-21
 
 Ports the web app's double-sided (interpoint) beta to OpenSCAD, so a single pass
