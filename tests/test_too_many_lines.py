@@ -35,15 +35,12 @@ MAKERWORLD_FILE = (
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from test_text_too_long import (  # noqa: E402  (shared fixtures/helpers)
+from test_text_too_long import (  # noqa: E402  (shared helpers)
     BRAILLE_FULL_CELL,
     _baseline_params,
     _render,
     _scad_constant,
-    _trimesh,  # noqa: F401  (pytest fixture)
     _z_max,
-    warning_offsets,  # noqa: F401  (pytest fixture)
-    warning_runner,  # noqa: F401  (pytest fixture)
 )
 
 # Every row the grid_rows slider allows must have a Line_N field to fill it.
@@ -181,7 +178,7 @@ def test_row_warning_is_not_gated_on_text_limit_check(scad_source):
 
 @pytest.mark.slow
 def test_too_many_lines_emits_warning_extrusion(
-    warning_runner, _trimesh, warning_offsets, tmp_path  # noqa: F811  (pytest fixtures, imported above)
+    warning_runner, _trimesh, warning_offsets, tmp_path
 ):
     """
     Filling a row past grid_rows must raise the bounding box by at least one
