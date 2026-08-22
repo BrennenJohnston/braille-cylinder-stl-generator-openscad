@@ -512,5 +512,5 @@ For general braille embossing questions, see the [web app](https://braille-cylin
 
 ---
 
-**Version**: 2.6.1  
+**Version**: 2.6.2  
 **Last Updated**: 2026-08-21

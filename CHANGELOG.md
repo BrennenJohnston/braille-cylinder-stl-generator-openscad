@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.2] - 2026-08-21
+
+Documentation and test hygiene only. **No `.scad` file was touched**, so every
+model renders byte-identically to 2.6.1 — no geometry, dimension, parameter,
+default, or range changed.
+
+### Fixed
+
+- **`docs/PARAMETER_MAPPING.md` gains the double-sided parameters.**
+  `tests/parameter_mapping.json` went to mapping version 2.6.0 in 2.6.0 with 13
+  new entries, but the prose mapping was never updated to match: grepping it for
+  `double_sided`, `Back_Line` or `interpoint` returned **nothing**. This repo's
+  stated convention — see the 2.5.0 entry — is that the `.md` and the `.json`
+  move together, and 2.6.0 broke it. The `.md` now carries a
+  **Double-Sided Card (BETA)** section documenting `double_sided`,
+  `Back_Line_1`–`Back_Line_10` (as the composite mapping onto the web app's single
+  `back_lines` array), and both interpoint offsets with their 1.15–1.35 mm range,
+  the two asserts that guard them, and the measured 1.19–1.31 mm renderable band
+  on the 0.4 mm package. The mapping version is unchanged at 2.6.0: the `.md` is
+  catching up to the `.json`, not describing anything new.
+
+- **Note 5's "Counter Plate Universality" claim is now scoped to single-sided.**
+  It stated flatly that counter plates carry recesses at every possible dot
+  position and are therefore reusable for any braille pattern. That is false with
+  `double_sided` On, where both cylinders carry 1:1 paired recesses and the pair
+  is specific to its text.
+
+### Changed
+
+- **The three shared warning-test fixtures move into `tests/conftest.py`.**
+  `_trimesh`, `warning_offsets` and `warning_runner` lived in
+  `tests/test_text_too_long.py` and were imported by `tests/test_too_many_lines.py`,
+  where the import shadowed the test's own parameter names and needed an `F811`
+  suppression to stay quiet. A conftest fixture needs no import, so the warning
+  now has nothing to report and the suppression is gone along with two `F401`
+  ones. The plain helpers (`_render`, `_baseline_params`, `_scad_constant`,
+  `_resolve_openscad_path`, `_z_max`, `BRAILLE_FULL_CELL`) deliberately stay in
+  `test_text_too_long.py` — ordinary imports never triggered `F811`, and four
+  modules import them from there. `tests/conftest.py` also puts the tests
+  directory on `sys.path` itself rather than relying on a test module having done
+  it first. Suite unchanged at **224 passed, 0 xfailed**.
+
 ## [2.6.1] - 2026-08-21
 
 Fuses every raised braille dot to the cylinder shell. **No dimension changed** -
