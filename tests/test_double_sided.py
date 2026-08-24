@@ -1029,14 +1029,18 @@ class TestSourceGuards:
             scad_source,
         )
         assert re.search(
-            r"DS_GAP_ACCEPTED\s*=\s*ds_use_03_package\s*\?\s*DS_GAP_RELIABLE\s*:\s*DS_GAP_FLOOR\s*;",
+            r"DS_GAP_ACCEPTED\s*=\s*DS_GAP_RELIABLE\s*;",
             scad_source,
         ), (
-            "The physical DOTS TOO CLOSE warning must accept the 0.4 package's "
-            "designed 0.468 mm gap (printed ridge measured clean 2026-08-20) and "
-            "fire only below the floor there; the 0.3 package keeps the reliable "
-            "line. RATIFIED by Brennen 2026-08-20, alongside the decision that "
-            "only the hard assert moved onto the printed ridge."
+            "The physical DOTS TOO CLOSE warning must use ONE line for both "
+            "packages, so this generator and the web app warn at the same number. "
+            "It was `ds_use_03_package ? DS_GAP_RELIABLE : DS_GAP_FLOOR` from "
+            "2026-08-20 to 2026-08-23, which retired the text for the 0.4 package "
+            "because that package sat below a 0.50 mm reliable line by design. "
+            "With the line re-decided at a provisional 0.45 the 0.4 package clears "
+            "it honestly (0.4678 nominal), so the workaround had nothing left to "
+            "work around and Brennen dropped it. Only the hard assert measures the "
+            "printed ridge; that part of FD-11b is unchanged."
         )
 
     def test_universal_grid_is_gated_off_in_ds_mode(self, scad_source):

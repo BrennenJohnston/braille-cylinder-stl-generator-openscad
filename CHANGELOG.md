@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`DS_GAP_RELIABLE` lowered 0.50 → 0.45 mm, and it is PROVISIONAL.** The web
+  app made this change first, after an NVDA walkthrough on 2026-08-23 found that
+  its shipped 0.4 mm package (0.4678 mm nominal) sat permanently below the
+  0.50 mm line, so *every* double-sided run warned about a package the physical
+  validation records as embossing clean. Investigating it turned up that
+  **0.50 had no stated basis** in either generator or in any specification: it
+  sits beside `DS_GAP_FLOOR` in the same comment, but the Bambu X1C Arachne
+  figures quoted there (paths 0.1–0.34 mm force-widened to 0.34, dropped below
+  0.1) justify only the floor.
+
+  **0.45 is not a measured value either, and the comment in the `.scad` says so.**
+  The two data points that exist — 0.4953 and 0.4278 mm printed ridge — *both
+  passed*, and two passing samples cannot locate a failure boundary; they prove
+  only that it lies below 0.4278. A print test that walks the gap down until the
+  ridge visibly fails is what should set the real number.
+
+- **BEHAVIOUR CHANGE — `DS_GAP_ACCEPTED` is now one line for both packages.** It
+  was `ds_use_03_package ? DS_GAP_RELIABLE : DS_GAP_FLOOR`, ratified 2026-08-20,
+  which pointed the 0.4 package at the floor and so **retired the physical
+  "DOTS TOO CLOSE" text for it entirely**. That existed only to stop the 0.4
+  package nagging against a 0.50 mm line it could never clear. At 0.45 it clears
+  the line honestly (0.4678 nominal), so the workaround has nothing left to work
+  around and it is gone — this generator and the web app now warn at the same
+  number instead of two.
+
+  **What existing users of the default 0.4 mm package will see:** the raised
+  "DOTS TOO CLOSE" text can now appear in the **0.34–0.45 mm nominal band**, where
+  it was previously silent. That band is only reachable by moving
+  `interpoint_offset_x_mm` / `interpoint_offset_y_mm` away from 1.25 — at the
+  shipped default nothing changes. Verified by facet count: **27,134 facets at
+  offset 1.25 (quiet) against 32,038 at 1.21 (text present)**.
+
+  The hard assert is untouched: it still measures `ds_printed_ridge_mm` against
+  `DS_GAP_FLOOR` (0.34), so exactly the same renders are blocked as before.
+
+  `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` is synced from
+  the canonical file, and two tests were updated to pin the new single line.
+
+
 ## [2.6.2] - 2026-08-21
 
 Documentation and test hygiene only. **No `.scad` file was touched**, so every

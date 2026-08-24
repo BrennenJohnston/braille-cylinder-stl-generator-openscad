@@ -349,7 +349,10 @@ class TestSourceGuards:
             # guard message tells the user to move back toward it, so it must
             # stay equal to the declared default of interpoint_offset_x/y_mm.
             ("DS_OFFSET_OPTIMUM_MM", 1.25),
-            ("DS_GAP_RELIABLE", 0.50),
+            # PROVISIONAL and unmeasured, lowered from 0.50 on 2026-08-23 to match
+            # the web app. Both data points that exist passed, so this number is a
+            # placeholder until a print test finds where the ridge actually fails.
+            ("DS_GAP_RELIABLE", 0.45),
             ("DS_GAP_FLOOR", 0.34),
             ("DS_AXIAL_STEP", 1.25),
             # D3 sign. Flipping it is a legitimate fix if a printed pair crowds
