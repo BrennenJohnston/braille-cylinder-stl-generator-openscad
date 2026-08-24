@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-08-23
+
+One printability threshold moves and one workaround it forced is removed, so this
+generator and the web app now warn at the same number. **Renders at the shipped
+defaults are unchanged** — the only geometry difference is that the raised
+"DOTS TOO CLOSE" text can now appear for the 0.4 mm package in a band that is
+reachable only by moving the interpoint offsets off 1.25.
+
 ### Changed
 
 - **`DS_GAP_RELIABLE` lowered 0.50 → 0.45 mm, and it is PROVISIONAL.** The web
