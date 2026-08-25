@@ -370,11 +370,11 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
 
 **First check which OpenSCAD you are in** (Help → About). This project needs
 the **Nightly** build with the Manifold engine; the stable **2021.01** release
-renders the counter plate through CGAL and takes **minutes** for what Nightly
-finishes in about **2 seconds** (measured 2026-08-25 on the same machine, same
-file: Nightly 1.8 s, 2021.01 over 10 minutes). If a render sits at a progress
-bar for minutes, you are almost certainly in 2021.01 — open the file in
-Nightly instead.
+renders the counter plate through CGAL and takes the better part of an hour
+for what Nightly finishes in about **2 seconds** (measured 2026-08-25 on the
+same machine, same file: Nightly 1.8 s; 2021.01 was still rendering when it
+was stopped at 45 minutes). If a render sits at a progress bar for minutes,
+you are almost certainly in 2021.01 — open the file in Nightly instead.
 
 Inside Nightly, the two speeds you experience are different things:
 
