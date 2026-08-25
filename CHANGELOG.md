@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.0] - UNRELEASED (version bump, tag and release are Brennen's call)
+
+Integrated gears, in beta: a cylinder can now be generated as ONE solid part with
+its top and bottom drive gears already attached, instead of a bare barrel that
+separately printed gears are pushed onto. Meshed gears are also what keeps a
+paired set turning together. **Renders at the shipped defaults are unchanged** —
+`integrated_gears` is Off by default, and with it off both plates render
+byte-identically to v2.7.0.
+
+Wording in this entry is FLAGGED FOR BRENNEN as user-facing text.
+
+### Added
+
+- **`integrated_gears = "Off"; // [Off, On]`, desktop build only.** On, either
+  plate exports as a 72 mm roller: the barrel at z 0..52 with a 10 mm gear at
+  each end (z −10..0 and 52..62). Measured on both plates — ONE watertight body,
+  no enclosed cavity, 24 tooth clusters in each gear band.
+
+- **`assets/gears_a.stl` and `assets/gears_b.stl`**, with
+  `assets/GEARS_PROVENANCE.json`. These are a 1:1 replication of the reference
+  gear set, never parametric geometry: 24 teeth, tip diameter 32.2187 mm, root
+  radius 13.6613702290795, 10.000 mm thick, blind bores, and the axially crowned
+  tooth form (a flipped gear is a different gear). A meshed pair runs at an axis
+  distance of **32.0473 mm**, which leaves 32.0473 − 30.8000 = **1.2473 mm** of
+  barrel-to-barrel gap at the nip. They are derived by the web generator's
+  `scripts/derive_gear_assets.py` and converted into this file's frame by
+  `python -m tests.test_gear_assets`; never edit them by hand. Both hashes are
+  pinned by `tests/test_gear_assets.py`.
+
+- **Two hidden weld rings** (r 8.0–13.0 × 0.1 mm) at the gear/barrel interfaces.
+  The gear meets the barrel on an exactly coincident face, which the
+  printability rules forbid and float32 STL rounding can turn into a pinch edge.
+  They are entirely buried: no external surface changes.
+
+### Changed
+
+- **The barrel prints SOLID while gears are on**, and the console says so when a
+  polygonal cutout was set. A one-piece roller has no through-path along its
+  axis anyway — the gear bores are blind pockets — so keeping the cutout would
+  seal a cavity nothing can reach or drain.
+
+- **Raised tactile row arrows grow by 0.005 mm while gears are on.** At the
+  default 10 mm indicator length on 10 mm line spacing each arrow's apex touches
+  the next arrow's base exactly, and float32 STL rounding welds that tangency
+  into a non-manifold pinch edge — which would break the watertight promise.
+  5 µm makes it a real overlap: 2.5% of the recess nesting clearance, far below
+  print accuracy. **Off, the outline is untouched**, so existing exports keep the
+  tangency they ship with.
+
+- **The MakerWorld single-file build carries the same geometry body**, because
+  `tests/test_makerworld_sync.py` requires the two files to stay byte-identical
+  below the compatibility marker. It ships no `assets/` folder, so its copy of
+  the `integrated_gears` dropdown is declared in a **Hidden** tab and its
+  Customizer never offers it.
+
+### Notes
+
+- **The cylinder size is fixed while gears are on: 30.8 mm × 52.0 mm, or the
+  render is refused** with "Integrated gears are matched to the reference roller
+  and only fit a 30.8 mm x 52 mm cylinder." The gears are baked at fixed heights
+  and do not move with the barrel: 1 mm short exports as three loose bodies —
+  and each of those is closed, so the file still reports watertight, which is
+  why only a body count catches it — while 10 mm tall swallows the teeth. Both
+  paper-thickness presets already set 30.8 × 52, so the shipped defaults pass.
+
+- **MakerWorld support is DEFERRED, not forgotten.** That build accepts a single
+  `.scad` file and cannot `import()` external assets; embedding two
+  30,000-triangle meshes as `polyhedron()` text would risk the Customizer's
+  limits. If it is wanted there later, that is its own decision.
+
+- The version bump, tag and release for 2.8.0 are Brennen's to make.
+
+
 ## [2.7.0] - 2026-08-23
 
 One printability threshold moves and one workaround it forced is removed, so this
