@@ -1706,11 +1706,15 @@ if (gears_on && active_polygon_cutout_radius_mm > 0) {
 // translated context the barrel spans -h/2..+h/2 and the interfaces sit at
 // z = +/-h/2. The asset file is in the base-at-zero frame, hence the shift down
 // by h/2 before importing.
-module gear_set() {
+//
+// Which gear set is a parameter, not a read of the global plate selection:
+// gears_b's teeth are clocked to mesh with gears_a's, so each plate module
+// names its own set - which also lets a single render build both plates.
+module gear_set(emboss = is_emboss_plate) {
     half_h = active_cylinder_height_mm / 2;
 
     translate([0, 0, -half_h])
-        import(is_emboss_plate ? "assets/gears_a.stl" : "assets/gears_b.stl");
+        import(emboss ? "assets/gears_a.stl" : "assets/gears_b.stl");
 
     for (z = [-half_h, half_h]) {
         translate([0, 0, z])
@@ -1907,7 +1911,7 @@ module cylinder_emboss_plate() {
                 // Integrated gears (BETA): the top and bottom drive gears, so
                 // this plate exports as one solid roller.
                 if (gears_on) {
-                    gear_set();
+                    gear_set(emboss = true);
                 }
 
                 // INVALID CHARACTERS warning — covers the back lines too while
@@ -2037,7 +2041,7 @@ module cylinder_counter_plate() {
                 // Integrated gears (BETA): the top and bottom drive gears, so
                 // this plate exports as one solid roller.
                 if (gears_on) {
-                    gear_set();
+                    gear_set(emboss = false);
                 }
 
                 // Double-sided: this cylinder's own raised dots - the BACK
