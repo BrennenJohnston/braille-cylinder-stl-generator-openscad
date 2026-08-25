@@ -216,14 +216,14 @@ plate_type = "Embossing Plate"; // [Embossing Plate, Counter Plate]
 // for printing on one plate: Embossing Plate (Cylinder A) on the left, Counter
 // Plate (Cylinder B) on the right. While this is On the plate_type choice
 // above is ignored. Suggested export name: Cylinder_Pair_<your text>.stl.
-// Wording DRAFT - pending Brennen sign-off.
+// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
 render_both_plates = "Off"; // [Off, On]
 // Gap between the two cylinders' surfaces (mm) - PRINT spacing only, not the
 // meshed-gear assembly distance (32.0473 mm axis to axis); a printed pair is
 // separated for assembly anyway. With Integrated Gears On, the gear tips
 // overhang the barrel by 0.71 mm each side, so the tip-to-tip gap comes out
 // about 1.4 mm less than this number.
-// Wording DRAFT - pending Brennen sign-off.
+// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
 pair_spacing_mm = 10; // [2:1:50]
 
 /* [Indicator Mode] */
@@ -888,7 +888,7 @@ if (ds_on && !both_on)
 
 // Both-plates mode: one render, one file, one suggested name. Deliberately
 // not a WARNING - scripts\scad-check.ps1 treats that token as a failure.
-// Wording DRAFT - pending Brennen sign-off.
+// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
 if (both_on) {
     echo(str("Both plates: one STL containing Cylinder A / Embossing Plate (left) ",
              "and Cylinder B / Counter Plate (right), surfaces ", pair_spacing_mm,
@@ -1737,6 +1737,13 @@ assert(!gears_on || (active_cylinder_height_mm == GEAR_BARREL_HEIGHT_MM
 // loud only when the user actually had one, so the note means something.
 if (gears_on && active_polygon_cutout_radius_mm > 0) {
     echo("NOTE: polygonal cutout is not used while integrated gears are on.");
+}
+
+// The console copy of the S9 hardware warning, so a CLI render says it too.
+// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
+// "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on that token.
+if (gears_on) {
+    echo("NOTE: integrated gears fit only version 2 of the braille embosser hardware. They do not fit version 1 - do not use geared cylinders with a version 1 embosser body.");
 }
 
 // Both gears plus their two weld rings, in the plate modules' LOCAL frame.

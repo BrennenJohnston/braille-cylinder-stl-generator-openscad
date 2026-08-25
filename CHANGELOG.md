@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Entry wording DRAFT — pending Brennen sign-off; whether these fold into 2.8.0
-before it tags is his call too.
+Entry wording signed off by Brennen 2026-08-25; whether these fold into 2.8.0
+before it tags is still his call.
 
 ### Added
 
@@ -27,6 +27,10 @@ before it tags is his call too.
   Nightly's Manifold engine renders in about 2 s — use Nightly — and inside
   Nightly the F5 preview re-pays ~0.5–1 s per frame while rotating (OpenCSG),
   which is normal, while F6 stays fast.
+- **A hardware-compatibility warning on Integrated Gears** (customizer text and
+  a console `NOTE:` while gears are on): the gears fit only version 2 of the
+  braille embosser hardware, not version 1. Wording signed off by Brennen
+  2026-08-25; a link to the version 2 build files will be added once published.
 
 ### Changed
 

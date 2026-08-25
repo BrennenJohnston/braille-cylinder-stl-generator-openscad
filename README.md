@@ -376,6 +376,12 @@ same machine, same file: Nightly 1.8 s; 2021.01 was still rendering when it
 was stopped at 45 minutes). If a render sits at a progress bar for minutes,
 you are almost certainly in 2021.01 — open the file in Nightly instead.
 
+**Second check, if F6 takes minutes even in Nightly**: the GUI can be set to
+the old CGAL engine. Open **Edit → Preferences → Advanced** and make sure the
+3D rendering backend is **Manifold** (on the Features tab, anything named
+manifold should be enabled). The ~2-second numbers below are Manifold numbers;
+the same render through CGAL is the better part of an hour.
+
 Inside Nightly, the two speeds you experience are different things:
 
 - **Render / F6 / export** builds exact geometry once. Measured at the shipped
