@@ -366,6 +366,38 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
 
 ## 🐛 Troubleshooting
 
+### Rendering feels very slow
+
+**First check which OpenSCAD you are in** (Help → About). This project needs
+the **Nightly** build with the Manifold engine; the stable **2021.01** release
+renders the counter plate through CGAL and takes **minutes** for what Nightly
+finishes in about **2 seconds** (measured 2026-08-25 on the same machine, same
+file: Nightly 1.8 s, 2021.01 over 10 minutes). If a render sits at a progress
+bar for minutes, you are almost certainly in 2021.01 — open the file in
+Nightly instead.
+
+Inside Nightly, the two speeds you experience are different things:
+
+- **Render / F6 / export** builds exact geometry once. Measured at the shipped
+  defaults: embossing plate ≈ 0.3 s, counter plate ≈ 2 s (its universal grid
+  subtracts 312 recess spheres no matter how much text there is), High quality
+  counter plate ≈ 10 s. This is the number that matters for the STL.
+- **Preview / F5** redraws the boolean tree on **every frame while you rotate
+  or zoom** (OpenCSG). A single frame of the counter plate costs roughly
+  0.5–1 s, so rotation can feel like 1–2 frames per second even though nothing
+  is wrong. The preview after a Customizer change pays the same price once.
+
+What helps:
+
+- Do design passes on the **embossing plate** (fast everywhere) and render the
+  counter plate when you need it.
+- For a smoother preview while editing, set `render_quality = "Low"`
+  (Rendering Quality section) — **and set it back to your intended quality
+  before exporting**, because unlike a preview-only trick this genuinely
+  changes the exported dot tessellation.
+- Trust F6 for the real result: a slow, choppy preview does not make the
+  exported STL any worse.
+
 ### "INVALID CHARACTERS" Warning
 - You pasted regular text instead of Unicode braille
 - Solution: Translate at Branah.com and copy the braille output
