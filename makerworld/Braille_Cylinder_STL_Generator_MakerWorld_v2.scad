@@ -446,6 +446,15 @@ function preset_value(preset, key, fallback) =
 // only what derives from them.
 
 /* [Hidden] */
+// INTEGRATED GEARS (BETA) - DESKTOP BUILD ONLY, and deliberately hidden here.
+// The desktop generator ships assets/gears_a.stl and assets/gears_b.stl and
+// offers this as a visible dropdown. This single-file build has no assets
+// folder, so switching it on would render a plate with NO gears and only a
+// console warning to say why. It is declared - because
+// tests/test_makerworld_sync.py requires both builds to carry the same
+// parameter set, and the geometry body below is byte-identical - but it lives
+// in a Hidden tab so the Customizer never offers it.
+integrated_gears = "Off"; // [Off, On]
 // Print the self-check echoes below. Off in normal renders so scripts\scad-check.ps1
 // stays quiet; tests/test_interpoint_math_scad.py renders with this On. A test
 // hook, not a user control, so it stays out of the Customizer.
@@ -458,6 +467,10 @@ ds_self_check = false;
 // than beside is_emboss_plate / tactile_on in CALCULATED VALUES because that
 // section lives past the MakerWorld sync marker.
 ds_on = (double_sided == "On") || (double_sided == "on");
+
+// Gear-mode gate, mirroring the canonical build. Always false in practice here:
+// `integrated_gears` is hidden from this build's Customizer (see above).
+gears_on = (integrated_gears == "On") || (integrated_gears == "on");
 
 // Back-face counterpart of _all_lines, under the same contract: the single
 // source of truth for the back content, so no geometry ever names a Back_Line_N.
@@ -1374,7 +1387,10 @@ module tactile_surface_prism(y_pos, span) {
 module tactile_raised(y_pos) {
     intersection() {
         tactile_surface_prism(y_pos, TACTILE_PRISM_SPAN)
-            tactile_arrow_2d(tactile_indicator_width, tactile_indicator_length);
+            // Gear mode grows the outline by GEAR_ARROW_WELD_MM so the arrow
+            // tip-to-base tangency becomes a real overlap; see that constant.
+            offset(delta = gears_on ? GEAR_ARROW_WELD_MM : 0)
+                tactile_arrow_2d(tactile_indicator_width, tactile_indicator_length);
         tactile_shell_band(radius - TACTILE_BASE_EMBED, radius + tactile_indicator_raise);
     }
 }
@@ -1625,13 +1641,102 @@ module counter_recess() {
 // CYLINDER MODULES
 // =============================================================================
 
-module cylinder_shell(cutout_rotate_deg = 0) {
+// =============================================================================
+// INTEGRATED GEARS (BETA)
+// =============================================================================
+// The gears are vendored 1:1 replica meshes, never parametric geometry. They
+// are derived by the web generator's scripts/derive_gear_assets.py and
+// converted into this file's frame by tests/test_gear_assets.py;
+// assets/GEARS_PROVENANCE.json records the whole chain. In THIS frame the
+// barrel base sits at z=0, so the assets already place their own gears at
+// z -10..0 and 52..62 with the axis at the origin - the import is never
+// rotated or scaled here.
+//
+// DESKTOP BUILD ONLY. The MakerWorld single-file build carries this code so the
+// two files stay in lockstep (tests/test_makerworld_sync.py compares them byte
+// for byte), but it ships without assets/, and its copy of the dropdown is
+// declared in a Hidden tab so the Customizer never offers it.
+
+// The reference roller the gears were measured against. They are baked at fixed
+// heights and do NOT move with the barrel, so any other size is refused rather
+// than silently mis-built: a barrel 1 mm short exports as THREE loose bodies
+// (each closed, so it still reports watertight - only a body count catches it),
+// and a 10 mm taller one swallows the teeth. The diameter never breaks the
+// union but it sets the nip: the pair meshes at an axis distance of 32.0473 mm,
+// so the barrel-to-barrel surface gap is 32.0473 - diameter.
+GEAR_BARREL_DIAMETER_MM = 30.8;
+GEAR_BARREL_HEIGHT_MM = 52;
+
+// Hidden weld ring at each gear/barrel interface. The gear meets the barrel on
+// an exactly coincident face, which the printability rules forbid and float32
+// STL rounding can turn into a pinch edge. The ring is entirely buried: it
+// clears both gear bores and changes no external surface.
+GEAR_WELD_RING_R_IN = 8.0;
+GEAR_WELD_RING_R_OUT = 13.0;
+GEAR_WELD_RING_H = 0.1;
+
+// Gear mode only: grow the RAISED tactile arrow's outline by 5 um. At the
+// default 10 mm indicator length on 10 mm line spacing each arrow's apex
+// touches the next arrow's base exactly, and float32 STL rounding welds that
+// tangency into a non-manifold pinch edge - which would break the watertight
+// one-piece roller. Physically negligible: 2.5% of the recess nesting
+// clearance, far below print accuracy. Off, the outline is untouched, so
+// existing exports keep the tangency they ship with.
+GEAR_ARROW_WELD_MM = 0.005;
+
+// The size gate, mirroring the web generator's, which Brennen signed on
+// 2026-08-24 as a HARD STOP covering BOTH dimensions rather than a warning.
+// OpenSCAD cannot test whether an imported file exists, so this is the guard
+// that matters: it refuses the sizes that would produce a broken part rather
+// than letting one export. Both paper-thickness presets already set the
+// cylinder to 30.8 x 52, so the shipped defaults pass.
+assert(!gears_on || (active_cylinder_height_mm == GEAR_BARREL_HEIGHT_MM
+                     && active_cylinder_diameter_mm == GEAR_BARREL_DIAMETER_MM),
+       "Integrated gears are matched to the reference roller and only fit a 30.8 mm x 52 mm cylinder.");
+
+// Decision D-2: the polygonal cutout is dropped while gears are on. Said out
+// loud only when the user actually had one, so the note means something.
+if (gears_on && active_polygon_cutout_radius_mm > 0) {
+    echo("NOTE: polygonal cutout is not used while integrated gears are on.");
+}
+
+// Both gears plus their two weld rings, in the plate modules' LOCAL frame.
+//
+// The plates build centred and then translate up by h/2, so inside that
+// translated context the barrel spans -h/2..+h/2 and the interfaces sit at
+// z = +/-h/2. The asset file is in the base-at-zero frame, hence the shift down
+// by h/2 before importing.
+module gear_set() {
+    half_h = active_cylinder_height_mm / 2;
+
+    translate([0, 0, -half_h])
+        import(is_emboss_plate ? "assets/gears_a.stl" : "assets/gears_b.stl");
+
+    for (z = [-half_h, half_h]) {
+        translate([0, 0, z])
+            difference() {
+                cylinder(h = GEAR_WELD_RING_H, r = GEAR_WELD_RING_R_OUT, center = true, $fn = CYLINDER_SHELL_FN);
+                // Taller than the ring so the bore is cut cleanly through,
+                // never leaving coplanar faces behind.
+                cylinder(h = GEAR_WELD_RING_H + 0.2, r = GEAR_WELD_RING_R_IN, center = true, $fn = CYLINDER_SHELL_FN);
+            }
+    }
+}
+
+module cylinder_shell(cutout_rotate_deg = 0, force_solid = false) {
     difference() {
         // Outer cylinder (see $fn TESSELLATION POLICY: case 1)
         cylinder(h = active_cylinder_height_mm, r = active_cylinder_diameter_mm / 2, center = true, $fn = CYLINDER_SHELL_FN);
         
         // Polygonal cutout if specified
-        if (active_polygon_cutout_radius_mm > 0) {
+        // force_solid drops the cutout for gear mode (decision D-2): a
+        // one-piece roller has no through-path along its axis anyway - the gear
+        // bores are blind pockets - so keeping it would seal a cavity nothing
+        // can reach or drain. NOTE this shell has no wall-thickness hollowing
+        // of its own, so suppressing the cutout IS what makes it solid here.
+        // The web worker needed a separate flag because it hollows by wall
+        // thickness whenever no polygon is given.
+        if (active_polygon_cutout_radius_mm > 0 && !force_solid) {
             // Web UI: "Circumscribed Radius" but implementation uses inscribed radius
             cutout_circumradius = active_polygon_cutout_radius_mm / cos(180 / active_polygon_cutout_points);
             rotate([0, 0, cutout_rotate_deg])
@@ -1797,7 +1902,13 @@ module cylinder_emboss_plate() {
         difference() {
             union() {
                 // Base cylinder
-                cylinder_shell(cutout_rotate_deg = -active_seam_offset_degrees);
+                cylinder_shell(cutout_rotate_deg = -active_seam_offset_degrees, force_solid = gears_on);
+
+                // Integrated gears (BETA): the top and bottom drive gears, so
+                // this plate exports as one solid roller.
+                if (gears_on) {
+                    gear_set();
+                }
 
                 // INVALID CHARACTERS warning — covers the back lines too while
                 // double-sided is on (see invalid_characters_warning above).
@@ -1921,7 +2032,13 @@ module cylinder_counter_plate() {
         difference() {
             union() {
                 // Base cylinder
-                cylinder_shell(cutout_rotate_deg = active_seam_offset_degrees);
+                cylinder_shell(cutout_rotate_deg = active_seam_offset_degrees, force_solid = gears_on);
+
+                // Integrated gears (BETA): the top and bottom drive gears, so
+                // this plate exports as one solid roller.
+                if (gears_on) {
+                    gear_set();
+                }
 
                 // Double-sided: this cylinder's own raised dots - the BACK
                 // text it embosses. Unioned in before any recess is subtracted
