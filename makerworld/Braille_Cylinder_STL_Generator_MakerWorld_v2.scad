@@ -838,6 +838,11 @@ is_emboss_plate = (plate_type == "positive") ? true :
                   (plate_type == "negative") ? false :
                   (plate_type == "Embossing Plate");
 
+// Both-plates mode (BETA): lowercase accepted the way the other toggles
+// accept theirs from the test system. While On, plate_type is ignored and
+// MAIN RENDERING at the bottom builds both cylinders side by side.
+both_on = (render_both_plates == "On") || (render_both_plates == "on");
+
 use_rounded_dots = (combined_shape == "rounded") ? true :
                    (combined_shape == "cone") ? false :
                    (dot_shape == "Rounded");
@@ -872,11 +877,24 @@ if (ds_forced_tactile)
 // renamed. Deliberately not a WARNING: it is a hint, and scripts\scad-check.ps1
 // treats that token as a failure.
 // Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
-if (ds_on)
+// (2026-08-25: gated on !both_on - in both-plates mode one file holds the
+// pair, so the pair hint below speaks instead. Condition change only, the
+// wording is untouched.)
+if (ds_on && !both_on)
     echo(str("Double-sided: this render is Cylinder ", is_emboss_plate ? "A" : "B",
              " (the ", is_emboss_plate ? "Embossing Plate" : "Counter Plate",
              "). Suggested export filename: Cylinder_", is_emboss_plate ? "A" : "B",
              "_<your name>.stl"));
+
+// Both-plates mode: one render, one file, one suggested name. Deliberately
+// not a WARNING - scripts\scad-check.ps1 treats that token as a failure.
+// Wording DRAFT - pending Brennen sign-off.
+if (both_on) {
+    echo(str("Both plates: one STL containing Cylinder A / Embossing Plate (left) ",
+             "and Cylinder B / Counter Plate (right), surfaces ", pair_spacing_mm,
+             " mm apart. Suggested export filename: Cylinder_Pair_<your name>.stl"));
+    echo("NOTE: render_both_plates is On, so plate_type is ignored and both cylinders render.");
+}
 
 // Material left between a raised dot and its nearest neighbouring recess, both
 // of which share this surface in double-sided mode. The 336-point lattice sweep
@@ -974,6 +992,13 @@ active_cylinder_height_mm = _preset_cylinder_height_mm;
 active_polygon_cutout_radius_mm = _preset_polygon_cutout_radius_mm;
 active_polygon_cutout_points = _preset_polygon_cutout_points;
 active_seam_offset_degrees = _preset_seam_offset_degrees;
+
+// Both-plates mode, PRINT layout only: centres one diameter plus the gap
+// apart puts the barrel surfaces exactly pair_spacing_mm apart. Not related
+// to the 32.0473 mm meshed-gear assembly distance. Brennen chose the
+// barrel-based measure on 2026-08-25 (gear tips overhang it; the slider
+// comment carries that caveat).
+pair_center_offset_mm = active_cylinder_diameter_mm + pair_spacing_mm;
 
 // -----------------------------------------------------------------------------
 // TACTILE INDICATOR CONSTANTS
@@ -2166,7 +2191,15 @@ module cylinder_counter_plate() {
 // MAIN RENDERING
 // =============================================================================
 
-if (is_emboss_plate) {
+if (both_on) {
+    // Cylinder A on the left, Cylinder B on the right, surfaces
+    // pair_spacing_mm apart. Z stays the print axis - both cylinders stand
+    // upright exactly as they do alone - and the pair is symmetric about the
+    // origin so the default camera frames it. The gear size gate and the DS
+    // guards are file-scope, so they fire once, not once per body.
+    translate([-pair_center_offset_mm / 2, 0, 0]) cylinder_emboss_plate();
+    translate([ pair_center_offset_mm / 2, 0, 0]) cylinder_counter_plate();
+} else if (is_emboss_plate) {
     cylinder_emboss_plate();
 } else {
     cylinder_counter_plate();
