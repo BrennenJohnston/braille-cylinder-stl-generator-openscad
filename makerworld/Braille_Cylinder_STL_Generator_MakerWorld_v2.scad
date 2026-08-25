@@ -212,6 +212,20 @@ interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
 // Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 plate_type = "Embossing Plate"; // [Embossing Plate, Counter Plate]
 
+// BETA - render BOTH plates in one go, standing side by side and spaced apart
+// for printing on one plate: Embossing Plate (Cylinder A) on the left, Counter
+// Plate (Cylinder B) on the right. While this is On the plate_type choice
+// above is ignored. Suggested export name: Cylinder_Pair_<your text>.stl.
+// Wording DRAFT - pending Brennen sign-off.
+render_both_plates = "Off"; // [Off, On]
+// Gap between the two cylinders' surfaces (mm) - PRINT spacing only, not the
+// meshed-gear assembly distance (32.0473 mm axis to axis); a printed pair is
+// separated for assembly anyway. With Integrated Gears On, the gear tips
+// overhang the barrel by 0.71 mm each side, so the tip-to-tip gap comes out
+// about 1.4 mm less than this number.
+// Wording DRAFT - pending Brennen sign-off.
+pair_spacing_mm = 10; // [2:1:50]
+
 /* [Indicator Mode] */
 // How each row is marked for alignment. Visual = today's recessed triangle (plus the optional letter square) in marker cells at the start of every row. Tactile = a raised arrow on the embossing plate and a matching recess on the counter plate, centred in the seam gap and pointing at the cylinder top, so a blind user can find the alignment point and tell which end is up by touch. Tactile removes the marker cells (freeing them for text) and ignores the Indicator Letters toggle.
 indicator_mode = "Visual"; // [Visual, Tactile]
