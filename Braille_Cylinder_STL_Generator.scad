@@ -190,7 +190,7 @@ interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
 // (30.8 mm diameter x 52 mm tall) and the barrel prints solid - the polygonal
 // cutout is not used. Needs assets/gears_a.stl and assets/gears_b.stl, which
 // ship with the desktop build.
-// Wording FLAGGED FOR BRENNEN 2026-08-24 - not yet signed off.
+// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
 integrated_gears = "Off"; // [Off, On]
 
 /* [Plate Selection] */

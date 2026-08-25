@@ -16,7 +16,7 @@ paired set turning together. **Renders at the shipped defaults are unchanged** â
 `integrated_gears` is Off by default, and with it off both plates render
 byte-identically to v2.7.0.
 
-Wording in this entry is FLAGGED FOR BRENNEN as user-facing text.
+Wording in this entry signed off by Brennen 2026-08-25.
 
 ### Added
 
