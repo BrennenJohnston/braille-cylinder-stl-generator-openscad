@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Entry wording DRAFT — pending Brennen sign-off; whether these fold into 2.8.0
+before it tags is his call too.
+
+### Added
+
+- **Both-plates mode (BETA): `render_both_plates = "Off"; // [Off, On]` plus
+  `pair_spacing_mm = 10; // [2:1:50]`**, both builds, `[Plate Selection]` tab.
+  On, one render builds the complete pair side by side — Cylinder A (embossing
+  plate) on the left, Cylinder B (counter plate) on the right, barrel surfaces
+  exactly `pair_spacing_mm` apart (centres one diameter plus the gap apart;
+  Brennen chose the barrel-based measure 2026-08-25 — with gears On the tips
+  overhang to a 8.58 mm tip-to-tip gap, documented on the slider). `plate_type`
+  is ignored while On, and the console suggests `Cylinder_Pair_<name>.stl`.
+  **Off, renders are byte-identical to before** (sha256-checked on both plates,
+  with and without gears). Matches the web app's new combined-pair download.
+- **A "Rendering feels very slow" README section.** Measured 2026-08-25: the
+  stable 2021.01 release takes over ten minutes (CGAL) for the counter plate
+  Nightly's Manifold engine renders in about 2 s — use Nightly — and inside
+  Nightly the F5 preview re-pays ~0.5–1 s per frame while rotating (OpenCSG),
+  which is normal, while F6 stays fast.
+
+### Changed
+
+- `gear_set()` takes its plate as a parameter (`emboss = true/false`) instead
+  of reading the global plate selection, so a single render can give each
+  cylinder its own gear set. No geometry change (sha256-verified).
+- The double-sided per-plate filename hint stands aside while
+  `render_both_plates` is On — one render, one suggested filename (the pair
+  hint). Condition change only; the signed wording is untouched.
+
 ## [2.8.0] - UNRELEASED (version bump, tag and release are Brennen's call)
 
 Integrated gears, in beta: a cylinder can now be generated as ONE solid part with
