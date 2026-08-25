@@ -1,0 +1,111 @@
+{
+  "note": "Derived 1:1 from Brennen's reference STLs; never edit; regenerate via the web repo's scripts/derive_gear_assets.py, then this repo's python -m tests.test_gear_assets",
+  "derived": "2026-08-24",
+  "frame": "This generator's frame: cylinder axis at the origin, barrel base at z=0 (barrel z 0..52), gears at z -10..0 and 52..62. That is the web repo's browser frame translated +26.000 mm in z; rotations are identical (the A set carries the canonical Rz(180) rotation, the B set the identity).",
+  "z_shift_mm": 26.0,
+  "source_repo": "braille-cylinder-stl-generator",
+  "assets": {
+    "gears_a.stl": {
+      "derived_from": "static/assets/gears/gears_a.bin",
+      "source_sha256": "5d459f2e15cad13e14f19371cc1cea6c5a1df210c5644e62f78f7c522cb52af8",
+      "sha256": "05e83cf914b12ec71677130728d54daa118c2f1961512767ee5847e55b007333",
+      "byte_size": 1520684,
+      "vert_count": 15210,
+      "tri_count": 30412,
+      "body_count": 2,
+      "bounds_mm": {
+        "min": [
+          -16.109356,
+          -16.109356,
+          -10.0
+        ],
+        "max": [
+          16.109356,
+          16.109356,
+          62.0
+        ]
+      },
+      "volume_mm3": 11014.573669
+    },
+    "gears_b.stl": {
+      "derived_from": "static/assets/gears/gears_b.bin",
+      "source_sha256": "f4311a6f0f3f121719db2234bbd63c7e85c78dc915101358d3ef073e9e9933a1",
+      "sha256": "bb1f6edd68117fb3868a71b76d9fa18521b6c4af6aee4b1fa0818012ae1004f6",
+      "byte_size": 1507684,
+      "vert_count": 15080,
+      "tri_count": 30152,
+      "body_count": 2,
+      "bounds_mm": {
+        "min": [
+          -16.10877,
+          -16.108807,
+          -10.0
+        ],
+        "max": [
+          16.108778,
+          16.108744,
+          62.0
+        ]
+      },
+      "volume_mm3": 12829.207361
+    }
+  },
+  "source_samples": {
+    "gears_a.bin": [
+      {
+        "role": "A1",
+        "file": "Rollers v7 (Gear Sample A1) (Top of Cylinder A, joins to handle connector).stl",
+        "sha256": "fd1f3fa1c01108ac62f0269eb498b07bcc0c95c8c0b8ac67837c6d7db94d676c",
+        "vert_count": 7614,
+        "tri_count": 15224,
+        "tooth_count": 24,
+        "tip_radius_mm": 16.109371,
+        "z_span_mm": [
+          26.0,
+          36.0
+        ]
+      },
+      {
+        "role": "A2",
+        "file": "Rollers v7 (Gear Sample A2) (Bottom of Cylinder A).stl",
+        "sha256": "eef0793878a1ea9610a03408c4725c025813b101bdff479c8f634f94051ad8fe",
+        "vert_count": 7596,
+        "tri_count": 15188,
+        "tooth_count": 24,
+        "tip_radius_mm": 16.109371,
+        "z_span_mm": [
+          -36.0,
+          -26.0
+        ]
+      }
+    ],
+    "gears_b.bin": [
+      {
+        "role": "B1",
+        "file": "Rollers v7 (Gear Sample B1) (Top of Cylinder B).stl",
+        "sha256": "df58d10a8826e562584260add1941f846902cd104fe4ba6be7daaa80edc89352",
+        "vert_count": 7540,
+        "tri_count": 15076,
+        "tooth_count": 24,
+        "tip_radius_mm": 16.109402,
+        "z_span_mm": [
+          26.0,
+          36.0
+        ]
+      },
+      {
+        "role": "B2",
+        "file": "Rollers v7 (Gear Sample B2) (Bottom of Cylinder B).stl",
+        "sha256": "649d63f87ddb87fa28a6f481ca04e695c41e484aec763b7511eac35e58a78e26",
+        "vert_count": 7540,
+        "tri_count": 15076,
+        "tooth_count": 24,
+        "tip_radius_mm": 16.109402,
+        "z_span_mm": [
+          -36.0,
+          -26.0
+        ]
+      }
+    ]
+  }
+}
