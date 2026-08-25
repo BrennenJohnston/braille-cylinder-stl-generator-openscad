@@ -32,6 +32,18 @@ before it tags is still his call.
   braille embosser hardware, not version 1. Wording signed off by Brennen
   2026-08-25; a link to the version 2 build files will be added once published.
 
+### Fixed
+
+- **Both-plates preview no longer comes back empty.** Two whole plates in one
+  preview tree could blow past OpenCSG's normalization cap ("Normalized tree is
+  growing past 200000 elements … resulted in an empty tree" — reported from the
+  GUI 2026-08-25, reproduced with both plates + gears + double-sided). Each
+  body in the pair branch is now wrapped in `render()`: the preview tree stays
+  at two elements whatever the dials say, at the cost of one ~2 s evaluation.
+  Single-plate renders never enter that branch — their output is proven
+  byte-identical (sha256) — and the exported pair STL still passes every
+  both-plates test.
+
 ### Changed
 
 - `gear_set()` takes its plate as a parameter (`emboss = true/false`) instead

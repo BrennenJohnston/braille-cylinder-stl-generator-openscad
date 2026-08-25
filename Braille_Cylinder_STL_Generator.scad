@@ -2071,8 +2071,17 @@ if (both_on) {
     // upright exactly as they do alone - and the pair is symmetric about the
     // origin so the default camera frames it. The gear size gate and the DS
     // guards are file-scope, so they fire once, not once per body.
-    translate([-pair_center_offset_mm / 2, 0, 0]) cylinder_emboss_plate();
-    translate([ pair_center_offset_mm / 2, 0, 0]) cylinder_counter_plate();
+    //
+    // render() on each body is REQUIRED, not an optimisation: two whole
+    // plates in one preview tree blow past OpenCSG's normalization cap
+    // ("Normalized tree is growing past 100000/200000 elements") and the
+    // preview comes back EMPTY - reproduced 2026-08-25 with both plates +
+    // gears + double-sided, and in Brennen's GUI log with less. Each body
+    // is evaluated to a mesh once (Manifold, ~2 s) and the preview tree
+    // stays at two elements no matter what the dials say. Single-plate
+    // renders never enter this branch, so their output is untouched.
+    translate([-pair_center_offset_mm / 2, 0, 0]) render() cylinder_emboss_plate();
+    translate([ pair_center_offset_mm / 2, 0, 0]) render() cylinder_counter_plate();
 } else if (is_emboss_plate) {
     cylinder_emboss_plate();
 } else {
