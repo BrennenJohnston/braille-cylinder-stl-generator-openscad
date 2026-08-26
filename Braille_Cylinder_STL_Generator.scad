@@ -777,10 +777,21 @@ ds_same_surface_gap = ds_on
 // used the floor instead, which retired this text for it entirely.
 ds_dots_too_close = ds_on && (ds_same_surface_gap < DS_GAP_ACCEPTED);
 
-// Map render quality to segment counts (support both UI and test system)
-quality_fn = (hemisphere_quality == "low" || render_quality == "Low") ? 24 :
-             (hemisphere_quality == "medium" || render_quality == "Medium") ? 32 :
-             (hemisphere_quality == "high" || render_quality == "High") ? 64 : 32;
+// Map render quality to segment counts (support both UI and test system).
+//
+// The test override is ranked ABOVE the dropdown, not interleaved with it.
+// Interleaved - the arms reading `hemisphere_quality == "low" || render_quality
+// == "Low"` and so on - the override could not raise quality: with the shipped
+// default render_quality "Medium" standing, `hemisphere_quality="high"` fell
+// through arm 1, then matched "Medium" in arm 2 and silently rendered at 32.
+// The 64 arm was unreachable. "low" and "medium" appeared to work only by
+// accident ("medium" collides with the default's own answer), so the bug bit
+// exactly the one value that disagrees with the default.
+quality_fn = (hemisphere_quality == "low")    ? 24 :
+             (hemisphere_quality == "medium") ? 32 :
+             (hemisphere_quality == "high")   ? 64 :
+             (render_quality == "Low")        ? 24 :
+             (render_quality == "High")       ? 64 : 32;
 
 // =============================================================================
 // PRESET ROUTING - Select preset vs. custom values

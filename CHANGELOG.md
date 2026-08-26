@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Entry wording signed off by Brennen 2026-08-25; whether these fold into 2.8.0
-before it tags is still his call.
+Entry wording signed off by Brennen 2026-08-25 — including the both-plates
+preview entry, whose CLI/GUI cap correction he approved the same day; whether
+these fold into 2.8.0 before it tags is still his call.
+
+DRAFT — pending Brennen sign-off: the `hemisphere_quality` entry below.
 
 ### Added
 
@@ -36,13 +39,25 @@ before it tags is still his call.
 
 - **Both-plates preview no longer comes back empty.** Two whole plates in one
   preview tree could blow past OpenCSG's normalization cap ("Normalized tree is
-  growing past 200000 elements … resulted in an empty tree" — reported from the
-  GUI 2026-08-25, reproduced with both plates + gears + double-sided). Each
-  body in the pair branch is now wrapped in `render()`: the preview tree stays
-  at two elements whatever the dials say, at the cost of one ~2 s evaluation.
-  Single-plate renders never enter that branch — their output is proven
-  byte-identical (sha256) — and the exported pair STL still passes every
-  both-plates test.
+  growing past 100000/200000 elements … resulted in an empty tree" — CLI and GUI
+  caps; reported from the GUI 2026-08-25, reproduced with both plates + gears +
+  double-sided). Each body in the pair branch is now wrapped in `render()`: the
+  preview tree stays at two elements whatever the dials say, at the cost of one
+  ~2 s evaluation. Single-plate renders never enter that branch — their output
+  is proven byte-identical (sha256) — and the exported pair STL still passes
+  every both-plates test.
+- **`hemisphere_quality = "high"` was silently ignored.** The test override and
+  the `render_quality` dropdown were interleaved in one ternary chain, so with
+  the shipped default `render_quality = "Medium"` standing, `"high"` fell
+  through the first arm, matched `"Medium"` in the second and returned 32 — the
+  64 arm was unreachable. Measured on one short line: `"high"` produced 8,976
+  triangles, exactly what `"medium"` produced; it now produces 28,176. `"low"`
+  and `"medium"` looked correct only by accident (`"medium"` collides with the
+  default's own answer), which is why nothing caught it. The override is now
+  ranked above the dropdown. **No shipped render changes** — nothing in the
+  repo sets `render_quality`, and no fixture used `"high"`; both default plates
+  are sha256-identical. Regression cover: `tests/test_hemisphere_quality.py`,
+  which asserts low < medium < high by triangle count.
 
 ### Changed
 
