@@ -11,8 +11,8 @@ Entry wording signed off by Brennen 2026-08-25 — including the both-plates
 preview entry, whose CLI/GUI cap correction he approved the same day; whether
 these fold into 2.8.0 before it tags is still his call.
 
-DRAFT — pending Brennen sign-off: the `hemisphere_quality` and rounded-dome-weld
-entries below.
+DRAFT — pending Brennen sign-off: the `hemisphere_quality`, rounded-dome-weld
+and MakerWorld-gears entries below.
 
 ### Added
 
@@ -31,6 +31,17 @@ entries below.
   Nightly's Manifold engine renders in about 2 s — use Nightly — and inside
   Nightly the F5 preview re-pays ~0.5–1 s per frame while rotating (OpenCSG),
   which is normal, while F6 stays fast.
+- **The MakerWorld build now says that integrated gears are not available in
+  it**, instead of the control simply being absent. `makerworld/README.md` gains
+  a short section pointing at the desktop build and the web app, and repeats the
+  version-2 hardware warning. Tested rather than assumed on 2026-08-25:
+  MakerWorld's Parametric Model Maker (v1.1.0, redesigned 2025-10-27) offers no
+  way to upload a mesh at all — no asset panel, and a file picker that refuses
+  STL selection and takes one file at a time — so no packaging of the gear
+  meshes could reach it. Recorded alongside: this build's customizer syntax
+  parses correctly there, and a single-file gear delivery is otherwise solved
+  (one combined mesh with the second set parked 100 mm away and cropped per
+  plate, proven exact locally), should asset uploads ever appear.
 - **A hardware-compatibility warning on Integrated Gears** (customizer text and
   a console `NOTE:` while gears are on): the gears fit only version 2 of the
   braille embosser hardware, not version 1. Wording signed off by Brennen

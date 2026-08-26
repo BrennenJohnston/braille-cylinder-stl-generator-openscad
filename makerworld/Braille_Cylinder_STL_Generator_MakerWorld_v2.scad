@@ -468,6 +468,22 @@ function preset_value(preset, key, fallback) =
 // tests/test_makerworld_sync.py requires both builds to carry the same
 // parameter set, and the geometry body below is byte-identical - but it lives
 // in a Hidden tab so the Customizer never offers it.
+//
+// TESTED 2026-08-25, so nobody has to wonder whether this is still true: the
+// gears cannot be shipped here, and the reason is one step earlier than "no
+// assets folder". MakerWorld's Parametric Model Maker - v1.1.0, redesigned
+// 2025-10-27 - has no way to upload a mesh at all. Its editor offers no asset
+// panel, and its file picker refuses STL selection outright and takes one file
+// at a time. So there is no version of this build that could carry the gear
+// meshes, however they were packaged. Two things were confirmed in the same
+// session and are worth knowing: this file's customizer syntax parses correctly
+// there, and a single-file gear delivery is otherwise solved (one combined mesh
+// with the second gear set parked 100 mm away, cropped per plate - proven exact
+// locally). If MakerWorld ever ships asset uploads, that is the design to reach
+// for. Until then, geared cylinders come from the desktop OpenSCAD build or the
+// web app.
+// DRAFT - pending Brennen sign-off (maintainer-facing, but it states the
+// decision, so it goes in the batch).
 integrated_gears = "Off"; // [Off, On]
 // Print the self-check echoes below. Off in normal renders so scripts\scad-check.ps1
 // stays quiet; tests/test_interpoint_math_scad.py renders with this On. A test

@@ -71,6 +71,30 @@ and the inlined presets block against `../presets.scad`.
 > (same settings, only `plate_type` changes) so the two plates form a matching
 > pair.
 
+## Integrated gears (BETA) are not in this build
+
+DRAFT — pending Brennen sign-off.
+
+The desktop generator can build a cylinder as one piece with its drive gears
+already attached. **This MakerWorld build cannot**, and it is not an oversight or
+a setting you are missing — the gears are a separate mesh file, and MakerWorld's
+Parametric Model Maker has no way to accept one (checked 2026-08-25: its editor
+offers no place to attach a model file, and its file picker will not select an
+STL at all).
+
+If you want geared cylinders, use either:
+
+- the **desktop OpenSCAD build** — [`../Braille_Cylinder_STL_Generator.scad`](../Braille_Cylinder_STL_Generator.scad),
+  which reads its gear meshes from the `assets/` folder beside it, or
+- the **web app**, which generates them in the browser.
+
+Everything else on this page — braille, both plates, double-sided cards, the
+tactile indicators — works here exactly as it does on the desktop.
+
+> **Before you print geared cylinders anywhere:** they fit only **version 2** of
+> the braille embosser hardware. They do not fit version 1 — do not use geared
+> cylinders with a version 1 embosser body.
+
 ## Double-sided cards (BETA)
 
 The `[Double-Sided Card (BETA)]` tab embosses braille on **both** faces of one
