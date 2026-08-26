@@ -98,7 +98,8 @@ preview to take longer.
 
 ## Integrated gears (BETA) are not in this build
 
-DRAFT — pending Brennen sign-off.
+<!-- Wording signed off by Brennen 2026-08-25; reword only with his sign-off.
+     The hardware sentence is his signed S9 text, reused verbatim. -->
 
 The desktop generator can build a cylinder as one piece with its drive gears
 already attached. **This MakerWorld build cannot**, and it is not an oversight or

@@ -292,7 +292,8 @@ less field use than the single-sided workflow. Report anything odd on the
 
 ## ⚙️ Integrated Gears (BETA)
 
-DRAFT — pending Brennen sign-off.
+<!-- Wording signed off by Brennen 2026-08-25; reword only with his sign-off.
+     The hardware sentence is his signed S9 text, reused verbatim. -->
 
 > **Hardware compatibility, before anything else:** integrated gears fit only
 > **version 2** of the braille embosser hardware. They do not fit version 1 — do

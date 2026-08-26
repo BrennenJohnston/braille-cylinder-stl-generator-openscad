@@ -11,8 +11,8 @@ Entry wording signed off by Brennen 2026-08-25 — including the both-plates
 preview entry, whose CLI/GUI cap correction he approved the same day; whether
 these fold into 2.8.0 before it tags is still his call.
 
-DRAFT — pending Brennen sign-off: the `hemisphere_quality`, rounded-dome-weld
-and MakerWorld-gears entries below.
+The `hemisphere_quality`, rounded-dome-weld and MakerWorld-gears entries were
+signed off the same day, at the end of the session that added them.
 
 ### Added
 

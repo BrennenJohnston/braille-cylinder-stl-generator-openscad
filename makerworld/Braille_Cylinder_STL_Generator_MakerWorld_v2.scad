@@ -482,8 +482,7 @@ function preset_value(preset, key, fallback) =
 // locally). If MakerWorld ever ships asset uploads, that is the design to reach
 // for. Until then, geared cylinders come from the desktop OpenSCAD build or the
 // web app.
-// DRAFT - pending Brennen sign-off (maintainer-facing, but it states the
-// decision, so it goes in the batch).
+// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
 integrated_gears = "Off"; // [Off, On]
 // Print the self-check echoes below. Off in normal renders so scripts\scad-check.ps1
 // stays quiet; tests/test_interpoint_math_scad.py renders with this On. A test
