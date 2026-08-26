@@ -3,9 +3,8 @@
   "title": "OpenSCAD to Web API Parameter Mapping",
   "description": "Machine-readable mapping between OpenSCAD customizer variables and web API parameters. Source of truth for cross-platform validation.",
   "version": "2.6.0",
-  "last_updated": "2026-08-20",
+  "last_updated": "2026-08-25",
   "documentation": "See docs/PARAMETER_MAPPING.md for human-readable version",
-  
   "ui_parameter_format": {
     "description": "OpenSCAD Customizer dropdown format guidelines to prevent duplicate options",
     "correct_format": "param = \"DefaultLabel\"; // [Label1, Label2, Label3]",
@@ -17,7 +16,6 @@
     ],
     "test_system_note": "Test system passes parameters via -D flags with lowercase values (e.g., 'rounded', 'positive'). The OpenSCAD file normalizes these to work with UI labels."
   },
-  
   "parameters": [
     {
       "openscad_name": "Line_1",
@@ -120,7 +118,10 @@
       "web_ui_label": "Text Limit Check",
       "type": "enum",
       "default": "On",
-      "values": ["On", "Off"],
+      "values": [
+        "On",
+        "Off"
+      ],
       "section": "Text Input - Pre-Translated Braille",
       "description": "Show TEXT TOO LONG warning and clip rows to the cell capacity. Off = render every pasted character (rows may crowd the seam).",
       "note": "OpenSCAD-only toggle; the web app validates cell counts before generation instead"
@@ -131,8 +132,14 @@
       "web_ui_label": "Double-Sided Card (BETA)",
       "type": "enum",
       "default": "Off",
-      "values": ["Off", "On"],
-      "test_system_values": ["off", "on"],
+      "values": [
+        "Off",
+        "On"
+      ],
+      "test_system_values": [
+        "off",
+        "on"
+      ],
       "value_mapping": {
         "off": "Off",
         "on": "On",
@@ -244,7 +251,10 @@
       "web_ui_label": "Interpoint Offset (around the cylinder)",
       "type": "float",
       "default": 1.25,
-      "range": [1.15, 1.35],
+      "range": [
+        1.15,
+        1.35
+      ],
       "unit": "mm",
       "section": "Double-Sided Card (BETA)",
       "description": "Circumferential half of the diagonal shift between the front and back grids, measured around the cylinder",
@@ -256,7 +266,10 @@
       "web_ui_label": "Interpoint Offset (along the axis)",
       "type": "float",
       "default": 1.25,
-      "range": [1.15, 1.35],
+      "range": [
+        1.15,
+        1.35
+      ],
       "unit": "mm",
       "section": "Double-Sided Card (BETA)",
       "description": "Axial half of the same diagonal shift, measured along the cylinder: back rows sit this far above the front rows",
@@ -268,8 +281,14 @@
       "web_ui_label": "Select Plate to Generate",
       "type": "enum",
       "default": "Embossing Plate",
-      "values": ["Embossing Plate", "Counter Plate"],
-      "test_system_values": ["positive", "negative"],
+      "values": [
+        "Embossing Plate",
+        "Counter Plate"
+      ],
+      "test_system_values": [
+        "positive",
+        "negative"
+      ],
       "value_mapping": {
         "positive": "Embossing Plate",
         "negative": "Counter Plate",
@@ -286,7 +305,10 @@
       "web_ui_label": "Row Indicator Style",
       "type": "enum",
       "default": "Visual",
-      "values": ["Visual", "Tactile"],
+      "values": [
+        "Visual",
+        "Tactile"
+      ],
       "section": "Indicator Mode",
       "description": "Visual = recessed triangle (plus optional letter square) in marker cells at the start of each row. Tactile = raised arrow on the embossing plate and matching recess on the counter plate, centred in the seam gap, with no marker cells.",
       "note": "Ported to the web app 2026-07-29; enum casing differs on the wire (visual/tactile). Schema home: indicators.indicator_mode"
@@ -297,7 +319,10 @@
       "web_ui_label": "Tactile Indicator Width",
       "type": "float",
       "default": 4.0,
-      "range": [2, 10],
+      "range": [
+        2,
+        10
+      ],
       "section": "Indicator Mode",
       "description": "Tactile indicator width measured around the cylinder (mm)",
       "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
@@ -308,7 +333,10 @@
       "web_ui_label": "Tactile Indicator Length",
       "type": "float",
       "default": 10.0,
-      "range": [2, 15],
+      "range": [
+        2,
+        15
+      ],
       "section": "Indicator Mode",
       "description": "Tactile indicator length measured along the cylinder axis (mm); long enough for a fingertip to read the direction of the point in one pass",
       "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there. Aligned to the web value 2026-08-18 (was 5.0)"
@@ -319,7 +347,10 @@
       "web_ui_label": "Tactile Indicator Raise",
       "type": "float",
       "default": 0.5,
-      "range": [0, 2],
+      "range": [
+        0,
+        2
+      ],
       "section": "Indicator Mode",
       "description": "How far the embossing plate's arrow stands proud of the surface (mm); kept below the braille dot height so the dots carry the rolling pressure",
       "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there. Aligned to the web value 2026-08-18 (was 0.8)"
@@ -330,7 +361,10 @@
       "web_ui_label": "Tactile Recess Clearance",
       "type": "float",
       "default": 0.2,
-      "range": [0, 1],
+      "range": [
+        0,
+        1
+      ],
       "section": "Indicator Mode",
       "description": "Outline margin added around the counter plate's recess (mm) so the arrow enters even when slightly misaligned",
       "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
@@ -341,7 +375,10 @@
       "web_ui_label": "Tactile Recess Extra Depth",
       "type": "float",
       "default": 0.2,
-      "range": [0, 1],
+      "range": [
+        0,
+        1
+      ],
       "section": "Indicator Mode",
       "description": "Counter recess depth added on top of the arrow raise (mm); 0 gives exact same-depth nesting",
       "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
@@ -352,7 +389,11 @@
       "web_ui_label": "Card Thickness",
       "type": "enum",
       "default": "0.4mm",
-      "values": ["0.4mm", "0.3mm", "Custom"],
+      "values": [
+        "0.4mm",
+        "0.3mm",
+        "Custom"
+      ],
       "section": "Paper Thickness Preset",
       "description": "Preset that controls multiple parameters (spacing, dot dimensions, cylinder settings)",
       "note": "Web UI label is 'Card Thickness' but this is NOT the removed card-geometry feature—it's a parametric memory system"
@@ -364,8 +405,14 @@
       "web_ui_label": "Braille Dot Shape",
       "type": "enum",
       "default": "Rounded",
-      "values": ["Rounded", "Cone"],
-      "test_system_values": ["rounded", "cone"],
+      "values": [
+        "Rounded",
+        "Cone"
+      ],
+      "test_system_values": [
+        "rounded",
+        "cone"
+      ],
       "value_mapping": {
         "rounded": "Rounded",
         "cone": "Cone",
@@ -382,8 +429,14 @@
       "web_ui_label": "Indicator Shapes",
       "type": "enum",
       "default": "On",
-      "values": ["On", "Off"],
-      "test_system_values": ["on", "off"],
+      "values": [
+        "On",
+        "Off"
+      ],
+      "test_system_values": [
+        "on",
+        "off"
+      ],
       "value_mapping": {
         "on": "On",
         "off": "Off",
@@ -399,7 +452,10 @@
       "web_ui_label": "Cylinder Diameter",
       "type": "float",
       "default": 30.8,
-      "range": [10, 100],
+      "range": [
+        10,
+        100
+      ],
       "unit": "mm",
       "section": "Expert Mode - Cylinder Dimensions",
       "description": "Cylinder outer diameter in millimeters"
@@ -410,7 +466,10 @@
       "web_ui_label": "Cylinder Height",
       "type": "float",
       "default": 52.0,
-      "range": [20, 150],
+      "range": [
+        20,
+        150
+      ],
       "unit": "mm",
       "section": "Expert Mode - Cylinder Dimensions",
       "description": "Cylinder height in millimeters"
@@ -421,7 +480,10 @@
       "web_ui_label": "Cutout Radius",
       "type": "float",
       "default": 13.0,
-      "range": [0, 50],
+      "range": [
+        0,
+        50
+      ],
       "unit": "mm",
       "section": "Expert Mode - Cylinder Dimensions",
       "description": "Polygonal cutout circumscribed radius (0 = no cutout)"
@@ -432,7 +494,10 @@
       "web_ui_label": "Cutout Points/Sides",
       "type": "integer",
       "default": 12,
-      "range": [3, 24],
+      "range": [
+        3,
+        24
+      ],
       "section": "Expert Mode - Cylinder Dimensions",
       "description": "Number of sides/points for polygonal cutout"
     },
@@ -442,7 +507,10 @@
       "web_ui_label": "Seam Offset",
       "type": "float",
       "default": 0.0,
-      "range": [0, 360],
+      "range": [
+        0,
+        360
+      ],
       "unit": "degrees",
       "section": "Expert Mode - Cylinder Dimensions",
       "description": "Seam offset (degrees) — Rotates starting position around cylinder"
@@ -453,7 +521,10 @@
       "web_ui_label": "Number of Braille Cells",
       "type": "integer",
       "default": 13,
-      "range": [1, 20],
+      "range": [
+        1,
+        20
+      ],
       "section": "Expert Mode - Braille Spacing",
       "description": "Text capacity in braille cells per row (matches the web app default of 13 text cells). Visual indicator mode adds 2 marker cells when Indicator Letters are On, or 1 (the alignment triangle) when Off; Tactile mode adds none. Up to 14 text cells fit the default cylinder in either of the narrower layouts."
     },
@@ -463,7 +534,10 @@
       "web_ui_label": "Number of Braille Lines",
       "type": "integer",
       "default": 4,
-      "range": [1, 10],
+      "range": [
+        1,
+        10
+      ],
       "section": "Expert Mode - Braille Spacing",
       "description": "Number of lines of braille"
     },
@@ -473,7 +547,10 @@
       "web_ui_label": "Braille Cell Spacing",
       "type": "float",
       "default": 6.5,
-      "range": [2, 15],
+      "range": [
+        2,
+        15
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Spacing",
       "description": "Horizontal spacing between cells"
@@ -484,7 +561,10 @@
       "web_ui_label": "Braille Line Spacing",
       "type": "float",
       "default": 10.0,
-      "range": [5, 25],
+      "range": [
+        5,
+        25
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Spacing",
       "description": "Vertical spacing between lines"
@@ -495,7 +575,10 @@
       "web_ui_label": "Braille Dot Spacing",
       "type": "float",
       "default": 2.5,
-      "range": [1, 5],
+      "range": [
+        1,
+        5
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Spacing",
       "description": "Spacing between dots within a cell"
@@ -506,7 +589,10 @@
       "web_ui_label": "Y Adjust",
       "type": "float",
       "default": 0.0,
-      "range": [-10, 10],
+      "range": [
+        -10,
+        10
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Spacing",
       "description": "Vertical adjustment of braille pattern"
@@ -517,7 +603,10 @@
       "web_ui_label": "Rounded dot base diameter (cone base)",
       "type": "float",
       "default": 1.5,
-      "range": [0.5, 3],
+      "range": [
+        0.5,
+        3
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Dot Adjustments",
       "subsection": "Embossing Braille Dot Dimensions (Rounded Shape)",
@@ -529,7 +618,10 @@
       "web_ui_label": "Rounded dot base height (cone height)",
       "type": "float",
       "default": 0.5,
-      "range": [0, 2],
+      "range": [
+        0,
+        2
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Dot Adjustments",
       "subsection": "Embossing Braille Dot Dimensions (Rounded Shape)",
@@ -541,7 +633,10 @@
       "web_ui_label": "Rounded dome diameter",
       "type": "float",
       "default": 1.0,
-      "range": [0.5, 3],
+      "range": [
+        0.5,
+        3
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Dot Adjustments",
       "subsection": "Embossing Braille Dot Dimensions (Rounded Shape)",
@@ -553,7 +648,10 @@
       "web_ui_label": "Rounded dot dome height",
       "type": "float",
       "default": 0.5,
-      "range": [0.1, 2],
+      "range": [
+        0.1,
+        2
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Dot Adjustments",
       "subsection": "Embossing Braille Dot Dimensions (Rounded Shape)",
@@ -565,7 +663,10 @@
       "web_ui_label": "Dot diameter",
       "type": "float",
       "default": 1.5,
-      "range": [0.5, 3],
+      "range": [
+        0.5,
+        3
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Dot Adjustments",
       "subsection": "Embossing Braille Dot Dimensions (Cone Shape)",
@@ -577,7 +678,10 @@
       "web_ui_label": "Dot height",
       "type": "float",
       "default": 0.8,
-      "range": [0.3, 2],
+      "range": [
+        0.3,
+        2
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Dot Adjustments",
       "subsection": "Embossing Braille Dot Dimensions (Cone Shape)",
@@ -589,7 +693,10 @@
       "web_ui_label": "Flat hat diameter",
       "type": "float",
       "default": 0.4,
-      "range": [0.1, 2],
+      "range": [
+        0.1,
+        2
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Dot Adjustments",
       "subsection": "Embossing Braille Dot Dimensions (Cone Shape)",
@@ -601,7 +708,10 @@
       "web_ui_label": "Bowl Recess Dot Base Diameter",
       "type": "float",
       "default": 1.8,
-      "range": [0.5, 5],
+      "range": [
+        0.5,
+        5
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Dot Adjustments",
       "subsection": "Counter Braille Recessed Dot Dimensions (Rounded Shape / Bowl)",
@@ -613,7 +723,10 @@
       "web_ui_label": "Bowl Recess Depth",
       "type": "float",
       "default": 0.8,
-      "range": [0.1, 2],
+      "range": [
+        0.1,
+        2
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Dot Adjustments",
       "subsection": "Counter Braille Recessed Dot Dimensions (Rounded Shape / Bowl)",
@@ -625,7 +738,10 @@
       "web_ui_label": "Cone recess base diameter",
       "type": "float",
       "default": 1.9,
-      "range": [0.5, 3],
+      "range": [
+        0.5,
+        3
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Dot Adjustments",
       "subsection": "Counter Braille Recessed Dot Dimensions (Cone Shape)",
@@ -637,7 +753,10 @@
       "web_ui_label": "Cone recess height",
       "type": "float",
       "default": 0.7,
-      "range": [0.3, 2],
+      "range": [
+        0.3,
+        2
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Dot Adjustments",
       "subsection": "Counter Braille Recessed Dot Dimensions (Cone Shape)",
@@ -649,7 +768,10 @@
       "web_ui_label": "Cone recess flat hat diameter",
       "type": "float",
       "default": 1.0,
-      "range": [0.1, 2],
+      "range": [
+        0.1,
+        2
+      ],
       "unit": "mm",
       "section": "Expert Mode - Braille Dot Adjustments",
       "subsection": "Counter Braille Recessed Dot Dimensions (Cone Shape)",
@@ -662,8 +784,16 @@
       "web_ui_label": "Render Quality",
       "type": "enum",
       "default": "Medium",
-      "values": ["Low", "Medium", "High"],
-      "test_system_values": ["low", "medium", "high"],
+      "values": [
+        "Low",
+        "Medium",
+        "High"
+      ],
+      "test_system_values": [
+        "low",
+        "medium",
+        "high"
+      ],
       "value_mapping": {
         "low": "Low",
         "medium": "Medium",
@@ -682,24 +812,67 @@
       "web_ui_label": "Cone Segments",
       "type": "integer",
       "default": 16,
-      "range": [8, 64],
+      "range": [
+        8,
+        64
+      ],
       "section": "Rendering Quality",
       "description": "Number of segments for cone shapes",
       "note": "Affects mesh resolution, not geometry dimensions"
+    },
+    {
+      "openscad_name": "integrated_gears",
+      "web_api_name": "gear_rollers_enabled",
+      "web_ui_label": "Integrated Gears (BETA)",
+      "section": "Integrated Gears (BETA)",
+      "type": "enum",
+      "values": [
+        "Off",
+        "On"
+      ],
+      "default": "Off",
+      "description": "Build the cylinder as one solid piece with its drive gears already attached, instead of a bare barrel that separately printed gears push onto. The gears are a 1:1 replica of the reference set and are not adjustable, so the cylinder is locked to 30.8 mm x 52 mm while this is On and any other size is refused. The barrel also prints solid: the polygonal cutout is dropped.",
+      "note": "DESKTOP BUILD ONLY. The gear meshes are real files (assets/gears_a.stl, assets/gears_b.stl) that must sit beside the .scad, so the MakerWorld single-file build declares this parameter in a [Hidden] tab and never offers it - MakerWorld's customizer has no way to accept a mesh (tested 2026-08-25). On the wire the web app sends the flat integer gear_rollers_enabled (0/1); schema home gear_rollers.enabled."
+    },
+    {
+      "openscad_name": "render_both_plates",
+      "web_api_name": null,
+      "web_ui_label": "Generate Both Cylinders",
+      "section": "Plate Selection",
+      "type": "enum",
+      "values": [
+        "Off",
+        "On"
+      ],
+      "default": "Off",
+      "description": "Render Cylinder A (embossing plate) and Cylinder B (counter plate) side by side in one pass instead of rendering each separately. plate_type is ignored while this is On.",
+      "note": "No wire equivalent: the web app reaches the same outcome by running its single-plate pipeline twice and concatenating the two STLs into one combined download, so there is no request field to map. Accepts the Customizer's On/Off and the lowercase on/off the test system passes with -D."
+    },
+    {
+      "openscad_name": "pair_spacing_mm",
+      "web_api_name": null,
+      "web_ui_label": null,
+      "section": "Plate Selection",
+      "type": "number",
+      "default": 10,
+      "range": [
+        2,
+        50
+      ],
+      "description": "Gap between the two barrel SURFACES when render_both_plates is On, for laying the pair out on one print plate. Centre-to-centre is this plus one cylinder diameter.",
+      "note": "A print-layout figure, not the assembly distance: a meshed pair runs at a 32.0473 mm axis distance. With gears On the teeth overhang the barrel, so the default 10 mm barrel gap leaves about 8.58 mm tip to tip. The web app hard-codes the same 10 mm surface gap for its combined download and exposes no dial."
     }
   ],
-  
   "removed_parameters": {
     "description": "Parameters removed in version 2.0.0 (card support removed)",
     "parameters": [
       "shape_type",
       "card_width",
-      "card_height", 
+      "card_height",
       "card_thickness"
     ],
     "reason": "Card support permanently removed in favor of cylinder-only operation"
   },
-  
   "validation_rules": {
     "description": "Rules for validating parameter consistency between OpenSCAD and web API",
     "checks": [
@@ -736,7 +909,6 @@
       }
     ]
   },
-  
   "notes": [
     "Version 2.0.0: Card support removed, cylinder-only operation",
     "Version 2.1.0: Paper thickness preset system added, defaults updated to match web app 0.4mm preset",

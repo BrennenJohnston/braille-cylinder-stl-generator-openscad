@@ -29,6 +29,7 @@ License: PolyForm Noncommercial 1.0.0
 import hashlib
 import json
 import math
+import os
 import struct
 import sys
 from pathlib import Path
@@ -46,7 +47,16 @@ ASSET_NAMES = ("gears_a", "gears_b")
 # Where the derived binaries live. Only regenerate() needs this; the tests read
 # this repo's own STLs and its provenance file, so the suite passes on a machine
 # that does not have the web repo checked out.
-WEB_REPO = Path(r"C:\Users\WATAP\Documents\github\braille-cylinder-stl-generator")
+#
+# The literal is one machine's layout, which is fine for the tests (they never
+# touch it) but makes regenerate() unrunnable anywhere else. BRAILLE_WEB_REPO
+# overrides it; unset, the path below is used exactly as before.
+WEB_REPO = Path(
+    os.environ.get(
+        "BRAILLE_WEB_REPO",
+        r"C:\Users\WATAP\Documents\github\braille-cylinder-stl-generator",
+    )
+)
 WEB_ASSETS_DIR = WEB_REPO / "static" / "assets" / "gears"
 
 # The web repo's packed format. The header is 14 bytes, which is not a multiple

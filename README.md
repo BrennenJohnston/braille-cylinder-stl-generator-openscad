@@ -290,6 +290,57 @@ less field use than the single-sided workflow. Report anything odd on the
 
 ---
 
+## ⚙️ Integrated Gears (BETA)
+
+DRAFT — pending Brennen sign-off.
+
+> **Hardware compatibility, before anything else:** integrated gears fit only
+> **version 2** of the braille embosser hardware. They do not fit version 1 — do
+> not use geared cylinders with a version 1 embosser body. (A link to the
+> version 2 build files will be added here once they are published.)
+
+Set `integrated_gears` to `On` in the **[Integrated Gears (BETA)]** tab and the
+cylinder is built as **one solid piece with its drive gears already attached**,
+instead of a bare barrel you push separately printed gears onto. Meshed gears
+are also what keeps a paired set turning together.
+
+**This build only.** The gear meshes are real files —
+`assets/gears_a.stl` and `assets/gears_b.stl` — which must sit in an `assets/`
+folder beside the `.scad`. That is why the MakerWorld single-file build does not
+offer this; see [`makerworld/README.md`](makerworld/README.md).
+
+Things worth knowing before you switch it on:
+
+- **The cylinder size is fixed while gears are on: 30.8 mm × 52 mm.** The gears
+  are a 1:1 replica of the reference set, baked at fixed heights, and they do
+  not move with the barrel. Any other size is **refused with an error** rather
+  than silently mis-built — a shorter barrel would export as three loose pieces
+  and a taller one would swallow the teeth. Both paper-thickness presets already
+  set this size, so the shipped defaults pass.
+- **The barrel prints solid.** The polygonal cutout is dropped while gears are
+  on, and the console says so if you had one set. A one-piece roller has no
+  through-path along its axis anyway — the gear bores are blind pockets — so
+  keeping the cutout would seal a cavity nothing can reach or drain.
+- The gears are **not adjustable**. They replicate the reference set exactly, so
+  that a roller printed here meshes with one printed from the web app.
+
+## 🔄 Rendering Both Plates At Once
+
+`render_both_plates = On` (in **[Plate Selection]**) builds the **complete pair
+in one render** — Cylinder A, the embossing plate, on the left, and Cylinder B,
+the counter plate, on the right — instead of rendering each plate separately and
+switching `plate_type` between them. `plate_type` is ignored while it is On.
+
+`pair_spacing_mm` (default 10) is the gap between the two barrel **surfaces**,
+for laying them out on one print plate. It is not the assembly distance: a
+meshed pair runs at a 32.0473 mm axis distance. With gears on, the teeth
+overhang the barrel, so a 10 mm barrel gap leaves about **8.58 mm tip to tip**.
+
+Rendering both plates is heavier than rendering one, which is normal — see
+Troubleshooting below if the preview feels slow.
+
+---
+
 ## 🖨️ 3D Printing Tips
 
 - **Material**: PLA works well; PETG is more durable
@@ -544,7 +595,11 @@ For issues specific to this OpenSCAD version:
 1. [Open an issue](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad/issues) on this repository
 2. Check parameter values in Customizer
 3. Verify Unicode braille character validity
-4. Ensure OpenSCAD version 2024.x or newer (2026.01.03+ recommended)
+4. Use an OpenSCAD **Nightly** build with the Manifold engine (2026.01.03 is
+   what CI pins). This is stronger than a minimum-version note: the stable
+   2021.01 release renders the counter plate in tens of minutes where Nightly
+   takes about two seconds — see [Rendering feels very slow](#-troubleshooting)
+   if that is what you are seeing
 
 For general braille embossing questions, see the [web app](https://braille-cylinder-stl-generator.vercel.app).
 

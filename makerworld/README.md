@@ -29,7 +29,7 @@ Everything from the `// BACKWARD COMPATIBILITY` marker to the end of the file
 (the entire geometry body) is **byte-identical** to
 `../Braille_Cylinder_STL_Generator.scad`, and every parameter default and slider
 range above that marker matches it too. The differences are all **presentation**,
-all above the marker, and there are three of them:
+all above the marker, and there are four of them:
 
 - **Inlined presets.** `include <presets.scad>;` is replaced by the contents of
   `presets.scad` between these sentinels:
@@ -42,15 +42,23 @@ all above the marker, and there are three of them:
 
 - **A MakerWorld-specific header block** in place of the desktop header.
 - **A three-line `dot_shape` comment** explaining this build's Rounded default.
+- **`integrated_gears` sits in a `[Hidden]` tab** here instead of a visible one,
+  so the Customizer never offers it. The parameter itself is identical in both
+  files — only which tab it appears under differs, which is invisible to the
+  sync test. See "Integrated gears (BETA) are not in this build" below.
 
-Nothing else differs: with identical settings the two builds produce
-byte-identical STLs, single-sided and double-sided alike. Both files default
-`dot_shape` to `"Rounded"` and `paper_thickness_preset` to `"0.4mm"` (the
-dropdowns still offer the other options).
+With identical settings the two builds produce byte-identical STLs, single-sided
+and double-sided alike. The one exception is integrated gears: the desktop build
+can render them and this one cannot, because it has no `assets/` folder and
+MakerWorld has no way to supply one. Both files default `dot_shape` to
+`"Rounded"` and `paper_thickness_preset` to `"0.4mm"` (the dropdowns still offer
+the other options).
 
 `tests/test_makerworld_sync.py` guards these invariants in CI — the geometry
-body, all 89 top-level declarations above the marker with their slider ranges,
-and the inlined presets block against `../presets.scad`.
+body, all 93 top-level declarations above the marker with their slider ranges,
+and the inlined presets block against `../presets.scad`. (That count is what the
+test itself reports; if you change the parameter set, take the new number from a
+test run rather than by counting lines.)
 
 ## Upload steps (MakerWorld Parametric Model Maker)
 
@@ -65,11 +73,28 @@ and the inlined presets block against `../presets.scad`.
    - Choose `indicator_mode`: `Visual` (default) or `Tactile` — see below.
    - Choose `paper_thickness_preset`: `0.4mm`, `0.3mm`, or `Custom`.
    - `dot_shape` is already set to `Rounded`; switch to `Cone` if preferred.
+   - To get **both** cylinders from one render, set `render_both_plates` to `On`
+     (see below) instead of rendering twice.
 5. Generate / render and download the STL.
 
-> Tip: generate the **Embossing Plate** and the **Counter Plate** separately
-> (same settings, only `plate_type` changes) so the two plates form a matching
-> pair.
+> Tip: you can get the matching pair either way. Set `render_both_plates` to
+> `On` and one render gives you both cylinders side by side; or leave it `Off`
+> and render the **Embossing Plate** and the **Counter Plate** separately with
+> the same settings, changing only `plate_type`. Either way the two plates only
+> work as the pair you made from one set of settings.
+
+## Both plates in one render
+
+`render_both_plates` (in **[Plate Selection]**, default `Off`) builds Cylinder A,
+the embossing plate, on the left and Cylinder B, the counter plate, on the right
+in a single render. `plate_type` is ignored while it is `On`.
+
+`pair_spacing_mm` (default 10) sets the gap between the two barrel **surfaces**,
+for laying them out on one print plate. It is not how far apart they sit when
+they are working — a meshed pair runs closer than that.
+
+Rendering both plates is roughly twice the work of rendering one, so expect the
+preview to take longer.
 
 ## Integrated gears (BETA) are not in this build
 
@@ -241,7 +266,7 @@ change. Do it manually (no codegen step is committed) and let
 
    The sync test now checks four things, not just the geometry body: the body is
    byte-identical to the canonical file; **every top-level parameter default and
-   slider range above the marker matches it** (89 declarations, including all the
+   slider range above the marker matches it** (93 declarations, including all the
    `DS_*` constants from step 2b); the inlined presets block matches
    `../presets.scad`; and the sentinels plus the Rounded default are present. The
    render confirms the file is a valid standalone single-file build.

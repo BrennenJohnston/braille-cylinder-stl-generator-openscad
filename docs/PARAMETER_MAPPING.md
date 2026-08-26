@@ -98,6 +98,21 @@ in the web repository for the two packages.
 | OpenSCAD Parameter | Web App Equivalent | Values |
 |--------------------|-------------------|--------|
 | `plate_type` | Select Plate to Generate | `"Embossing Plate"`, `"Counter Plate"` |
+| `render_both_plates` | Generate Both Cylinders (no wire field) | `"Off"` (default), `"On"`. Renders Cylinder A and Cylinder B side by side in one pass; `plate_type` is ignored while On. **No request field maps to this**: the web app reaches the same outcome by running its single-plate pipeline twice and concatenating the two STLs into one combined download. Accepts the lowercase `on`/`off` the test system passes with `-D`. |
+| `pair_spacing_mm` | (no wire field; the web app hard-codes 10 mm) | `10` (default), range `2`–`50`. Gap between the two barrel **surfaces** while `render_both_plates` is On, for laying the pair out on one print plate; centre-to-centre is this plus one diameter. It is **not** the assembly distance — a meshed pair runs at a 32.0473 mm axis distance, and with gears On the teeth overhang the barrel, leaving about 8.58 mm tip to tip at the default. |
+
+### Integrated Gears (BETA)
+
+| OpenSCAD Parameter | Web App Equivalent | Values |
+|--------------------|-------------------|--------|
+| `integrated_gears` | `gear_rollers_enabled` | `"Off"` (default), `"On"`. Builds the cylinder as one solid piece with its drive gears attached. The gears are a 1:1 replica of the reference set and are **not adjustable**, so the cylinder is locked to 30.8 mm × 52 mm while On and any other size is refused rather than mis-built; the barrel also prints solid (the polygonal cutout is dropped). Web schema home `gear_rollers.enabled`; on the wire it is the flat integer `gear_rollers_enabled` (0/1). |
+
+**Desktop build only.** The gear meshes are real files — `assets/gears_a.stl` and
+`assets/gears_b.stl` — that must sit beside the `.scad`. The MakerWorld
+single-file build declares the same parameter (the sync test requires it) but in
+a `[Hidden]` tab, so its Customizer never offers it. That is not a packaging
+choice that could be worked around: MakerWorld's Parametric Model Maker has no
+way to accept a mesh file at all (tested 2026-08-25).
 
 ### Indicator Mode
 
