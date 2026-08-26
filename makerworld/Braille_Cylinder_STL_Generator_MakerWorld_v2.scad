@@ -1269,6 +1269,32 @@ CYLINDER_SHELL_FN = 64;
 SHELL_FACET_DIP = radius * (1 - cos(180 / CYLINDER_SHELL_FN));
 DOT_BASE_EMBED  = SHELL_FACET_DIP * 2;
 
+// -----------------------------------------------------------------------------
+// ROUNDED-DOT DOME WELD
+// -----------------------------------------------------------------------------
+// The embed above fused dot to shell; this fuses the two halves of the dot to
+// each other. Inside every rounded dot the spherical cap was cut off at exactly
+// the frustum's top plane, and the cap's base circle there is exactly the
+// frustum's top radius - provably so, since R = (r^2 + h^2) / 2h rearranges to
+// give the cap radius r at that height. Two bodies meeting on one shared circle
+// with no overlap, tessellated differently either side of it (cone_segments 16
+// against quality_fn 24/32). It welded, but by luck: raising DOT_BASE_EMBED far
+// enough was observed splitting the dome off as its own body at 0.08, 0.18 and
+// 0.20 mm, and the embed is DERIVED - it already reaches 0.1204 mm at the 100 mm
+// diameter ceiling, past all three.
+//
+// The cure is the house rule the rest of this file follows: overlap, never
+// touch. Only the cap's CUT PLANE moves down; the sphere does not, so the dome's
+// apex stays exactly where it was and the dot stands as proud as it always did.
+// What changes is buried - the cap now continues a hair below the frustum's top,
+// where the frustum has already widened past the cap's radius, so the two bodies
+// genuinely intersect.
+//
+// 0.005 mm is the figure GEAR_ARROW_WELD_MM already uses for the same job on the
+// tactile arrows. Fixed rather than derived because this junction is internal to
+// the dot and does not scale with the cylinder.
+DOT_DOME_WELD_MM = 0.005;
+
 // "INVALID CHARACTERS" warning text placement (rendered above the cylinder
 // when get_dot_pattern() returns the bad-pattern marker for an untranslated
 // English glyph).
@@ -1586,11 +1612,15 @@ module braille_dot_centered() {
                     center = true,
                     $fn = cone_segments
                 );
-                // Dome: proper spherical cap
+                // Dome: proper spherical cap. The cutting cube's lower face sits
+                // DOT_DOME_WELD_MM BELOW the frustum's top plane, not on it, so
+                // the cap overlaps the frustum instead of merely touching it.
+                // The sphere itself is unmoved, so the apex - the part a finger
+                // reads - is exactly where it was.
                 intersection() {
                     translate([0, 0, _center_z])
                     sphere(r = _R_sphere, $fn = quality_fn);
-                    translate([0, 0, _preset_rounded_dot_base_height + _R_sphere])
+                    translate([0, 0, _preset_rounded_dot_base_height + _R_sphere - DOT_DOME_WELD_MM])
                     cube([_R_sphere * 4, _R_sphere * 4, _R_sphere * 2], center = true);
                 }
             }

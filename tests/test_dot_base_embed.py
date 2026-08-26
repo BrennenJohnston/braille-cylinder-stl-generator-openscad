@@ -157,3 +157,46 @@ def test_the_embed_did_not_change_how_far_a_dot_stands_proud(
         f"outside [{low:.5f}, {high:.5f}]. Dot height is a tactile dimension: the base "
         "embed is allowed to add material below the surface only."
     )
+
+
+def test_the_rounded_dome_overlaps_its_frustum_instead_of_touching_it():
+    """
+    Source guard for DOT_DOME_WELD_MM, the dot's OTHER junction.
+
+    The embed above fuses dot to shell. This one fuses the dome to the frustum
+    underneath it: the spherical cap used to be cut off at exactly the frustum's
+    top plane, where the cap's base circle is exactly the frustum's top radius,
+    so the two halves of every rounded dot met on one shared circle with no
+    overlap and different tessellation either side (cone_segments against
+    quality_fn). It welded, but by luck - the CHANGELOG's 2.6.1 known-issues
+    entry records the dome splitting off as its own body once the base embed grew
+    past roughly 0.08 mm, and the embed is derived, reaching 0.1204 mm at the
+    100 mm diameter ceiling.
+
+    This is a SOURCE guard rather than a render assertion on purpose. A render
+    test would be green before and after - the tangency welds in every shipped
+    configuration today, which is exactly why it survived - and a test that
+    passes on the broken code proves nothing. What is actually being protected
+    is the geometric relationship, so that is what is asserted.
+    """
+    source = SCAD_FILE.read_text(encoding="utf-8")
+
+    assert "DOT_DOME_WELD_MM = 0.005;" in source, (
+        "DOT_DOME_WELD_MM is gone or its value moved. It is the overlap that "
+        "keeps the dome and its frustum one body; 0.005 mm matches "
+        "GEAR_ARROW_WELD_MM, which solves the same problem on the tactile arrows."
+    )
+
+    assert (
+        "_preset_rounded_dot_base_height + _R_sphere - DOT_DOME_WELD_MM" in source
+    ), (
+        "The rounded dome's cutting cube no longer subtracts DOT_DOME_WELD_MM, so "
+        "the cap is being cut off exactly at the frustum's top plane again - a "
+        "zero-overlap tangency between two differently tessellated surfaces."
+    )
+
+    assert "sphere(r = _R_sphere, $fn = quality_fn);" in source, (
+        "The dome sphere itself moved. Only the CUTTING PLANE may move: the "
+        "sphere's position sets where the apex lands, which is the tactile "
+        "dimension a reader feels."
+    )

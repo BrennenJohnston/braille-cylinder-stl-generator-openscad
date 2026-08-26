@@ -11,7 +11,8 @@ Entry wording signed off by Brennen 2026-08-25 — including the both-plates
 preview entry, whose CLI/GUI cap correction he approved the same day; whether
 these fold into 2.8.0 before it tags is still his call.
 
-DRAFT — pending Brennen sign-off: the `hemisphere_quality` entry below.
+DRAFT — pending Brennen sign-off: the `hemisphere_quality` and rounded-dome-weld
+entries below.
 
 ### Added
 
@@ -58,6 +59,25 @@ DRAFT — pending Brennen sign-off: the `hemisphere_quality` entry below.
   repo sets `render_quality`, and no fixture used `"high"`; both default plates
   are sha256-identical. Regression cover: `tests/test_hemisphere_quality.py`,
   which asserts low < medium < high by triangle count.
+- **The rounded dot's two halves now overlap instead of touching** — the second
+  tangency reported under 2.6.1's known issues, and the last one in the file.
+  The spherical cap was cut off at exactly the frustum's top plane, where the
+  cap's base circle is exactly the frustum's top radius, so dome and base met on
+  one shared circle with no overlap and different tessellation either side
+  (`cone_segments` against `quality_fn`). New `DOT_DOME_WELD_MM = 0.005` — the
+  figure `GEAR_ARROW_WELD_MM` already uses for the same job — lowers the cap's
+  **cutting plane** only. **The sphere does not move, so the apex does not move
+  and the dot stands exactly as proud as before**: max radius identical to nine
+  decimal places (16.397665601 mm) on the default plate, and the tactile height
+  guard in `tests/test_dot_base_embed.py` passes unchanged on all four
+  preset/shape combinations. Exported meshes gain the buried cap geometry
+  (22,444 → 24,428 triangles on the default plate) and stay one watertight body.
+  Stated plainly: this is preventive. The split the 2.6.1 entry recorded could
+  **not** be reproduced at the 100 mm diameter ceiling on the old code — one
+  watertight body there too — so what is removed is a zero-overlap tangency the
+  file's own "overlap, never touch" rule forbids, not an observed failure. The
+  guard is a source assertion for that reason: a render test would have been
+  green before and after.
 
 ### Changed
 
