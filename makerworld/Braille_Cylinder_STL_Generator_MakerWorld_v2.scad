@@ -1799,7 +1799,7 @@ if (gears_on && active_polygon_cutout_radius_mm > 0) {
 // Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
 // "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on that token.
 if (gears_on) {
-    echo("NOTE: integrated gears fit only version 2 of the braille embosser hardware. They do not fit version 1 - do not use geared cylinders with a version 1 embosser body.");
+    echo("NOTE: integrated gears fit only the one-piece geared-roller housing. They do not fit the Version 1 or Version 2 embosser bodies.");
 }
 
 // Both gears plus their two weld rings, in the plate modules' LOCAL frame.

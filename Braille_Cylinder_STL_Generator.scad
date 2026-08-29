@@ -190,11 +190,13 @@ interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
 // (30.8 mm diameter x 52 mm tall) and the barrel prints solid - the polygonal
 // cutout is not used. Needs assets/gears_a.stl and assets/gears_b.stl, which
 // ship with the desktop build.
-// COMPATIBILITY: Integrated gears fit only version 2 of the braille embosser
-// hardware. They do not fit version 1 - do not use geared cylinders with a
-// version 1 embosser body. (The version 2 build-files link will be added here
-// once Brennen publishes it.)
-// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
+// COMPATIBILITY: Integrated gears fit only the one-piece geared-roller
+// housing. They do not fit the Version 1 or Version 2 embosser bodies.
+// (The geared-roller build-files link will be added here once Brennen
+// publishes it.)
+// Wording SIGNED OFF by Brennen 2026-08-25, RE-SIGNED 2026-08-28 as S9' -
+// reword only with his sign-off. The re-sign was needed because "version 2"
+// now names the KEYED-PEG embosser, which these gears do not fit either.
 integrated_gears = "Off"; // [Off, On]
 
 /* [Plate Selection] */
@@ -1651,7 +1653,7 @@ if (gears_on && active_polygon_cutout_radius_mm > 0) {
 // Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
 // "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on that token.
 if (gears_on) {
-    echo("NOTE: integrated gears fit only version 2 of the braille embosser hardware. They do not fit version 1 - do not use geared cylinders with a version 1 embosser body.");
+    echo("NOTE: integrated gears fit only the one-piece geared-roller housing. They do not fit the Version 1 or Version 2 embosser bodies.");
 }
 
 // Both gears plus their two weld rings, in the plate modules' LOCAL frame.
