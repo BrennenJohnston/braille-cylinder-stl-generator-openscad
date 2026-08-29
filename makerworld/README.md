@@ -8,6 +8,25 @@ STL Generator for uploading to
 |------|---------|
 | [`Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`](Braille_Cylinder_STL_Generator_MakerWorld_v2.scad) | The single `.scad` file to upload to MakerWorld. |
 
+## Embosser Version 2 (prototype)
+
+`../Braille_Cylinder_STL_Generator_EmbosserV2.scad` needs **no flattening**: it
+was written self-contained, with the preset tables already inlined between the
+same `BEGIN`/`END` sentinels and no `include` directive, so the file at the
+repository root IS the MakerWorld upload. There is no copy of it in this folder,
+and nothing to keep in sync.
+
+**Listing label (S-V12) — signed off by Brennen 2026-08-28; reword only with
+his sign-off:**
+
+> Braille Cylinder STL Generator — Embosser Version 2 (keyed gear pegs, prototype)
+
+A note on the two version numbers, which are unrelated: the `_v2` suffix on
+`Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` means the **second
+generation of the MakerWorld FILE**, not Version 2 of the embosser hardware.
+The Version 2 hardware file is the `_EmbosserV2` one, and it has no `_v2`
+suffix of its own.
+
 ## Why a separate single-file build?
 
 The canonical desktop generator is a **dual-file** program:

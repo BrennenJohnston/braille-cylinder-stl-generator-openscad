@@ -3,7 +3,7 @@
   "title": "OpenSCAD to Web API Parameter Mapping",
   "description": "Machine-readable mapping between OpenSCAD customizer variables and web API parameters. Source of truth for cross-platform validation.",
   "version": "2.6.0",
-  "last_updated": "2026-08-25",
+  "last_updated": "2026-08-28",
   "documentation": "See docs/PARAMETER_MAPPING.md for human-readable version",
   
   "ui_parameter_format": {
@@ -721,8 +721,30 @@
       "section": "Plate Selection",
       "description": "Gap between the two barrel SURFACES while render_both_plates is On, for laying the pair out on one print plate. Centre-to-centre is this plus one cylinder diameter.",
       "note": "A print-layout figure, not the assembly distance: a meshed pair runs at a 32.0473 mm axis distance. With gears On the teeth overhang the barrel, so the default 10 mm barrel gap leaves about 8.58 mm tip to tip. The web app hard-codes the same 10 mm surface gap for its combined download and exposes no dial."
+    },
+    {
+      "openscad_name": "key_clearance_mm",
+      "web_api_name": "v2_key_clearance_mm",
+      "web_ui_label": "Key clearance (mm)",
+      "type": "number",
+      "default": 0.15,
+      "range": [0, 0.5],
+      "section": "Version 2 Keyed Cutouts",
+      "description": "Extra room around each gear peg, per side (mm). Grows every keyed hole outward and shrinks the key nub inward by the same amount.",
+      "note": "EMBOSSER VERSION 2 FILE ONLY (Braille_Cylinder_STL_Generator_EmbosserV2.scad); the Version 1 file has no such tab. Deliberately NOT preset-owned - a preset-owned key silently ignores -D, and this is the one dial tuned per printer. Schema home version_2.key_clearance_mm; on the wire it is the flat v2_key_clearance_mm, sent only when embosser_version is 2."
     }
   ],
+  
+  "version_2_file": {
+    "description": "Parameters the Embosser Version 2 file does not have. Braille_Cylinder_STL_Generator_EmbosserV2.scad is a separate self-contained file; the Version 1 files are unchanged and still the default.",
+    "not_present": [
+      "polygon_cutout_radius_mm",
+      "polygon_cutout_points",
+      "seam_offset_degrees",
+      "integrated_gears"
+    ],
+    "reason": "The keyed cutout IS the bore, so there is no polygonal cutout to size; the keys sit on the tactile arrow column, so turning the seam would put them in the wrong place; and the integrated-gears beta builds the Version 1 one-piece roller, a different part."
+  },
   
   "removed_parameters": {
     "description": "Parameters removed in version 2.0.0 (card support removed)",

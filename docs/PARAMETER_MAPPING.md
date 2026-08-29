@@ -22,6 +22,31 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 
 ## Parameter Mapping
 
+### Version 2 Keyed Cutouts
+
+These apply to `Braille_Cylinder_STL_Generator_EmbosserV2.scad` only. The
+Version 1 file has no such tab.
+
+| OpenSCAD | Web API | Web UI Label | Default | Range |
+|----------|---------|--------------|---------|-------|
+| `key_clearance_mm` | `v2_key_clearance_mm` | Key clearance (mm) | 0.15 | 0–0.5 |
+
+Three Version 1 parameters are **not present in the Version 2 file** and have no
+Version 2 equivalent to map:
+
+| Parameter | Why it is gone |
+|-----------|----------------|
+| `polygon_cutout_radius_mm` | the keyed cutout IS the bore |
+| `polygon_cutout_points` | same |
+| `seam_offset_degrees` | the keys sit on the tactile arrow column; turning the seam would put them in the wrong place |
+
+`integrated_gears` is also absent: that beta builds the Version 1 one-piece
+geared roller, which is a different part.
+
+On the web side these ride inside `settings` as the flat names
+`embosser_version` (integer 1 or 2) and `v2_key_clearance_mm`, and nothing is
+added to the request while Version 1 is selected.
+
 ### Text Input - Pre-Translated Braille
 | OpenSCAD Parameter | Web App Equivalent | Notes |
 |--------------------|-------------------|-------|

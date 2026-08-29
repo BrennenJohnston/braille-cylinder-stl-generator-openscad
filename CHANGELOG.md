@@ -16,6 +16,33 @@ signed off the same day, at the end of the session that added them.
 
 ### Added
 
+- **Embosser Version 2 (PROTOTYPE): `Braille_Cylinder_STL_Generator_EmbosserV2.scad`.**
+  A NEW self-contained file beside the Version 1 ones, which are untouched and
+  still the default. Version 2 is a new embosser design whose four drive gears
+  each carry a differently shaped peg; this file cuts a matching keyed
+  through-hole at each end of the cylinder, so a gear cannot be seated in the
+  wrong place, plus a 3 mm triangular key nub on the Embossing Plate's top face
+  that fixes the one gear carrying the handle torque.
+  **What it changes** from the Version 1 file: the keyed cutout replaces the
+  polygonal one; the preset barrel is 30.1 x 52 mm rather than 30.8 x 52; there
+  is one new dial, `key_clearance_mm = 0.15; // [0:0.01:0.5]`, under a
+  `[Version 2 Keyed Cutouts]` tab; and Integrated Gears, `polygon_cutout_radius_mm`,
+  `polygon_cutout_points` and `seam_offset_degrees` are not offered — the gears
+  BETA builds the Version 1 one-piece roller, and the other three are inert when
+  the keyed hole IS the bore and the keys sit on the arrow column.
+  **What it keeps**: everything else. The braille, the dot shapes, both paper
+  presets, the indicators, the double-sided beta and both-plates mode are the
+  Version 1 code, unchanged.
+  **The gears must be re-cut.** The four holes are family R14 — rounded
+  rectangles of 14 x 14 mm (A top), 18 x 10 (A bottom), 16 x 12 (B top) and
+  20 x 8 (B bottom), each with a 0.5 mm corner radius. None of the earlier star,
+  hexagon or 15 x 15 mm square pegs will enter an R14 hole.
+  The file is **self-contained** — the preset tables are inlined between
+  sentinels, with no `include` — so the same bytes serve the desktop build and a
+  MakerWorld upload. Covered by `tests/test_embosser_v2_scad.py`.
+- **The version bump and tag for this entry are Brennen's call.** 2.9.0 is
+  suggested if 2.8.0 ships first; nothing here bumps the version line.
+
 - **Both-plates mode (BETA): `render_both_plates = "Off"; // [Off, On]` plus
   `pair_spacing_mm = 10; // [2:1:50]`**, both builds, `[Plate Selection]` tab.
   On, one render builds the complete pair side by side — Cylinder A (embossing

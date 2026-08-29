@@ -418,7 +418,36 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
 
 ## 🐛 Troubleshooting
 
-### Rendering feels very slow
+### Embosser Version 2 (prototype)
+
+`Braille_Cylinder_STL_Generator_EmbosserV2.scad` at the repository root
+generates cylinders for **Embosser Version 2**, a new hardware design whose four
+drive gears each carry a differently shaped peg. The file cuts a matching keyed
+through-hole at each end of the cylinder, so a gear cannot be seated in the
+wrong place, plus a key nub on the Embossing Plate's top face.
+
+It is a **work-in-progress prototype**: the cylinder size, the cutout shapes and
+the fit may change as testing continues.
+
+**The gears must be re-cut to match.** The holes are family R14 — rounded
+rectangles of 14 x 14 mm (Cylinder A's top, the nub end), 18 x 10 (A's bottom),
+16 x 12 (B's top) and 20 x 8 (B's bottom), each with a 0.5 mm corner radius.
+None of the earlier star, hexagon or 15 x 15 mm square pegs will enter an R14
+hole, so a cylinder printed from this file pairs only with gears cut to the R14
+spec.
+
+One dial is new: **Key clearance (`key_clearance_mm`)**, 0.15 mm per side by
+default and adjustable from 0 to 0.5 mm. It grows every hole outward and shrinks
+the nub inward by the same amount. Raise it if the pegs bind; raising it also
+eats into the margin that stops a peg entering the wrong hole (0.85 mm at the
+default, 0.50 mm at the maximum).
+
+The Version 1 files are untouched and remain the default. Use
+`Braille_Cylinder_STL_Generator.scad` unless you are building the Version 2
+embosser. **The same Version 2 file is also the MakerWorld upload** — it is
+self-contained, with the preset tables inlined and no `include` directive.
+
+## Rendering feels very slow
 
 **First check which OpenSCAD you are in** (Help → About). This project needs
 the **Nightly** build with the Manifold engine; the stable **2021.01** release
