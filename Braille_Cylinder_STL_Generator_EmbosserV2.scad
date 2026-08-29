@@ -32,10 +32,9 @@
 //  SELF-CONTAINED. The paper-thickness preset tables are inlined below rather
 //  than `include`d, so this single file is also the MakerWorld upload.
 //
-//  Every user-facing sentence carries a sign-off comment. Wording marked
-//  FLAGGED FOR BRENNEN is DRAFT and must not be treated as settled.
-// FLAGGED FOR BRENNEN (S-V11): this header block, the [Version 2 Keyed Cutouts]
-// tab comment, and the NOTE: echoes below.
+//  Wording SIGNED OFF by Brennen 2026-08-28 (S-V11) - this header block, the
+//  [Version 2 Keyed Cutouts] tab comment, the NOTE: echoes and the wall warning
+//  below. Reword any of them only with his sign-off.
 //
 // =============================================================================
 // WHAT THIS MAKES
@@ -316,7 +315,7 @@ render_quality = "Medium"; // [Low, Medium, High]
 cone_segments = 16; // [8:1:64] Number of segments for cone shapes
 
 /* [Version 2 Keyed Cutouts] */
-// FLAGGED FOR BRENNEN (S-V11) - DRAFT wording.
+// Wording SIGNED OFF by Brennen 2026-08-28 (S-V11) - reword only with his sign-off.
 // Extra room around each gear peg, per side (mm). 0.15 mm suits most printers;
 // raise it if pegs bind. It grows every hole outward and shrinks the key nub
 // inward by the same amount, so one dial means one thing. Raising it also eats
@@ -1498,7 +1497,7 @@ function v2_widest_key_radius(clearance) =
     max(v2_key_max_radius(V2_KEY_A1, clearance), v2_key_max_radius(V2_KEY_A2, clearance),
         v2_key_max_radius(V2_KEY_B1, clearance), v2_key_max_radius(V2_KEY_B2, clearance));
 
-// FLAGGED FOR BRENNEN (S-V11) - DRAFT wording.
+// Wording SIGNED OFF by Brennen 2026-08-28 (S-V11) - reword only with his sign-off.
 // "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on that token.
 echo("NOTE: Embosser Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.");
 
@@ -1522,8 +1521,9 @@ tactile_seam_wall_too_thin = tactile_on
 
 // Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 if (tactile_seam_wall_too_thin)
-    // FLAGGED FOR BRENNEN (S-V11) - DRAFT wording, re-pointed from the polygonal
-    // cutout to the keyed hole. The v1 sentence named a cutout Version 2 has not.
+    // Wording SIGNED OFF by Brennen 2026-08-28 (S-V11) - re-pointed from the
+    // polygonal cutout to the keyed hole, because the v1 sentence named a cutout
+    // Version 2 does not have. Reword only with his sign-off.
     echo(str("WARNING: only ", round(tactile_seam_wall_mm * 1000) / 1000,
              " mm of wall is left between the tactile arrow recess and the ",
              "keyed cutout; the printable minimum is ", TACTILE_SEAM_WALL_MIN,
