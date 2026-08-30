@@ -436,7 +436,7 @@ None of the earlier star, hexagon or 15 x 15 mm square pegs will enter an R14
 hole, so a cylinder printed from this file pairs only with gears cut to the R14
 spec.
 
-One dial is new: **Key clearance (`key_clearance_mm`)**, 0.15 mm per side by
+One dial is new: **Key clearance (`key_clearance_mm`)**, 0.075 mm per side by
 default and adjustable from 0 to 0.5 mm. It grows every hole outward and shrinks
 the nub inward by the same amount. Raise it if the pegs bind; raising it also
 eats into the margin that stops a peg entering the wrong hole (0.85 mm at the

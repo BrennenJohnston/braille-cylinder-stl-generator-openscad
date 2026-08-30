@@ -20,7 +20,7 @@
 //  which is untouched and still supported):
 //   • a keyed through-cutout at both ends instead of the polygonal cutout;
 //   • a 3 mm triangular key nub on the Embossing Plate's top face;
-//   • the cylinder preset is 30.1 x 52 mm, not 30.8 x 52;
+//   • the cylinder preset is 30.5 x 52 mm, not 30.8 x 52;
 //   • one new dial, key_clearance_mm, under [Version 2 Keyed Cutouts];
 //   • no Integrated Gears (BETA) — that beta builds the Version 1 one-piece
 //     roller, which is a different part;
@@ -263,13 +263,13 @@ dot_shape = "Rounded"; // [Rounded, Cone]
 indicators = "On"; // [On, Off]
 
 /* [Expert Mode - Cylinder Dimensions] */
-// The Version 2 embosser expects a 30.1 mm x 52 mm cylinder. Other sizes still
+// The Version 2 embosser expects a 30.5 mm x 52 mm cylinder. Other sizes still
 // render - the size is a soft preset, not a rule - but they will not fit the
 // Version 2 housing. The polygonal cutout, its point count and the seam offset
 // are NOT offered here: the keyed hole is the bore, and the keys sit on the
 // arrow column, so turning the seam would put them in the wrong place. They are
 // fixed in the Hidden section below.
-cylinder_diameter_mm = 30.1; // [10:0.1:100] Cylinder outer diameter in mm
+cylinder_diameter_mm = 30.5; // [10:0.1:100] Cylinder outer diameter in mm
 cylinder_height_mm = 52; // [20:1:150] Cylinder height in mm
 
 /* [Expert Mode - Braille Spacing] */
@@ -315,13 +315,15 @@ render_quality = "Medium"; // [Low, Medium, High]
 cone_segments = 16; // [8:1:64] Number of segments for cone shapes
 
 /* [Version 2 Keyed Cutouts] */
-// Wording SIGNED OFF by Brennen 2026-08-28 (S-V11) - reword only with his sign-off.
-// Extra room around each gear peg, per side (mm). 0.15 mm suits most printers;
-// raise it if pegs bind. It grows every hole outward and shrinks the key nub
-// inward by the same amount, so one dial means one thing. Raising it also eats
-// into the margin that stops a peg entering the wrong hole: 0.85 mm at 0.15,
-// 0.50 mm at the 0.5 maximum.
-key_clearance_mm = 0.15; // [0:0.01:0.5]
+// Wording SIGNED OFF by Brennen 2026-08-28 (S-V11), numbers revised 2026-08-29
+// after the first print test - reword only with his sign-off.
+// Extra room around each gear peg, per side (mm). 0.075 mm suits most printers;
+// raise it if pegs bind. It grows every keyed hole outward. It does NOT move the
+// key nub, which is pinned at V2_NUB_CLEARANCE because gear A1's notch is
+// already cut to it. Raising the dial eats into the margin that stops a peg
+// entering the wrong hole: 0.925 mm at 0.075, 0.50 mm at the 0.5 maximum.
+// The step is 0.005, not 0.01: 0.075 is not a whole number of 0.01 steps.
+key_clearance_mm = 0.075; // [0:0.005:0.5]
 
 /* [Hidden] */
 $fn = 32; // Resolution for curved surfaces
@@ -352,7 +354,7 @@ PI = 3.14159265359;
 // MakerWorld, which accepts a single file and no local includes.
 //
 // Two differences from the Version 1 tables, both required by Version 2:
-//   * cylinder_diameter_mm is 30.1, not 30.8;
+//   * cylinder_diameter_mm is 30.5, not 30.8;
 //   * polygon_cutout_radius_mm, polygon_cutout_points and seam_offset_degrees
 //     are ABSENT. preset_value() falls back to the file-scope constants for a
 //     missing key, and Version 2 fixes those three in the Hidden section.
@@ -394,7 +396,7 @@ PRESET_04 = [
     ["cone_counter_dot_flat_hat",       1.0],
 
     // Cylinder (Version 2 preset barrel)
-    ["cylinder_diameter_mm",            30.1],
+    ["cylinder_diameter_mm",            30.5],
     ["cylinder_height_mm",              52],
 ];
 
@@ -427,7 +429,7 @@ PRESET_03 = [
     ["cone_counter_dot_flat_hat",       0.8],
 
     // Cylinder (Version 2 preset barrel)
-    ["cylinder_diameter_mm",            30.1],
+    ["cylinder_diameter_mm",            30.5],
     ["cylinder_height_mm",              52],
 ];
 
@@ -1366,6 +1368,13 @@ V2_NUB_HEIGHT = 3.0;
 V2_NUB_TOP_CHAMFER = 0.5;
 V2_NUB_BASE_FLARE = 0.5;
 
+// The nub's inset, which key_clearance_mm deliberately does NOT control
+// (revised 2026-08-29). Gear A1's notch is a fixed negative that is already
+// cut, and it measures 3.943 x 4.553 mm - the nub at exactly this value. When
+// the dial also drove the nub, lowering it to tighten the holes GREW the nub
+// into that notch. Change this only alongside a matching gear A1.
+V2_NUB_CLEARANCE = 0.15;
+
 // The dial is bounded in the Customizer; this catches a -D that is not.
 assert(key_clearance_mm >= 0 && key_clearance_mm <= 0.5,
        "key_clearance_mm must be between 0 and 0.5 mm.");
@@ -1449,20 +1458,20 @@ module top_key_nub(top_face_z) {
         hull() {
             translate([0, 0, z0 - V2_SLAB])
                 linear_extrude(height = V2_SLAB)
-                    offset(delta = V2_NUB_BASE_FLARE) nub_2d(key_clearance_mm);
+                    offset(delta = V2_NUB_BASE_FLARE) nub_2d(V2_NUB_CLEARANCE);
             translate([0, 0, body_lo - V2_SLAB])
-                linear_extrude(height = V2_SLAB) nub_2d(key_clearance_mm);
+                linear_extrude(height = V2_SLAB) nub_2d(V2_NUB_CLEARANCE);
         }
         // The straight middle.
         translate([0, 0, body_lo])
-            linear_extrude(height = body_hi - body_lo) nub_2d(key_clearance_mm);
+            linear_extrude(height = body_hi - body_lo) nub_2d(V2_NUB_CLEARANCE);
         // The chamfered top.
         hull() {
             translate([0, 0, body_hi - V2_SLAB])
-                linear_extrude(height = V2_SLAB) nub_2d(key_clearance_mm);
+                linear_extrude(height = V2_SLAB) nub_2d(V2_NUB_CLEARANCE);
             translate([0, 0, z1 - V2_SLAB])
                 linear_extrude(height = V2_SLAB)
-                    offset(delta = -V2_NUB_TOP_CHAMFER) nub_2d(key_clearance_mm);
+                    offset(delta = -V2_NUB_TOP_CHAMFER) nub_2d(V2_NUB_CLEARANCE);
         }
     }
 }
@@ -1501,8 +1510,8 @@ function v2_widest_key_radius(clearance) =
 // "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on that token.
 echo("NOTE: Embosser Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.");
 
-if (active_cylinder_diameter_mm != 30.1 || active_cylinder_height_mm != 52) {
-    echo(str("NOTE: The Version 2 embosser expects a 30.1 mm x 52 mm cylinder. Received ",
+if (active_cylinder_diameter_mm != 30.5 || active_cylinder_height_mm != 52) {
+    echo(str("NOTE: The Version 2 embosser expects a 30.5 mm x 52 mm cylinder. Received ",
              active_cylinder_diameter_mm, " mm x ", active_cylinder_height_mm, " mm."));
 }
 

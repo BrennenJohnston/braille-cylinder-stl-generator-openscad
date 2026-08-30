@@ -24,8 +24,8 @@ signed off the same day, at the end of the session that added them.
   wrong place, plus a 3 mm triangular key nub on the Embossing Plate's top face
   that fixes the one gear carrying the handle torque.
   **What it changes** from the Version 1 file: the keyed cutout replaces the
-  polygonal one; the preset barrel is 30.1 x 52 mm rather than 30.8 x 52; there
-  is one new dial, `key_clearance_mm = 0.15; // [0:0.01:0.5]`, under a
+  polygonal one; the preset barrel is 30.5 x 52 mm rather than 30.8 x 52; there
+  is one new dial, `key_clearance_mm = 0.075; // [0:0.005:0.5]`, under a
   `[Version 2 Keyed Cutouts]` tab; and Integrated Gears, `polygon_cutout_radius_mm`,
   `polygon_cutout_points` and `seam_offset_degrees` are not offered — the gears
   BETA builds the Version 1 one-piece roller, and the other three are inert when

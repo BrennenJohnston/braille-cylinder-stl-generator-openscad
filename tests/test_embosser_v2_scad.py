@@ -55,11 +55,11 @@ KEYS = {  # plate -> (bottom key, top key), each [length (on 90/270), width (on 
     "Embossing Plate": ((18.0, 10.0), (14.0, 14.0)),
     "Counter Plate": ((20.0, 8.0), (16.0, 12.0)),
 }
-DEFAULT_CLEARANCE = 0.15
+DEFAULT_CLEARANCE = 0.075
 COUNTERSINK_OFFSET = 2.0
 COUNTERSINK_DEPTH = 2.0
 
-BARREL_D = 30.1
+BARREL_D = 30.5
 BARREL_H = 52.0
 NUB_HEIGHT = 3.0
 NUB_AREA_AT_ZERO = 11.144  # mm^2, the profile area before the clearance inset
@@ -69,7 +69,7 @@ ARROW_COLUMN_DEG = 180.0
 BOTTOM_PROBE_Z = 8.0
 TOP_PROBE_Z = 45.0
 
-SIZE_NOTE_START = "NOTE: The Version 2 embosser expects a 30.1 mm x 52 mm cylinder."
+SIZE_NOTE_START = "NOTE: The Version 2 embosser expects a 30.5 mm x 52 mm cylinder."
 PROTOTYPE_NOTE_START = "NOTE: Embosser Version 2 is a work-in-progress prototype."
 
 # The web generator's copy of the same numbers. Absent on CI, so the
@@ -478,7 +478,7 @@ def test_the_version2_tab_sits_above_the_first_hidden_tab(source_text):
     tab = source_text.index("/* [Version 2 Keyed Cutouts] */")
     hidden = source_text.index("/* [Hidden] */")
     assert tab < hidden, "the Version 2 tab is hidden from the Customizer"
-    assert "key_clearance_mm = 0.15; // [0:0.01:0.5]" in source_text
+    assert "key_clearance_mm = 0.075; // [0:0.005:0.5]" in source_text
 
 
 def test_the_clearance_is_never_preset_owned(source_text):
@@ -491,7 +491,7 @@ def test_the_clearance_is_never_preset_owned(source_text):
         end = source_text.index("];", start)
         body = source_text[start:end]
         assert "key_clearance_mm" not in body, f"{table} must not own the clearance"
-        assert '["cylinder_diameter_mm",            30.1]' in body.replace("  ", "  ")
+        assert '["cylinder_diameter_mm",            30.5]' in body.replace("  ", "  ")
         for dropped in (
             "polygon_cutout_radius_mm",
             "polygon_cutout_points",
