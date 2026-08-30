@@ -21,11 +21,13 @@ signed off the same day, at the end of the session that added them.
   still the default. Version 2 is a new embosser design whose four drive gears
   each carry a differently shaped peg; this file cuts a matching keyed
   through-hole at each end of the cylinder, so a gear cannot be seated in the
-  wrong place, plus a 3 mm triangular key nub on the Embossing Plate's top face
-  that fixes the one gear carrying the handle torque.
+  wrong place, plus a 3 mm anti-rotation nub above each plate's top face and a
+  matching socket in each bottom face, so all four cylinder ends key against
+  their gear. Cylinder A carries the triangle that mates with gear A1's notch
+  and A2's pin; Cylinder B a square for B1 and B2.
   **What it changes** from the Version 1 file: the keyed cutout replaces the
   polygonal one; the preset barrel is 30.5 x 52 mm rather than 30.8 x 52; there
-  is one new dial, `key_clearance_mm = 0.075; // [0:0.005:0.5]`, under a
+  is one new dial, `key_clearance_mm = 0.110; // [0:0.005:0.5]`, under a
   `[Version 2 Keyed Cutouts]` tab; and Integrated Gears, `polygon_cutout_radius_mm`,
   `polygon_cutout_points` and `seam_offset_degrees` are not offered — the gears
   BETA builds the Version 1 one-piece roller, and the other three are inert when

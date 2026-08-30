@@ -29,7 +29,7 @@ Version 1 file has no such tab.
 
 | OpenSCAD | Web API | Web UI Label | Default | Range |
 |----------|---------|--------------|---------|-------|
-| `key_clearance_mm` | `v2_key_clearance_mm` | Key clearance (mm) | 0.075 | 0–0.5 |
+| `key_clearance_mm` | `v2_key_clearance_mm` | Key clearance (mm) | 0.110 | 0–0.5 |
 
 Three Version 1 parameters are **not present in the Version 2 file** and have no
 Version 2 equivalent to map:

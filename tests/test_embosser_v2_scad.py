@@ -55,7 +55,7 @@ KEYS = {  # plate -> (bottom key, top key), each [length (on 90/270), width (on 
     "Embossing Plate": ((18.0, 10.0), (14.0, 14.0)),
     "Counter Plate": ((20.0, 8.0), (16.0, 12.0)),
 }
-DEFAULT_CLEARANCE = 0.075
+DEFAULT_CLEARANCE = 0.110
 COUNTERSINK_OFFSET = 2.0
 COUNTERSINK_DEPTH = 2.0
 
@@ -64,6 +64,15 @@ BARREL_H = 52.0
 NUB_HEIGHT = 3.0
 NUB_AREA_AT_ZERO = 11.144  # mm^2, the profile area before the clearance inset
 ARROW_COLUMN_DEG = 180.0
+
+# The anti-rotation features, new on 2026-08-29 (D-R3-2..D-R3-5). Both plates
+# now stand a nub above the top face and sink a socket into the bottom one, and
+# the two plates' shapes differ: a triangle on Cylinder A, a square on B.
+# Section areas in mm^2, matching app/geometry/version2.py in the web repo.
+ANTIROT_CLEARANCE = 0.15
+SOCKET_DEPTH = NUB_HEIGHT + ANTIROT_CLEARANCE
+ANTIROT_NUB_AREA = {"Embossing Plate": 7.0461, "Counter Plate": 9.0000}
+ANTIROT_SOCKET_AREA = {"Embossing Plate": 11.0980, "Counter Plate": 10.8707}
 
 # Sections taken in the straight part of each half, clear of both countersinks.
 BOTTOM_PROBE_Z = 8.0
@@ -157,10 +166,11 @@ def _hole_loop(mesh, z):
         for loop in loops
         if np.hypot(loop[:, 0], loop[:, 1]).max() < BARREL_D / 2 - 1.0
     ]
-    assert len(inner) == 1, (
-        f"expected exactly one hole loop at z={z}, found {len(inner)}"
-    )
-    return inner[0]
+    assert inner, f"no hole loop at z={z}"
+    # Since 2026-08-29 a section near the bottom face meets TWO inner loops -
+    # the keyed hole and the anti-rotation socket. The keyed hole is the one
+    # centred on the axis; the socket sits out at r ~ 11.5 on the arrow column.
+    return min(inner, key=lambda loop: math.hypot(loop[:, 0].mean(), loop[:, 1].mean()))
 
 
 def _polygon_area(points):
@@ -173,6 +183,28 @@ def _polygon_area(points):
                 for i in range(len(x))
             )
         )
+    )
+
+
+def _polygon_centroid(points):
+    """
+    The area-weighted centroid, NOT the mean of the vertices.
+
+    A mesh section puts vertices wherever facets happen to cross the plane, so
+    the vertex mean is pulled toward whichever edge got tessellated finest - it
+    read 180.30 degrees for the triangle and 181.51 for the square where both
+    are exactly on the column.
+    """
+    import numpy as np
+
+    x, y = points[:, 0], points[:, 1]
+    next_x, next_y = np.roll(x, -1), np.roll(y, -1)
+    cross = x * next_y - next_x * y
+    area = cross.sum() / 2.0
+    assert abs(area) > 1e-9, "a degenerate loop has no centroid"
+    return (
+        float(((x + next_x) * cross).sum() / (6.0 * area)),
+        float(((y + next_y) * cross).sum() / (6.0 * area)),
     )
 
 
@@ -210,7 +242,8 @@ def test_version2_plate_renders_as_one_body(
     assert mesh.is_watertight
     assert mesh.volume > 0, "a negative volume would mean an enclosed void"
 
-    expected_top = BARREL_H + (NUB_HEIGHT if plate == "Embossing Plate" else 0.0)
+    # Both plates carry a nub since 2026-08-29, so both reach the same height.
+    expected_top = BARREL_H + NUB_HEIGHT
     assert mesh.bounds[0][2] == pytest.approx(0.0, abs=1e-3)
     assert mesh.bounds[1][2] == pytest.approx(expected_top, abs=1e-3)
 
@@ -328,45 +361,95 @@ def test_all_four_mouths_carry_the_same_45_degree_countersink(
 
 @pytest.mark.requires_openscad
 @pytest.mark.slow
-def test_the_key_nub_is_on_cylinder_a_only(trimesh_module, openscad_binary, tmp_path):
+@pytest.mark.requires_openscad
+@pytest.mark.slow
+@pytest.mark.parametrize("plate", list(KEYS))
+def test_each_plate_stands_its_own_nub_on_the_arrow_column(
+    trimesh_module, openscad_binary, tmp_path, plate
+):
     """
-    The nub stands 3 mm proud of the Embossing Plate's top face, on the arrow
-    column, and Cylinder B has nothing above its top face at all.
+    Both plates stand a 3 mm nub proud of the top face, centred on the arrow
+    column - a triangle on Cylinder A, a square on B.
+
+    The "Cylinder B has no nub" rule retired on 2026-08-29, when every gear
+    gained an anti-rotation feature. Reach along the column is measured rather
+    than the widest POINT, because a square's widest point is a corner sitting
+    6.6 degrees off the column and the apex test the triangle allowed does not
+    generalise.
     """
     import numpy as np
 
-    stl_a, out_a, _ = _render(
-        openscad_binary, tmp_path, "v2_nub_a", {"plate_type": "Embossing Plate"}
-    )
-    mesh_a = _load(trimesh_module, stl_a, out_a)
+    name = "v2_nub_" + plate.split()[0].lower()
+    stl, out, _ = _render(openscad_binary, tmp_path, name, {"plate_type": plate})
+    mesh = _load(trimesh_module, stl, out)
 
-    above = mesh_a.vertices[mesh_a.vertices[:, 2] > BARREL_H + 1e-3]
-    assert len(above) > 0, "no nub on the Embossing Plate"
-    assert mesh_a.bounds[1][2] == pytest.approx(BARREL_H + NUB_HEIGHT, abs=1e-3)
+    above = mesh.vertices[mesh.vertices[:, 2] > BARREL_H + 1e-3]
+    assert len(above) > 0, f"no nub on the {plate}"
+    assert mesh.bounds[1][2] == pytest.approx(BARREL_H + NUB_HEIGHT, abs=1e-3)
 
-    # The apex is the point furthest from the axis, and it sits on the column.
-    apex = above[np.argmax(np.hypot(above[:, 0], above[:, 1]))]
-    apex_angle = math.degrees(math.atan2(apex[1], apex[0])) % 360.0
-    assert apex_angle == pytest.approx(ARROW_COLUMN_DEG, abs=0.05)
-
-    # Section through the straight middle of the nub: the profile inset by the
-    # clearance. The inset costs area, so it is smaller than the 1:1 figure.
-    section = mesh_a.section(
-        plane_origin=[0.0, 0.0, BARREL_H + 1.5], plane_normal=[0.0, 0.0, 1.0]
+    section = mesh.section(
+        plane_origin=[0.0, 0.0, BARREL_H + NUB_HEIGHT / 2.0],
+        plane_normal=[0.0, 0.0, 1.0],
     )
     assert section is not None
     loops = [np.asarray(loop)[:, :2] for loop in section.discrete]
     assert len(loops) == 1, "only the nub stands above the top face"
+    assert _polygon_area(loops[0]) == pytest.approx(ANTIROT_NUB_AREA[plate], abs=0.1)
     assert _polygon_area(loops[0]) < NUB_AREA_AT_ZERO
-    assert _polygon_area(loops[0]) == pytest.approx(NUB_AREA_AT_ZERO - 2.2, abs=0.5)
 
-    stl_b, out_b, _ = _render(
-        openscad_binary, tmp_path, "v2_nub_b", {"plate_type": "Counter Plate"}
+    # Centred on the column, and symmetric about it.
+    centre = _polygon_centroid(loops[0])
+    angle = math.degrees(math.atan2(centre[1], centre[0])) % 360.0
+    assert angle == pytest.approx(ARROW_COLUMN_DEG, abs=0.05)
+    assert loops[0][:, 1].max() == pytest.approx(-loops[0][:, 1].min(), abs=0.01)
+
+
+@pytest.mark.requires_openscad
+@pytest.mark.slow
+@pytest.mark.parametrize("plate", list(KEYS))
+def test_each_plate_sinks_its_own_socket_into_the_bottom_face(
+    trimesh_module, openscad_binary, tmp_path, plate
+):
+    """
+    The matching socket: a BLIND pocket of SOCKET_DEPTH in the bottom face, on
+    the arrow column, separate from the keyed hole rather than a lobe of it.
+    """
+    import numpy as np
+
+    name = "v2_socket_" + plate.split()[0].lower()
+    stl, out, _ = _render(openscad_binary, tmp_path, name, {"plate_type": plate})
+    mesh = _load(trimesh_module, stl, out)
+
+    section = mesh.section(
+        plane_origin=[0.0, 0.0, SOCKET_DEPTH / 2.0], plane_normal=[0.0, 0.0, 1.0]
     )
-    mesh_b = _load(trimesh_module, stl_b, out_b)
-    assert mesh_b.bounds[1][2] == pytest.approx(BARREL_H, abs=1e-3), (
-        "Cylinder B must have no nub"
+    assert section is not None
+    loops = [np.asarray(loop)[:, :2] for loop in section.discrete]
+    inner = [
+        loop
+        for loop in loops
+        if np.hypot(loop[:, 0], loop[:, 1]).max() < BARREL_D / 2 - 1.0
+    ]
+    assert len(inner) == 2, (
+        f"expected the keyed hole AND the socket at mid-depth, found {len(inner)}"
     )
+
+    socket = max(
+        inner, key=lambda loop: math.hypot(loop[:, 0].mean(), loop[:, 1].mean())
+    )
+    assert _polygon_area(socket) == pytest.approx(ANTIROT_SOCKET_AREA[plate], abs=0.1)
+
+    centre = _polygon_centroid(socket)
+    angle = math.degrees(math.atan2(centre[1], centre[0])) % 360.0
+    assert angle == pytest.approx(ARROW_COLUMN_DEG, abs=0.05)
+
+    # Blind, not a second bore: material stands above the socket's floor.
+    assert not mesh.contains(np.array([[centre[0], centre[1], 1.0]]))[0]
+    assert mesh.contains(np.array([[centre[0], centre[1], SOCKET_DEPTH + 1.0]]))[0]
+
+    # And the wall it leaves behind must stay printable.
+    wall = BARREL_D / 2 - np.hypot(socket[:, 0], socket[:, 1]).max()
+    assert wall >= 1.2, f"{plate} socket leaves only {wall:.4f} mm of wall"
 
 
 # ---------------------------------------------------------------------------
@@ -478,7 +561,7 @@ def test_the_version2_tab_sits_above_the_first_hidden_tab(source_text):
     tab = source_text.index("/* [Version 2 Keyed Cutouts] */")
     hidden = source_text.index("/* [Hidden] */")
     assert tab < hidden, "the Version 2 tab is hidden from the Customizer"
-    assert "key_clearance_mm = 0.075; // [0:0.005:0.5]" in source_text
+    assert "key_clearance_mm = 0.110; // [0:0.005:0.5]" in source_text
 
 
 def test_the_clearance_is_never_preset_owned(source_text):

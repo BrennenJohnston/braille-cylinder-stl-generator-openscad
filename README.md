@@ -436,11 +436,20 @@ None of the earlier star, hexagon or 15 x 15 mm square pegs will enter an R14
 hole, so a cylinder printed from this file pairs only with gears cut to the R14
 spec.
 
-One dial is new: **Key clearance (`key_clearance_mm`)**, 0.075 mm per side by
-default and adjustable from 0 to 0.5 mm. It grows every hole outward and shrinks
-the nub inward by the same amount. Raise it if the pegs bind; raising it also
-eats into the margin that stops a peg entering the wrong hole (0.85 mm at the
-default, 0.50 mm at the maximum).
+One dial is new: **Key clearance (`key_clearance_mm`)**, 0.110 mm per side by
+default and adjustable from 0 to 0.5 mm in steps of 0.005. It grows every hole
+outward, and ONLY the holes - it has not touched the nub since 2026-08-29,
+because gear A1's notch is already cut and tightening the holes would have grown
+the nub into it. Raise it if the pegs bind; raising it also eats into the margin
+that stops a peg entering the wrong hole (0.890 mm at the default, 0.50 mm at
+the maximum).
+
+**Both cylinder ends key against their gear.** Each plate stands a 3 mm
+anti-rotation nub proud of its TOP face and sinks a matching socket into its
+BOTTOM one, all four on the tactile arrow column: Cylinder A carries the
+triangle that mates with gear A1's notch and gear A2's pin, Cylinder B a square
+for B1 and B2. Every one of these is a fixed fit against gears that are already
+cut, so none of them follows the clearance dial.
 
 The Version 1 files are untouched and remain the default. Use
 `Braille_Cylinder_STL_Generator.scad` unless you are building the Version 2

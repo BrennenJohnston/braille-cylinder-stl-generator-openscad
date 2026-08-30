@@ -323,7 +323,7 @@ cone_segments = 16; // [8:1:64] Number of segments for cone shapes
 // already cut to it. Raising the dial eats into the margin that stops a peg
 // entering the wrong hole: 0.925 mm at 0.075, 0.50 mm at the 0.5 maximum.
 // The step is 0.005, not 0.01: 0.075 is not a whole number of 0.01 steps.
-key_clearance_mm = 0.075; // [0:0.005:0.5]
+key_clearance_mm = 0.110; // [0:0.005:0.5]
 
 /* [Hidden] */
 $fn = 32; // Resolution for curved surfaces
@@ -1366,14 +1366,54 @@ V2_NUB_BASE_R = 9.754087;
 V2_NUB_APEX_R = 14.147487;
 V2_NUB_HEIGHT = 3.0;
 V2_NUB_TOP_CHAMFER = 0.5;
-V2_NUB_BASE_FLARE = 0.5;
+// 0.10 since 2026-08-29 (D-R3-4), down from 0.5. Gear A1's notch has NO mouth
+// relief - probing it on a 10 um grid gave a half-width constant from the
+// mating face to full depth - so a 0.5 flare stood 0.49 mm proud per side and
+// A1 cannot have been seating flush on either printed pair. Found by
+// measurement, not reported. At 0.10 the flare clears by 0.05 mm on every face.
+V2_NUB_BASE_FLARE = 0.10;
+
+// Clearance per face on EVERY anti-rotation feature (D-R3-2): between a nub and
+// its gear notch, and between a socket and its gear pin. A fixed constant with
+// no dial, deliberately - it sets a fit against gears that are already cut.
+V2_ANTIROT_CLEARANCE = 0.15;
+
+// How far Brennen's gear CAD insets the triangle - the notch in A1, the pin on
+// A2 - from the nominal outline above. MEASURED off the printed gears, not
+// chosen here.
+V2_GEAR_TRIANGLE_INSET = 0.15;
+
+// The B pair's anti-rotation squares, as MEASURED on the v7.1 gears, in the
+// form [inner radius, outer radius, half width]. Top gears carry NOTCHES and
+// bottom gears carry PINS, so the cylinder needs a nub at each top face and a
+// socket in each bottom face. The A triangle is NOT rebuilt from measurements -
+// it derives from the V2_NUB_* nominal above, so that shape has one source -
+// but B's square is known only from the gear.
+V2_ANTIROT_B1_NOTCH = [9.80, 13.10, 1.65];
+V2_ANTIROT_B2_PIN   = [10.05, 13.05, 1.50];
 
 // The nub's inset, which key_clearance_mm deliberately does NOT control
 // (revised 2026-08-29). Gear A1's notch is a fixed negative that is already
-// cut, and it measures 3.943 x 4.553 mm - the nub at exactly this value. When
-// the dial also drove the nub, lowering it to tighten the holes GREW the nub
-// into that notch. Change this only alongside a matching gear A1.
-V2_NUB_CLEARANCE = 0.15;
+// cut, and when the dial also drove the nub, lowering it to tighten the holes
+// GREW the nub into that notch. Change this only alongside a matching gear A1.
+//
+// DERIVED, never retyped (D-R3-5): the notch is already inset from nominal by
+// V2_GEAR_TRIANGLE_INSET, so standing the nub off by one more
+// V2_ANTIROT_CLEARANCE is what leaves 0.15 mm perpendicular to each of its
+// faces. It was a hard 0.15 until 2026-08-29, and the nub was line-to-line in
+// the notch - 5 um of INTERFERENCE on the base face.
+V2_NUB_CLEARANCE = V2_GEAR_TRIANGLE_INSET + V2_ANTIROT_CLEARANCE;
+
+// A socket must leave barrel wall behind it (D-R3-3). At the signed clearance
+// Cylinder A's socket apex reaches r 13.997487 and the wall is 1.2525 mm, so
+// this cap trims exactly 0.0000 mm today. It starts to bite above c = 0.1525
+// and exists so the 1.2 mm FDM minimum survives anyone raising the clearance or
+// switching a socket to a mitred offset. NOT dead code - a guard rail.
+V2_SOCKET_MAX_RADIUS = 14.0;
+
+// Socket depth: the gear pin's own height plus one clearance, so the pin cannot
+// bottom out before the two faces meet.
+V2_SOCKET_DEPTH = V2_NUB_HEIGHT + V2_ANTIROT_CLEARANCE;
 
 // The dial is bounded in the Customizer; this catches a -D that is not.
 assert(key_clearance_mm >= 0 && key_clearance_mm <= 0.5,
@@ -1406,6 +1446,68 @@ module nub_2d(clearance) {
             [-V2_NUB_APEX_R,  0],
             [-V2_NUB_BASE_R, -V2_NUB_SIDE / 2]
         ]);
+}
+
+// One radial rectangle lying on the arrow column, given as
+// [inner radius, outer radius, half width]. The column is 180 degrees, so
+// radial +r is -x here and tangential is y. A zero corner radius gives the
+// four sharp corners gear B1's notch actually has.
+module radial_rect_2d(feature, corner_r) {
+    depth = feature[1] - feature[0];
+    translate([-(feature[0] + feature[1]) / 2, 0])
+        if (corner_r > 0)
+            offset(r = corner_r, $fn = V2_ARC_FN)
+                square([depth - 2 * corner_r, 2 * (feature[2] - corner_r)], center = true);
+        else
+            square([depth, 2 * feature[2]], center = true);
+}
+
+// The anti-rotation NUB on this plate's top face. Cylinder A's is the V2_NUB
+// triangle inset by V2_NUB_CLEARANCE - one source for that shape. Cylinder B's
+// is gear B1's square notch shrunk by one clearance on every face, sharp
+// cornered because the notch is.
+module antirot_nub_2d(emboss) {
+    if (emboss)
+        nub_2d(V2_NUB_CLEARANCE);
+    else
+        radial_rect_2d([V2_ANTIROT_B1_NOTCH[0] + V2_ANTIROT_CLEARANCE,
+                        V2_ANTIROT_B1_NOTCH[1] - V2_ANTIROT_CLEARANCE,
+                        V2_ANTIROT_B1_NOTCH[2] - V2_ANTIROT_CLEARANCE], 0);
+}
+
+// The anti-rotation SOCKET in this plate's bottom face: the gear pin's exact
+// PARALLEL CURVE at V2_ANTIROT_CLEARANCE, so every face clears by that much and
+// every internal corner carries an arc of the same radius.
+//
+// NUBS ARE MITRED, SOCKETS ARE PARALLEL CURVES - offset(delta=) against
+// offset(r=). Getting it backwards puts a sharp internal corner in a vertically
+// printed barrel and moves Cylinder A's wall from 1.2525 mm to 1.1025, under
+// the 1.2 mm minimum.
+//
+// Cylinder A's is then truncated at V2_SOCKET_MAX_RADIUS, which trims exactly
+// nothing today - see the constant.
+module antirot_socket_2d(emboss) {
+    if (emboss)
+        intersection() {
+            offset(r = V2_ANTIROT_CLEARANCE, $fn = V2_ARC_FN)
+                nub_2d(V2_GEAR_TRIANGLE_INSET);
+            translate([-V2_SOCKET_MAX_RADIUS, -V2_SOCKET_MAX_RADIUS])
+                square([2 * V2_SOCKET_MAX_RADIUS, 2 * V2_SOCKET_MAX_RADIUS]);
+        }
+    else
+        radial_rect_2d([V2_ANTIROT_B2_PIN[0] - V2_ANTIROT_CLEARANCE,
+                        V2_ANTIROT_B2_PIN[1] + V2_ANTIROT_CLEARANCE,
+                        V2_ANTIROT_B2_PIN[2] + V2_ANTIROT_CLEARANCE],
+                       V2_ANTIROT_CLEARANCE);
+}
+
+// The anti-rotation socket, sunk into the bottom face. A plain prism - no
+// chamfer and no flare - because the gear's pin carries its own 0.5 mm lead-in
+// and needs no mouth relief from us.
+module bottom_key_socket(bottom_face_z, emboss) {
+    translate([0, 0, bottom_face_z - V2_OVERLAP])
+        linear_extrude(height = V2_SOCKET_DEPTH + V2_OVERLAP)
+            antirot_socket_2d(emboss);
 }
 
 // One key half, extruded between z0 and z1 with the overlap added at both ends
@@ -1447,7 +1549,7 @@ module mouth_countersink(key, face_z, into_plus_z) {
 // 14.396 mm2 of section where the profile is 11.144. Gear A1's notch is this
 // shape's exact negative, so that bulge would jam the gear that carries the
 // handle torque.
-module top_key_nub(top_face_z) {
+module top_key_nub(top_face_z, emboss) {
     z0 = top_face_z - V2_OVERLAP;          // embedded into the face
     z1 = top_face_z + V2_NUB_HEIGHT;
     body_lo = z0 + V2_NUB_BASE_FLARE;
@@ -1458,20 +1560,20 @@ module top_key_nub(top_face_z) {
         hull() {
             translate([0, 0, z0 - V2_SLAB])
                 linear_extrude(height = V2_SLAB)
-                    offset(delta = V2_NUB_BASE_FLARE) nub_2d(V2_NUB_CLEARANCE);
+                    offset(delta = V2_NUB_BASE_FLARE) antirot_nub_2d(emboss);
             translate([0, 0, body_lo - V2_SLAB])
-                linear_extrude(height = V2_SLAB) nub_2d(V2_NUB_CLEARANCE);
+                linear_extrude(height = V2_SLAB) antirot_nub_2d(emboss);
         }
         // The straight middle.
         translate([0, 0, body_lo])
-            linear_extrude(height = body_hi - body_lo) nub_2d(V2_NUB_CLEARANCE);
+            linear_extrude(height = body_hi - body_lo) antirot_nub_2d(emboss);
         // The chamfered top.
         hull() {
             translate([0, 0, body_hi - V2_SLAB])
-                linear_extrude(height = V2_SLAB) nub_2d(V2_NUB_CLEARANCE);
+                linear_extrude(height = V2_SLAB) antirot_nub_2d(emboss);
             translate([0, 0, z1 - V2_SLAB])
                 linear_extrude(height = V2_SLAB)
-                    offset(delta = -V2_NUB_TOP_CHAMFER) nub_2d(V2_NUB_CLEARANCE);
+                    offset(delta = -V2_NUB_TOP_CHAMFER) antirot_nub_2d(emboss);
         }
     }
 }
@@ -1492,6 +1594,11 @@ module cylinder_shell_v2(emboss) {
         // All four mouths, same rule.
         mouth_countersink(v2_bottom_key(emboss), -half_h, true);
         mouth_countersink(v2_top_key(emboss), half_h, false);
+
+        // The anti-rotation socket, cut HERE in the shell stage beside the
+        // halves and the mouths, because it is material removed from the barrel
+        // and every stage after this one only unions things on.
+        bottom_key_socket(-half_h, emboss);
     }
 }
 
@@ -2086,9 +2193,10 @@ module cylinder_emboss_plate() {
                 // The key nub, unioned into the RAISED stage right after the
                 // base - before raised dots and markers, and well before any
                 // recess is cut, so the order shell -> union raised -> subtract
-                // recesses is untouched. Cylinder A only: the Counter Plate has
-                // no nub, and guessing a side would print the wrong pair.
-                top_key_nub(active_cylinder_height_mm / 2);
+                // recesses is untouched. BOTH plates carry a nub since
+                // 2026-08-29 - the shapes differ, a triangle here and a square
+                // on the Counter Plate, and the emboss flag is what picks them.
+                top_key_nub(active_cylinder_height_mm / 2, true);
 
                 // INVALID CHARACTERS warning — covers the back lines too while
                 // double-sided is on (see invalid_characters_warning above).
@@ -2212,8 +2320,14 @@ module cylinder_counter_plate() {
         difference() {
             union() {
                 // Base cylinder: SOLID, keyed through at both ends, with the
-                // OTHER two keys. No nub on this plate.
+                // OTHER two keys.
                 cylinder_shell_v2(emboss = false);
+
+                // This plate's anti-rotation nub - the SQUARE that mates with
+                // gear B1's notch. New on 2026-08-29: the Counter Plate had no
+                // nub while gear A1 was the only gear with a notch, and every
+                // gear has an anti-rotation feature now.
+                top_key_nub(active_cylinder_height_mm / 2, false);
 
                 // Double-sided: this cylinder's own raised dots - the BACK
                 // text it embosses. Unioned in before any recess is subtracted

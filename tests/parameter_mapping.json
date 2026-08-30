@@ -727,7 +727,7 @@
       "web_api_name": "v2_key_clearance_mm",
       "web_ui_label": "Key clearance (mm)",
       "type": "number",
-      "default": 0.075,
+      "default": 0.110,
       "range": [0, 0.5],
       "section": "Version 2 Keyed Cutouts",
       "description": "Extra room around each gear peg, per side (mm). Grows every keyed hole outward and shrinks the key nub inward by the same amount.",
