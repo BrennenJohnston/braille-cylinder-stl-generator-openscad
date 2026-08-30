@@ -26,20 +26,14 @@ logger = logging.getLogger(__name__)
 class TestCrossPlatformValidation:
     """Cross-platform STL validation tests."""
 
-    def test_environment_setup(
-        self, openscad_runner, mesh_comparator, test_cases
-    ):
+    def test_environment_setup(self, openscad_runner, mesh_comparator, test_cases):
         """Verify test environment is properly configured."""
         assert openscad_runner is not None, "OpenSCAD runner not initialized"
-        assert (
-            mesh_comparator is not None
-        ), "Mesh comparator not initialized"
+        assert mesh_comparator is not None, "Mesh comparator not initialized"
         assert test_cases is not None, "Test cases not loaded"
         assert len(test_cases["test_cases"]) > 0, "No test cases defined"
 
-        logger.info(
-            f"Environment setup OK: {len(test_cases['test_cases'])} test cases"
-        )
+        logger.info(f"Environment setup OK: {len(test_cases['test_cases'])} test cases")
 
     # Generate parametrized tests for each test case
     # NOTE: Only cylinder tests are active. Card tests removed until web UI parity restored.
@@ -106,11 +100,11 @@ class TestCrossPlatformValidation:
 
         assert test_case is not None, f"Test case not found: {test_case_name}"
 
-        logger.info(f"\n{'='*70}")
+        logger.info(f"\n{'=' * 70}")
         logger.info(f"Test Case: {test_case_name}")
         logger.info(f"Description: {test_case['description']}")
         logger.info(f"Tags: {', '.join(test_case['tags'])}")
-        logger.info(f"{'='*70}")
+        logger.info(f"{'=' * 70}")
 
         # Get fixture directory
         fixture_dir = fixtures_dir / test_case_name
@@ -142,9 +136,7 @@ class TestCrossPlatformValidation:
             f"  Stderr: {result.stderr}"
         )
 
-        logger.info(
-            f"✓ OpenSCAD completed in {result.duration_seconds:.1f}s"
-        )
+        logger.info(f"✓ OpenSCAD completed in {result.duration_seconds:.1f}s")
 
         # Compare meshes
         logger.info(f"Comparing: {reference_stl.name} vs {test_stl.name}")
@@ -161,9 +153,7 @@ class TestCrossPlatformValidation:
 
         # Assert comparison passed
         if not comparison.passed:
-            failure_msg = (
-                f"Mesh comparison failed for {test_case_name}:\n"
-            )
+            failure_msg = f"Mesh comparison failed for {test_case_name}:\n"
             for failure in comparison.failures:
                 failure_msg += f"  - {failure}\n"
             failure_msg += f"\nDetailed results: {results_file}"
@@ -173,37 +163,21 @@ class TestCrossPlatformValidation:
 
     def _log_comparison_results(self, comparison: ComparisonResult):
         """Log comparison results."""
-        logger.info(
-            f"  Volume diff: {comparison.volume_diff_percent:.2f}%"
-        )
-        logger.info(
-            f"  Surface area diff: {comparison.surface_area_diff_percent:.2f}%"
-        )
-        logger.info(
-            f"  Bounding box diff: {comparison.bounding_box_diff_mm:.3f} mm"
-        )
-        logger.info(
-            f"  Face count diff: {comparison.face_count_diff}"
-        )
-        logger.info(
-            f"  Vertex count diff: {comparison.vertex_count_diff}"
-        )
-        logger.info(
-            f"  Watertightness match: {comparison.watertightness_match}"
-        )
+        logger.info(f"  Volume diff: {comparison.volume_diff_percent:.2f}%")
+        logger.info(f"  Surface area diff: {comparison.surface_area_diff_percent:.2f}%")
+        logger.info(f"  Bounding box diff: {comparison.bounding_box_diff_mm:.3f} mm")
+        logger.info(f"  Face count diff: {comparison.face_count_diff}")
+        logger.info(f"  Vertex count diff: {comparison.vertex_count_diff}")
+        logger.info(f"  Watertightness match: {comparison.watertightness_match}")
 
         if comparison.max_surface_deviation_mm is not None:
             logger.info(
                 f"  Max surface deviation: {comparison.max_surface_deviation_mm:.3f} mm"
             )
         elif comparison.cloudcompare_available:
-            logger.info(
-                "  Numeric deviation: Not computed (implementation pending)"
-            )
+            logger.info("  Numeric deviation: Not computed (implementation pending)")
         else:
-            logger.info(
-                "  Numeric deviation: Skipped (CloudCompare not available)"
-            )
+            logger.info("  Numeric deviation: Skipped (CloudCompare not available)")
 
     def _save_results(
         self,

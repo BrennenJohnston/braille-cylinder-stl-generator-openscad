@@ -77,8 +77,12 @@ class OpenSCADRunner:
         self.default_timeout_seconds = default_timeout_seconds
         self._verify_openscad()
         self.version_string = self.get_version()
-        self.use_manifold = use_manifold if use_manifold is not None else self._detect_manifold_support()
-        
+        self.use_manifold = (
+            use_manifold
+            if use_manifold is not None
+            else self._detect_manifold_support()
+        )
+
         # Version enforcement (primarily for CI)
         if enforce_version:
             self._enforce_version(enforce_version)
@@ -153,7 +157,7 @@ class OpenSCADRunner:
     def _detect_manifold_support(self) -> bool:
         """
         Detect if OpenSCAD supports the Manifold backend.
-        
+
         Manifold is available in OpenSCAD nightly builds (2024+) and provides
         significantly faster boolean operations compared to CGAL.
 
@@ -189,14 +193,14 @@ class OpenSCADRunner:
             timeout=10,
         )
         return (result.stdout or result.stderr).strip()
-    
+
     def _enforce_version(self, required_version: str) -> None:
         """
         Enforce exact OpenSCAD version for reproducibility.
-        
+
         Args:
             required_version: Required version string (e.g., "2026.01.03")
-            
+
         Raises:
             OpenSCADNotFoundError: If version doesn't match
         """
@@ -209,17 +213,17 @@ class OpenSCADRunner:
                 f"See tests/tool_versions.yml for download instructions."
             )
         logger.info(f"✓ OpenSCAD version check passed: {required_version}")
-    
+
     def check_manifold_backend(self, require_manifold: bool = False) -> bool:
         """
         Check if Manifold backend is available and optionally require it.
-        
+
         Args:
             require_manifold: If True, raise error if Manifold is not available
-            
+
         Returns:
             True if Manifold is available
-            
+
         Raises:
             OpenSCADNotFoundError: If require_manifold=True and Manifold not available
         """
@@ -280,13 +284,13 @@ class OpenSCADRunner:
                 stderr=subprocess.PIPE,
                 cwd=scad_file.parent,
             )
-            
+
             # Poll with progress reporting instead of blocking communicate()
             stdout_data = b""
             stderr_data = b""
             last_report_time = start_time
             report_interval = 15  # Report progress every 15 seconds
-            
+
             while True:
                 # Check if process has finished
                 retcode = process.poll()
@@ -296,11 +300,13 @@ class OpenSCADRunner:
                     stdout_data += remaining_stdout or b""
                     stderr_data += remaining_stderr or b""
                     break
-                
+
                 # Check for timeout
                 elapsed = time.time() - start_time
                 if elapsed > timeout:
-                    logger.error(f"OpenSCAD timed out after {timeout} seconds - killing process")
+                    logger.error(
+                        f"OpenSCAD timed out after {timeout} seconds - killing process"
+                    )
                     self._kill_process_tree(process.pid)
                     return OpenSCADResult(
                         success=False,
@@ -311,19 +317,23 @@ class OpenSCADRunner:
                         duration_seconds=elapsed,
                         command=" ".join(cmd),
                     )
-                
+
                 # Report progress periodically
                 if time.time() - last_report_time >= report_interval:
                     logger.info(f"  ... still processing ({int(elapsed)}s elapsed)")
                     last_report_time = time.time()
-                
+
                 # Small sleep to avoid busy-waiting
                 time.sleep(0.5)
-            
+
             duration = time.time() - start_time
-            stdout_str = stdout_data.decode("utf-8", errors="replace") if stdout_data else ""
-            stderr_str = stderr_data.decode("utf-8", errors="replace") if stderr_data else ""
-            
+            stdout_str = (
+                stdout_data.decode("utf-8", errors="replace") if stdout_data else ""
+            )
+            stderr_str = (
+                stderr_data.decode("utf-8", errors="replace") if stderr_data else ""
+            )
+
             success = process.returncode == 0 and output_stl.exists()
 
             if not success:
@@ -340,7 +350,7 @@ class OpenSCADRunner:
                 duration_seconds=duration,
                 command=" ".join(cmd),
             )
-                
+
         except Exception as e:
             duration = time.time() - start_time
             logger.error(f"OpenSCAD execution error: {e}")
@@ -355,11 +365,11 @@ class OpenSCADRunner:
                 duration_seconds=duration,
                 command=" ".join(cmd),
             )
-    
+
     def _kill_process_tree(self, pid: int) -> None:
         """
         Kill a process and all its children (Windows-compatible).
-        
+
         Args:
             pid: Process ID to kill
         """
@@ -375,6 +385,7 @@ class OpenSCADRunner:
                 # On Unix, use process group
                 import os
                 import signal
+
                 os.killpg(os.getpgid(pid), signal.SIGTERM)
         except Exception as e:
             logger.warning(f"Failed to kill process tree {pid}: {e}")
@@ -488,15 +499,9 @@ def main():
     )
     parser.add_argument("scad_file", type=Path, help="Input .scad file")
     parser.add_argument("output_stl", type=Path, help="Output STL file")
-    parser.add_argument(
-        "--params-json", type=Path, help="JSON file with parameters"
-    )
-    parser.add_argument(
-        "--timeout", type=int, default=300, help="Timeout in seconds"
-    )
-    parser.add_argument(
-        "--verbose", action="store_true", help="Enable verbose logging"
-    )
+    parser.add_argument("--params-json", type=Path, help="JSON file with parameters")
+    parser.add_argument("--timeout", type=int, default=300, help="Timeout in seconds")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
 
     args = parser.parse_args()
 

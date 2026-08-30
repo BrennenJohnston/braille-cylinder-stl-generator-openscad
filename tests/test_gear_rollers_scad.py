@@ -40,7 +40,9 @@ from test_text_too_long import _resolve_openscad_path  # noqa: E402  (shared hel
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCAD_FILE = PROJECT_ROOT / "Braille_Cylinder_STL_Generator.scad"
-MAKERWORLD_FILE = PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad"
+MAKERWORLD_FILE = (
+    PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad"
+)
 
 # The reference roller (assets/GEARS_PROVENANCE.json, and the web generator's
 # app/geometry/gears.py).
@@ -54,9 +56,7 @@ BOUNDS_TOL_MM = 0.001
 
 # The signed S7 sentence. The assert must quote it, so a user meets the same
 # words here and in the web app.
-SIZE_MESSAGE = (
-    "Integrated gears are matched to the reference roller and only fit a 30.8 mm x 52 mm cylinder."
-)
+SIZE_MESSAGE = "Integrated gears are matched to the reference roller and only fit a 30.8 mm x 52 mm cylinder."
 
 
 @pytest.fixture(scope="module")
@@ -91,10 +91,19 @@ def _render(binary, tmp_path, name, defines, scad_file=SCAD_FILE):
     stl_path = tmp_path / f"{name}.stl"
     command = [str(binary), "--hardwarnings", "--check-parameter-ranges=true"]
     for key, value in defines.items():
-        command += ["-D", f'{key}="{value}"' if isinstance(value, str) else f"{key}={value}"]
+        command += [
+            "-D",
+            f'{key}="{value}"' if isinstance(value, str) else f"{key}={value}",
+        ]
     command += ["-o", str(stl_path), str(scad_file)]
-    result = subprocess.run(command, capture_output=True, text=True, timeout=300, cwd=PROJECT_ROOT)
-    return stl_path, (result.stdout or "") + "\n" + (result.stderr or ""), result.returncode
+    result = subprocess.run(
+        command, capture_output=True, text=True, timeout=300, cwd=PROJECT_ROOT
+    )
+    return (
+        stl_path,
+        (result.stdout or "") + "\n" + (result.stderr or ""),
+        result.returncode,
+    )
 
 
 def _load_roller(trimesh_module, stl_path, output):
@@ -123,7 +132,9 @@ def _tooth_clusters(mesh, z_low, z_high):
 @pytest.mark.requires_openscad
 @pytest.mark.slow
 @pytest.mark.parametrize("plate", ["Embossing Plate", "Counter Plate"])
-def test_geared_plate_is_one_watertight_roller(trimesh_module, openscad_binary, tmp_path, plate):
+def test_geared_plate_is_one_watertight_roller(
+    trimesh_module, openscad_binary, tmp_path, plate
+):
     """72 mm tall, one solid, gears at both ends, no enclosed cavity."""
     name = "geared_" + plate.split()[0].lower()
     stl_path, output, _ = _render(
@@ -148,7 +159,9 @@ def test_geared_plate_is_one_watertight_roller(trimesh_module, openscad_binary, 
     import numpy as np
 
     for z_low, z_high in GEAR_BANDS:
-        band = mesh.vertices[(mesh.vertices[:, 2] > z_low + 0.5) & (mesh.vertices[:, 2] < z_high - 0.5)]
+        band = mesh.vertices[
+            (mesh.vertices[:, 2] > z_low + 0.5) & (mesh.vertices[:, 2] < z_high - 0.5)
+        ]
         assert len(band) > 0
         assert float(np.hypot(band[:, 0], band[:, 1]).max()) <= XY_LIMIT_MM
         assert _tooth_clusters(mesh, z_low + 1.0, z_high - 1.0) == TOOTH_COUNT
@@ -157,7 +170,9 @@ def test_geared_plate_is_one_watertight_roller(trimesh_module, openscad_binary, 
 @pytest.mark.requires_openscad
 @pytest.mark.slow
 @pytest.mark.parametrize("plate", ["Embossing Plate", "Counter Plate"])
-def test_the_barrel_is_solid_in_gear_mode(trimesh_module, openscad_binary, tmp_path, plate):
+def test_the_barrel_is_solid_in_gear_mode(
+    trimesh_module, openscad_binary, tmp_path, plate
+):
     """
     Decision D-2, probed at the DEFAULTS - where the cutout radius is 13 mm, so
     this is the case a user actually renders. A point at r 10, mid-height, must
@@ -171,7 +186,9 @@ def test_the_barrel_is_solid_in_gear_mode(trimesh_module, openscad_binary, tmp_p
     )
     mesh = _load_roller(trimesh_module, stl_path, output)
 
-    probes = np.array([[10.0, 0.0, 26.0], [0.0, 10.0, 26.0], [-10.0, 0.0, 26.0], [0.0, -10.0, 26.0]])
+    probes = np.array(
+        [[10.0, 0.0, 26.0], [0.0, 10.0, 26.0], [-10.0, 0.0, 26.0], [0.0, -10.0, 26.0]]
+    )
     assert mesh.contains(probes).all()
 
     # And the note is said out loud, because the user HAD a cutout set.
@@ -187,7 +204,9 @@ def test_gears_off_leaves_the_cutout_alone(trimesh_module, openscad_binary, tmp_
     """
     import numpy as np
 
-    stl_path, output, _ = _render(openscad_binary, tmp_path, "plain", {"plate_type": "Embossing Plate"})
+    stl_path, output, _ = _render(
+        openscad_binary, tmp_path, "plain", {"plate_type": "Embossing Plate"}
+    )
     mesh = _load_roller(trimesh_module, stl_path, output)
 
     probes = np.array([[10.0, 0.0, 26.0], [0.0, 10.0, 26.0]])
@@ -207,7 +226,9 @@ def test_gears_off_leaves_the_cutout_alone(trimesh_module, openscad_binary, tmp_
         ({"cylinder_diameter_mm": 30.75}, "the schema-default diameter"),
     ],
 )
-def test_a_cylinder_the_gears_cannot_fit_is_refused(openscad_binary, tmp_path, defines, label):
+def test_a_cylinder_the_gears_cannot_fit_is_refused(
+    openscad_binary, tmp_path, defines, label
+):
     """
     The size assert must FIRE, and no STL may be written.
 
@@ -220,13 +241,17 @@ def test_a_cylinder_the_gears_cannot_fit_is_refused(openscad_binary, tmp_path, d
     stl_path, output, _ = _render(openscad_binary, tmp_path, "refused", params)
 
     assert "ERROR:" in output, f"the assert did not fire for {label}:\n{output[:800]}"
-    assert SIZE_MESSAGE in output, f"the assert fired with the wrong wording for {label}"
+    assert SIZE_MESSAGE in output, (
+        f"the assert fired with the wrong wording for {label}"
+    )
     assert not stl_path.exists(), f"an STL was written despite {label}"
 
 
 @pytest.mark.requires_openscad
 @pytest.mark.slow
-def test_an_off_size_cylinder_still_renders_with_gears_off(trimesh_module, openscad_binary, tmp_path):
+def test_an_off_size_cylinder_still_renders_with_gears_off(
+    trimesh_module, openscad_binary, tmp_path
+):
     """The gate is gear-mode only: the same size renders fine without gears."""
     stl_path, output, _ = _render(
         openscad_binary,

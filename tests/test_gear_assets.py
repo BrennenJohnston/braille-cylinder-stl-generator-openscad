@@ -87,11 +87,18 @@ def _read_packed(path):
     """Read one of the web repo's .bin assets into (vertices, faces)."""
     data = path.read_bytes()
     if data[:6] != GEAR_MAGIC:
-        raise ValueError(f"{path.name}: bad magic {data[:6]!r}, expected {GEAR_MAGIC!r}")
+        raise ValueError(
+            f"{path.name}: bad magic {data[:6]!r}, expected {GEAR_MAGIC!r}"
+        )
     vert_count, tri_count = struct.unpack_from("<II", data, 6)
-    vertices = np.frombuffer(data, dtype="<f4", count=3 * vert_count, offset=GEAR_HEADER_BYTES)
+    vertices = np.frombuffer(
+        data, dtype="<f4", count=3 * vert_count, offset=GEAR_HEADER_BYTES
+    )
     faces = np.frombuffer(
-        data, dtype="<u4", count=3 * tri_count, offset=GEAR_HEADER_BYTES + 12 * vert_count
+        data,
+        dtype="<u4",
+        count=3 * tri_count,
+        offset=GEAR_HEADER_BYTES + 12 * vert_count,
     )
     return (
         vertices.reshape(-1, 3).astype(np.float64),
@@ -122,7 +129,9 @@ def regenerate():
         "assets": {},
     }
 
-    web_manifest = json.loads((WEB_ASSETS_DIR / "gears_manifest.json").read_text(encoding="utf-8"))
+    web_manifest = json.loads(
+        (WEB_ASSETS_DIR / "gears_manifest.json").read_text(encoding="utf-8")
+    )
     provenance["source_samples"] = {
         name: entry["sources"] for name, entry in web_manifest["assets"].items()
     }
@@ -157,7 +166,9 @@ def regenerate():
             f"z {mesh.bounds[0][2]:.3f}..{mesh.bounds[1][2]:.3f}"
         )
 
-    PROVENANCE_PATH.write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8", newline="\n")
+    PROVENANCE_PATH.write_text(
+        json.dumps(provenance, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
     print(f"wrote {PROVENANCE_PATH}")
 
 
@@ -178,12 +189,12 @@ LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1"
 
 def _require_real_asset(path):
     if not path.is_file():
-        pytest.fail(f"{path} is missing. Regenerate with: python -m tests.test_gear_assets")
+        pytest.fail(
+            f"{path} is missing. Regenerate with: python -m tests.test_gear_assets"
+        )
     payload = path.read_bytes()
     if payload.startswith(LFS_POINTER_PREFIX):
-        pytest.fail(
-            f"{path} is a Git LFS pointer, not the mesh. Run: git lfs pull"
-        )
+        pytest.fail(f"{path} is a Git LFS pointer, not the mesh. Run: git lfs pull")
     return payload
 
 
@@ -255,7 +266,8 @@ def test_asset_is_two_watertight_gears(asset_name):
     assert all(body.volume > 0 for body in bodies)
 
     spans = sorted(
-        (round(float(b.bounds[0][2]), 3), round(float(b.bounds[1][2]), 3)) for b in bodies
+        (round(float(b.bounds[0][2]), 3), round(float(b.bounds[1][2]), 3))
+        for b in bodies
     )
     for got, want in zip(spans, EXPECTED_Z_BANDS):
         assert got[0] == pytest.approx(want[0], abs=BOUNDS_TOL_MM)
@@ -299,7 +311,10 @@ def test_the_two_gears_share_one_clocking(asset_name):
         tips = in_band[radius > (TIP_RADIUS_MM - TIP_BAND_DEPTH_MM)]
         angles = np.degrees(np.arctan2(tips[:, 1], tips[:, 0])) % 360.0
         scaled = np.radians((angles % pitch) * TOOTH_COUNT)
-        mean = math.degrees(math.atan2(np.sin(scaled).mean(), np.cos(scaled).mean())) / TOOTH_COUNT
+        mean = (
+            math.degrees(math.atan2(np.sin(scaled).mean(), np.cos(scaled).mean()))
+            / TOOTH_COUNT
+        )
         phases.append(mean % pitch)
 
     assert phases[0] == pytest.approx(phases[1], abs=0.01)

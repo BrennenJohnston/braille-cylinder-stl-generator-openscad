@@ -188,11 +188,12 @@ class TestSelfCheckValues:
         collapses the front-to-back distance to the bare circumferential pitch.
         """
         assert (
-            self_check_values["lattice_1_25_0"]
-            < self_check_values["lattice_1_25_1_25"]
+            self_check_values["lattice_1_25_0"] < self_check_values["lattice_1_25_1_25"]
         )
 
-    def test_both_packages_clear_the_floor_and_the_others_do_not(self, self_check_values):
+    def test_both_packages_clear_the_floor_and_the_others_do_not(
+        self, self_check_values
+    ):
         """
         The reason double-sided mode ships its own smaller footprints: at the
         single-sided sizes the same-surface gap falls under the 0.34 mm a 0.4 mm
@@ -205,7 +206,9 @@ class TestSelfCheckValues:
         assert self_check_values["gap_single_sided"] < 0.34
         assert self_check_values["gap_legacy_cone"] < 0
 
-    def test_the_printed_ridge_is_narrower_than_the_nominal_gap(self, self_check_values):
+    def test_the_printed_ridge_is_narrower_than_the_nominal_gap(
+        self, self_check_values
+    ):
         """
         Every gap above is measured on the NOMINAL bowl diameter, but the bowl
         is cut as a hemisphere centred on the shell surface, so its printed
@@ -279,12 +282,12 @@ class TestGuards:
     @pytest.mark.parametrize(
         ("offset", "preset", "should_render"),
         [
-            (1.25, "0.4mm", True),   # the shipped default
-            (1.19, "0.4mm", True),   # narrowest the 0.4 package accepts
+            (1.25, "0.4mm", True),  # the shipped default
+            (1.19, "0.4mm", True),  # narrowest the 0.4 package accepts
             (1.18, "0.4mm", False),  # one 0.01 mm step outside it
-            (1.31, "0.4mm", True),   # widest the 0.4 package accepts
+            (1.31, "0.4mm", True),  # widest the 0.4 package accepts
             (1.32, "0.4mm", False),  # one step outside it
-            (1.15, "0.3mm", True),   # the 0.3 package keeps the whole slider
+            (1.15, "0.3mm", True),  # the 0.3 package keeps the whole slider
             (1.35, "0.3mm", True),
         ],
     )
@@ -416,7 +419,9 @@ class TestSourceGuards:
             r"ds_printed_ridge_mm\s*=\s*ds_on\s*\?\s*ds_same_surface_min_gap\(\s*"
             r"DS_DOT_BASE_DIA,\s*2\s*\*\s*DS_BOWL_R,",
             scad_source,
-        ), "The guard's ridge must be measured on the bowl's printed mouth, 2 * DS_BOWL_R."
+        ), (
+            "The guard's ridge must be measured on the bowl's printed mouth, 2 * DS_BOWL_R."
+        )
         assert "assert(ds_printed_ridge_mm >= DS_GAP_FLOOR," in scad_source, (
             "The printability assert must test ds_printed_ridge_mm."
         )

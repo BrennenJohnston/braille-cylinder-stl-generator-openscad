@@ -74,14 +74,16 @@ def _render_at(binary, tmp_path, quality):
     stl_path, output, returncode = _render(
         binary, tmp_path, f"hq_{quality or 'default'}", defines
     )
-    assert stl_path.exists(), f"no STL written for hemisphere_quality={quality!r}:\n{output}"
+    assert stl_path.exists(), (
+        f"no STL written for hemisphere_quality={quality!r}:\n{output}"
+    )
     assert "ERROR:" not in output, output
     assert "WARNING:" not in output, output
     return _triangle_count(stl_path)
 
 
 @pytest.fixture(scope="module")
-def counts(openscad_binary, tmp_path_factory):
+def counts(openscad_binary, tmp_path_factory):  # noqa: F811  (fixture request, not a redefinition)
     """All four renders once - each is a full plate and they are not cheap."""
     tmp_path = tmp_path_factory.mktemp("hemisphere_quality")
     return {

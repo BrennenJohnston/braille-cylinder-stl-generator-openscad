@@ -111,7 +111,9 @@ def test_a_single_sided_plate_is_one_connected_body(
         "bodies; DOT_BASE_EMBED is supposed to fuse every raised dot to the shell. "
         f"Body sizes (facets): {sorted(len(b.faces) for b in bodies)}"
     )
-    assert mesh.is_watertight, f"The {preset} {dot_shape} emboss plate is not watertight."
+    assert mesh.is_watertight, (
+        f"The {preset} {dot_shape} emboss plate is not watertight."
+    )
 
 
 @pytest.mark.parametrize("preset,dot_shape,table", CONFIGURATIONS)
@@ -151,7 +153,9 @@ def test_the_embed_did_not_change_how_far_a_dot_stands_proud(
 
     proud = apex - radius
     print()
-    print(f"{preset} {dot_shape}: tallest dot stands {proud:.5f} mm proud, expected {expected}")
+    print(
+        f"{preset} {dot_shape}: tallest dot stands {proud:.5f} mm proud, expected {expected}"
+    )
     assert low <= proud <= high, (
         f"The {preset} {dot_shape} dot now stands {proud:.5f} mm proud of the shell, "
         f"outside [{low:.5f}, {high:.5f}]. Dot height is a tactile dimension: the base "
@@ -187,9 +191,7 @@ def test_the_rounded_dome_overlaps_its_frustum_instead_of_touching_it():
         "GEAR_ARROW_WELD_MM, which solves the same problem on the tactile arrows."
     )
 
-    assert (
-        "_preset_rounded_dot_base_height + _R_sphere - DOT_DOME_WELD_MM" in source
-    ), (
+    assert "_preset_rounded_dot_base_height + _R_sphere - DOT_DOME_WELD_MM" in source, (
         "The rounded dome's cutting cube no longer subtracts DOT_DOME_WELD_MM, so "
         "the cap is being cut off exactly at the frustum's top plane again - a "
         "zero-overlap tangency between two differently tessellated surfaces."

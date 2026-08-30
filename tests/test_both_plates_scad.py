@@ -71,7 +71,9 @@ def _center_distance_x(bodies):
 @pytest.mark.requires_openscad
 @pytest.mark.slow
 @pytest.mark.parametrize("value", ["On", "on"])
-def test_both_mode_renders_two_spaced_bodies(trimesh_module, openscad_binary, tmp_path, value):
+def test_both_mode_renders_two_spaced_bodies(
+    trimesh_module, openscad_binary, tmp_path, value
+):
     """Two watertight bodies, centres diameter + gap apart, hint echoed."""
     stl_path, output, _ = _render(
         openscad_binary, tmp_path, f"both_{value}", {"render_both_plates": value}
@@ -100,7 +102,10 @@ def test_both_mode_renders_two_spaced_bodies(trimesh_module, openscad_binary, tm
 @pytest.mark.slow
 def test_pair_spacing_follows_the_slider(trimesh_module, openscad_binary, tmp_path):
     stl_path, output, _ = _render(
-        openscad_binary, tmp_path, "both_20", {"render_both_plates": "On", "pair_spacing_mm": 20}
+        openscad_binary,
+        tmp_path,
+        "both_20",
+        {"render_both_plates": "On", "pair_spacing_mm": 20},
     )
     mesh = _load_roller(trimesh_module, stl_path, output)
     bodies = mesh.split(only_watertight=False)
@@ -110,7 +115,9 @@ def test_pair_spacing_follows_the_slider(trimesh_module, openscad_binary, tmp_pa
 
 @pytest.mark.requires_openscad
 @pytest.mark.slow
-def test_both_mode_with_gears_builds_two_full_rollers(trimesh_module, openscad_binary, tmp_path):
+def test_both_mode_with_gears_builds_two_full_rollers(
+    trimesh_module, openscad_binary, tmp_path
+):
     """Each body spans the full 72 mm roller: gears arrived on both cylinders."""
     stl_path, output, _ = _render(
         openscad_binary,

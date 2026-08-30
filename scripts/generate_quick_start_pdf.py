@@ -40,7 +40,9 @@ def md_inline(text: str) -> str:
     text = text.replace("`", "")
     text = re.sub(r"<(https?://[^>]+)>", r"[\1](\1)", text)
     # fpdf2 cannot nest styles inside link text; drop emphasis markers there
-    text = re.sub(r"\[([^\]]*)\]", lambda m: "[" + m.group(1).replace("*", "") + "]", text)
+    text = re.sub(
+        r"\[([^\]]*)\]", lambda m: "[" + m.group(1).replace("*", "") + "]", text
+    )
     # *italic* -> __italic__ (single asterisks only; ** pairs are left alone)
     text = re.sub(r"(?<!\*)\*(?!\*)([^*]+)\*(?!\*)", r"__\1__", text)
     return text
@@ -100,7 +102,9 @@ def emit_heading(pdf: FPDF, level: int, text: str) -> None:
 
 def emit_paragraph(pdf: FPDF, text: str) -> None:
     body_font(pdf)
-    pdf.multi_cell(0, 5.2, md_inline(text), markdown=True, new_x="LMARGIN", new_y="NEXT")
+    pdf.multi_cell(
+        0, 5.2, md_inline(text), markdown=True, new_x="LMARGIN", new_y="NEXT"
+    )
     pdf.ln(1.5)
 
 
@@ -110,8 +114,12 @@ def emit_list_item(pdf: FPDF, text: str, bullet: str) -> None:
     pdf.set_x(left + 3)
     pdf.cell(6, 5.2, bullet)
     pdf.multi_cell(
-        pdf.w - pdf.r_margin - (left + 9), 5.2, md_inline(text),
-        markdown=True, new_x="LMARGIN", new_y="NEXT",
+        pdf.w - pdf.r_margin - (left + 9),
+        5.2,
+        md_inline(text),
+        markdown=True,
+        new_x="LMARGIN",
+        new_y="NEXT",
     )
     pdf.ln(0.5)
 
@@ -124,8 +132,12 @@ def emit_quote(pdf: FPDF, lines: list[str]) -> None:
     pdf.set_x(left + 5)
     text = "\n".join(md_inline(line) for line in lines)
     pdf.multi_cell(
-        pdf.w - pdf.r_margin - (left + 5), 5.4, text,
-        markdown=True, new_x="LMARGIN", new_y="NEXT",
+        pdf.w - pdf.r_margin - (left + 5),
+        5.4,
+        text,
+        markdown=True,
+        new_x="LMARGIN",
+        new_y="NEXT",
     )
     bottom = pdf.get_y()
     pdf.set_draw_color(*HEADING_COLOR)
@@ -190,8 +202,12 @@ def parse_blocks(md: str):
             marker, text = m.group(1), m.group(2)
             i += 1
             # absorb hanging-indent continuation lines
-            while i < len(lines) and lines[i].startswith("  ") and lines[i].strip() \
-                    and not re.match(r"^\s*(-|\d+\.)\s", lines[i]):
+            while (
+                i < len(lines)
+                and lines[i].startswith("  ")
+                and lines[i].strip()
+                and not re.match(r"^\s*(-|\d+\.)\s", lines[i])
+            ):
                 text += " " + lines[i].strip()
                 i += 1
             yield "li", (marker, text)
@@ -201,8 +217,12 @@ def parse_blocks(md: str):
         i += 1
         while i < len(lines):
             nxt = lines[i].strip()
-            if not nxt or nxt.startswith(("#", ">", "|", "- ")) or nxt == "---" \
-                    or re.match(r"^\d+\.\s", nxt):
+            if (
+                not nxt
+                or nxt.startswith(("#", ">", "|", "- "))
+                or nxt == "---"
+                or re.match(r"^\d+\.\s", nxt)
+            ):
                 break
             para.append(nxt)
             i += 1
@@ -225,7 +245,9 @@ def main() -> int:
         else:
             emit_paragraph(pdf, payload)
     pdf.output(str(PDF_PATH))
-    print(f"Wrote {PDF_PATH} ({PDF_PATH.stat().st_size:,} bytes, {pdf.page_no()} pages)")
+    print(
+        f"Wrote {PDF_PATH} ({PDF_PATH.stat().st_size:,} bytes, {pdf.page_no()} pages)"
+    )
     return 0
 
 

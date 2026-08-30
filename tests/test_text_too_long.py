@@ -63,6 +63,7 @@ def _resolve_openscad_path():
             return p
     return None  # let OpenSCADRunner auto-detect
 
+
 # Same braille glyph used by other fixtures; six dots so it always produces
 # extrusion geometry on the cylinder surface.
 BRAILLE_FULL_CELL = "\u283f"  # U+283F: braille pattern dots-123456
@@ -178,7 +179,9 @@ def test_text_too_long_emits_warning_extrusion(
     z_oversize = _z_max(_trimesh, oversize_stl)
     z_exact = _z_max(_trimesh, exact_stl)
 
-    cyl_top = baseline_params["cylinder_height_mm"]  # cylinder centered then translated up
+    cyl_top = baseline_params[
+        "cylinder_height_mm"
+    ]  # cylinder centered then translated up
     z_offset = warning_offsets["z_offset"]
     depth = warning_offsets["depth"]
 
@@ -218,7 +221,7 @@ def test_text_too_long_emits_warning_extrusion(
     assert z_oversize >= expected_warning_top - 1.0, (
         f"Oversize render's z_max ({z_oversize:.3f}) is below the expected "
         f"warning top ({expected_warning_top:.3f} = cylinder_top {cyl_top} + "
-        f"z_offset {z_offset} + 8 + depth/2 {depth/2}). Either the warning "
+        f"z_offset {z_offset} + 8 + depth/2 {depth / 2}). Either the warning "
         f"didn't fire or the stack offset constant drifted."
     )
 

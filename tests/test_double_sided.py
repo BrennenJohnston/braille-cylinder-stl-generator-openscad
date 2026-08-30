@@ -74,7 +74,7 @@ from test_text_too_long import (  # noqa: E402  (shared helpers)
 # both small, both asymmetric, so a mirrored or transposed layout cannot pass by
 # accident.
 FRONT_TEXT = "⠁⠃⠉"  # dots 1 | 1-2 | 1-4
-BACK_TEXT = "⠙⠑⠋"   # dots 1-4-5 | 1-5 | 1-2-4
+BACK_TEXT = "⠙⠑⠋"  # dots 1-4-5 | 1-5 | 1-2-4
 EXPECTED_FRONT_DOTS = 5
 EXPECTED_BACK_BOWLS = 8
 
@@ -138,7 +138,9 @@ def _layout_from(radius, cols, rows, package, height=None, table="PRESET_04"):
     Phase 13 calls this with the golden pair's grid and radius as well as the
     shipped defaults, so both configurations are built by one set of formulas.
     """
-    height = _preset_value("cylinder_height_mm", table=table) if height is None else height
+    height = (
+        _preset_value("cylinder_height_mm", table=table) if height is None else height
+    )
     cell = _preset_value("cell_spacing", table=table)
     line = _preset_value("line_spacing", table=table)
     dot = _preset_value("dot_spacing", table=table)
@@ -322,14 +324,18 @@ class _Features:
         pts = self.v[mask]
         if len(pts) == 0:
             return []
-        labels = fcluster(linkage(pdist(pts), method="single"), tol, criterion="distance")
+        labels = fcluster(
+            linkage(pdist(pts), method="single"), tol, criterion="distance"
+        )
         out = []
         for label in sorted(set(labels)):
             sel = pts[labels == label]
             r = np.hypot(sel[:, 0], sel[:, 1])
             out.append(
                 {
-                    "theta": math.degrees(math.atan2(sel[:, 1].mean(), sel[:, 0].mean())),
+                    "theta": math.degrees(
+                        math.atan2(sel[:, 1].mean(), sel[:, 0].mean())
+                    ),
                     "z": float(sel[:, 2].mean()) - self.z_origin,
                     "r_min": float(r.min()),
                     "r_max": float(r.max()),
@@ -364,7 +370,8 @@ def _match(clusters, expected, label):
         for candidate in unmatched:
             angle_deg, y = candidate
             if (
-                abs(_ang_diff(cluster["theta"], math.degrees(angle_deg))) <= ANGLE_TOL_DEG
+                abs(_ang_diff(cluster["theta"], math.degrees(angle_deg)))
+                <= ANGLE_TOL_DEG
                 and abs(cluster["z"] - y) <= Z_TOL_MM
             ):
                 hit = candidate
@@ -395,7 +402,9 @@ class TestCylinderAGeometry:
 
     def test_raised_front_dots(self, ds_features, layout):
         clusters = ds_features.clusters(ds_features.away_from_seam(ds_features.raised))
-        pairs = _match(clusters, _front_placements(layout, FRONT_TEXT), "raised front dots")
+        pairs = _match(
+            clusters, _front_placements(layout, FRONT_TEXT), "raised front dots"
+        )
         assert len(pairs) == EXPECTED_FRONT_DOTS
 
     def test_back_bowls_are_one_per_actual_back_dot(self, ds_features, layout):
@@ -407,7 +416,9 @@ class TestCylinderAGeometry:
         pairs = _match(clusters, _back_placements(layout, BACK_TEXT), "back bowls")
         assert len(pairs) == EXPECTED_BACK_BOWLS
 
-    def test_back_band_sits_one_axial_step_above_the_front_rows(self, ds_features, layout):
+    def test_back_band_sits_one_axial_step_above_the_front_rows(
+        self, ds_features, layout
+    ):
         """
         Every bowl is exactly interpoint_offset_y_mm HIGHER than a front row -
         higher, not lower: that is the D3 sign, confirmed on a printed pair.
@@ -430,7 +441,9 @@ class TestCylinderAGeometry:
         the paper - the failure no clearance number can catch.
         """
         front = [math.degrees(a) for a, _ in _front_placements(layout, FRONT_TEXT)]
-        assert all(a < 0 for a in front), "The reference text must sit on one side of centre."
+        assert all(a < 0 for a in front), (
+            "The reference text must sit on one side of centre."
+        )
         for cluster in ds_features.clusters(ds_features.recessed):
             assert 0.0 < cluster["theta"] < 180.0, (
                 f"A bowl rendered at theta={cluster['theta']:.3f} deg, on the same side as "
@@ -448,8 +461,12 @@ class TestCylinderAGeometry:
         """
         step_deg = math.degrees(layout["offset_x"] / layout["radius"])
         assert step_deg > 0
-        mirrored = sorted(-math.degrees(a) for a, _ in _front_placements(layout, BACK_TEXT))
-        rendered = sorted(c["theta"] for c in ds_features.clusters(ds_features.recessed))
+        mirrored = sorted(
+            -math.degrees(a) for a, _ in _front_placements(layout, BACK_TEXT)
+        )
+        rendered = sorted(
+            c["theta"] for c in ds_features.clusters(ds_features.recessed)
+        )
         for got, bare_mirror in zip(rendered, mirrored):
             assert abs(got - (bare_mirror + step_deg)) <= ANGLE_TOL_DEG, (
                 f"A bowl sits {got - bare_mirror:+.3f} deg from the bare mirror of its dot; "
@@ -472,16 +489,24 @@ class TestCylinderAGeometry:
         for row in range(layout["rows"]):
             y = _row_y(layout, row)
             here = seam & (np.abs(ds_features.z - y) < half - 0.5)
-            assert here.any(), f"Row {row} (z={y:.1f} mm) has no raised arrow at the seam."
+            assert here.any(), (
+                f"Row {row} (z={y:.1f} mm) has no raised arrow at the seam."
+            )
             assert (
-                abs(ds_features.r[here].max() - (layout["radius"] + layout["arrow_raise"]))
+                abs(
+                    ds_features.r[here].max()
+                    - (layout["radius"] + layout["arrow_raise"])
+                )
                 <= 0.01
             ), f"Row {row}'s arrow does not stand {layout['arrow_raise']} mm proud."
 
         top = _row_y(layout, 0) + half
         bottom = _row_y(layout, layout["rows"] - 1) - half
         z_seam = ds_features.z[seam]
-        assert abs(z_seam.max() - top) <= Z_TOL_MM and abs(z_seam.min() - bottom) <= Z_TOL_MM, (
+        assert (
+            abs(z_seam.max() - top) <= Z_TOL_MM
+            and abs(z_seam.min() - bottom) <= Z_TOL_MM
+        ), (
             f"The seam band spans z {z_seam.min():.3f}..{z_seam.max():.3f} mm; "
             f"{layout['rows']} arrows of {layout['arrow_length']} mm span {bottom:.3f}..{top:.3f} mm."
         )
@@ -514,18 +539,21 @@ class TestFootprints:
         radius DS_BOWL_R, so it is DEEPER than DS_BOWL_DEPTH, by design - see
         this file's header. Tessellation takes a few micron off the pole.
         """
-        sphere_r = (
-            (layout["bowl_dia"] / 2) ** 2 + layout["bowl_depth"] ** 2
-        ) / (2 * layout["bowl_depth"])
+        sphere_r = ((layout["bowl_dia"] / 2) ** 2 + layout["bowl_depth"] ** 2) / (
+            2 * layout["bowl_depth"]
+        )
         depths = [
-            layout["radius"] - c["r_min"] for c in ds_features.clusters(ds_features.recessed)
+            layout["radius"] - c["r_min"]
+            for c in ds_features.clusters(ds_features.recessed)
         ]
         measured = max(depths)
         print(
             f"\nMEASURED ds bowl cut depth = {measured:.4f} mm "
             f"(hemisphere of radius {sphere_r:.4f}; DS_BOWL_DEPTH is {layout['bowl_depth']})"
         )
-        assert max(depths) - min(depths) <= 1e-6, f"Bowls cut to different depths: {depths}"
+        assert max(depths) - min(depths) <= 1e-6, (
+            f"Bowls cut to different depths: {depths}"
+        )
         expected_bowl = PACKAGES[DEFAULT_PACKAGE]["measured_bowl"]
         assert abs(measured - expected_bowl) <= BOWL_DEPTH_TOL_MM, (
             f"The bowl now cuts {measured:.4f} mm deep, not the {expected_bowl} mm "
@@ -549,7 +577,9 @@ class TestFootprints:
         """
         heights = [
             c["r_max"] - layout["radius"]
-            for c in ds_features.clusters(ds_features.away_from_seam(ds_features.raised))
+            for c in ds_features.clusters(
+                ds_features.away_from_seam(ds_features.raised)
+            )
         ]
         for h in heights:
             assert 0.99 * layout["dot_height"] <= h <= layout["dot_height"], (
@@ -577,7 +607,9 @@ class TestPackage03Geometry:
         pkg = PACKAGES["0.3mm"]
         heights = [
             c["r_max"] - layout["radius"]
-            for c in features_03.clusters(features_03.away_from_seam(features_03.raised))
+            for c in features_03.clusters(
+                features_03.away_from_seam(features_03.raised)
+            )
         ]
         assert heights, "No raised dots found on the 0.3-package render."
         for h in heights:
@@ -602,7 +634,9 @@ class TestPackage03Geometry:
     def test_positions_are_unchanged_by_the_package(self, features_03, layout):
         """Both preset tables share the same spacing, so only sizes may move."""
         clusters = features_03.clusters(features_03.recessed)
-        _match(clusters, _back_placements(layout, BACK_TEXT), "back bowls (0.3 package)")
+        _match(
+            clusters, _back_placements(layout, BACK_TEXT), "back bowls (0.3 package)"
+        )
 
 
 @pytest.fixture(scope="module")
@@ -630,7 +664,9 @@ class TestCylinderBGeometry:
             ds_b_features.away_from_seam(ds_b_features.raised)
         )
         pairs = _match(
-            clusters, _negated(_back_placements(layout, BACK_TEXT)), "B raised back dots"
+            clusters,
+            _negated(_back_placements(layout, BACK_TEXT)),
+            "B raised back dots",
         )
         assert len(pairs) == EXPECTED_BACK_BOWLS
 
@@ -690,13 +726,17 @@ class TestCylinderBGeometry:
         seam = ds_b_features.recessed & (
             np.abs(np.abs(ds_b_features.theta) - 180.0) < 10.0
         )
-        assert seam.any(), "No recessed material at the seam: the arrow recesses are missing."
+        assert seam.any(), (
+            "No recessed material at the seam: the arrow recesses are missing."
+        )
 
         half = layout["arrow_length"] / 2.0
         for row in range(layout["rows"]):
             y = _row_y(layout, row)
             here = seam & (np.abs(ds_b_features.z - y) < half - 0.5)
-            assert here.any(), f"Row {row} (z={y:.1f} mm) has no arrow recess at the seam."
+            assert here.any(), (
+                f"Row {row} (z={y:.1f} mm) has no arrow recess at the seam."
+            )
 
         depth = layout["radius"] - ds_b_features.r[seam].min()
         nominal = layout["arrow_raise"] + layout["arrow_extra_depth"]
@@ -809,7 +849,9 @@ class TestForcedTactile:
     def test_marker_columns_are_still_dropped(self, forced, layout):
         features, _ = forced
         clusters = features.clusters(features.recessed)
-        _match(clusters, _back_placements(layout, BACK_TEXT), "back bowls (forced tactile)")
+        _match(
+            clusters, _back_placements(layout, BACK_TEXT), "back bowls (forced tactile)"
+        )
 
 
 class TestDoubleSidedOffIsInert:
@@ -936,14 +978,18 @@ class TestSourceGuards:
             scad_source,
         ), "The back height must be the front height plus DS_BACK_DIRECTION * offset_y."
 
-    def test_recesses_are_subtracted_after_the_raised_dots_are_unioned(self, scad_source):
+    def test_recesses_are_subtracted_after_the_raised_dots_are_unioned(
+        self, scad_source
+    ):
         """
         Shell -> union raised -> subtract recesses, the same order the web app's
         manifold worker uses. Reversing it buries a bowl under a neighbouring dot.
         """
         body = scad_source[scad_source.index("module cylinder_emboss_plate()") :]
         body = body[: body.index("module cylinder_counter_plate()")]
-        assert body.index("braille_dot_for_plate()") < body.index("ds_back_recesses()"), (
+        assert body.index("braille_dot_for_plate()") < body.index(
+            "ds_back_recesses()"
+        ), (
             "ds_back_recesses() must come after the raised dots in cylinder_emboss_plate()."
         )
         assert "if (ds_on) {\n                ds_back_recesses();" in body, (
@@ -958,7 +1004,13 @@ class TestSourceGuards:
         for module, names in (
             (
                 "module ds_braille_dot_centered()",
-                ["DS_DOT_BASE_H", "DS_DOT_BASE_DIA", "DS_DOT_DOME_DIA", "DS_DOT_DOME_R", "DS_DOT_HEIGHT"],
+                [
+                    "DS_DOT_BASE_H",
+                    "DS_DOT_BASE_DIA",
+                    "DS_DOT_DOME_DIA",
+                    "DS_DOT_DOME_R",
+                    "DS_DOT_HEIGHT",
+                ],
             ),
             ("module ds_counter_recess()", ["DS_BOWL_R"]),
         ):
@@ -966,7 +1018,9 @@ class TestSourceGuards:
             block = scad_source[start : start + 1200]
             block = block[: block.index("\n}\n") + 3]
             for name in names:
-                assert name in block, f"{module} must be built from {name}, not a literal."
+                assert name in block, (
+                    f"{module} must be built from {name}, not a literal."
+                )
 
     def test_ds_dot_overrides_the_shape_selection_and_the_preset(self, scad_source):
         assert re.search(
@@ -1073,8 +1127,10 @@ class TestSourceGuards:
         assert re.search(r"if \(ds_on\) \{\s*ds_back_raised_dots\(\);", body), (
             "cylinder_counter_plate() must union ds_back_raised_dots() when ds_on."
         )
-        assert body.index("cylinder_shell") < body.index("ds_back_raised_dots()") < body.index(
-            "ds_front_recesses()"
+        assert (
+            body.index("cylinder_shell")
+            < body.index("ds_back_raised_dots()")
+            < body.index("ds_front_recesses()")
         ), (
             "The raised back dots must be unioned with the shell before the "
             "front bowls are subtracted."
@@ -1088,14 +1144,14 @@ class TestSourceGuards:
         cross-check exact rather than merely close.
         """
         assert re.search(
-            r'module ds_back_recesses\(\)\s*\{\s*'
+            r"module ds_back_recesses\(\)\s*\{\s*"
             r'ds_back_placements\(1,\s*0,\s*"A back_recess"\)\s*ds_counter_recess\(\);',
             scad_source,
         ), "ds_back_recesses() must be a thin wrapper over ds_back_placements()."
         assert re.search(
-            r'module ds_back_raised_dots\(\)\s*\{\s*'
+            r"module ds_back_raised_dots\(\)\s*\{\s*"
             r'ds_back_placements\(-1,\s*DS_DOT_HEIGHT\s*/\s*2,\s*"B back_dot"\)\s*'
-            r'ds_braille_dot_centered\(\);',
+            r"ds_braille_dot_centered\(\);",
             scad_source,
         ), "ds_back_raised_dots() must be a thin wrapper over ds_back_placements()."
 
@@ -1201,7 +1257,9 @@ class TestCustomizerSurface:
             )
             if name in body
         ]
-        assert not exposed, f"Double-sided footprints exposed in the Customizer: {exposed}"
+        assert not exposed, (
+            f"Double-sided footprints exposed in the Customizer: {exposed}"
+        )
 
 
 class TestBackLineValidationSource:
@@ -1232,7 +1290,8 @@ class TestBackLineValidationSource:
             in scad_source
         ), "The cell-capacity check must measure the back lines while ds_on."
         assert (
-            "max_line_len = max(_front_max_line_len, _back_max_line_len);" in scad_source
+            "max_line_len = max(_front_max_line_len, _back_max_line_len);"
+            in scad_source
         ), "TEXT TOO LONG must fire on the widest row of EITHER face."
 
     def test_row_capacity_counts_the_back_lines(self, scad_source):
@@ -1444,7 +1503,9 @@ GOLDEN_AB_VOLUME_TOL_MM3 = 0.25
 def _web_fixtures_dir():
     """The web repo's fixtures directory, or None when it is not on disk."""
     root = os.environ.get(WEB_REPO_ENV)
-    root = Path(root) if root else PROJECT_ROOT.parent / "braille-cylinder-stl-generator"
+    root = (
+        Path(root) if root else PROJECT_ROOT.parent / "braille-cylinder-stl-generator"
+    )
     fixtures = root / "tests" / "fixtures"
     return fixtures if (fixtures / f"{GOLDEN_STEM['positive']}.stl").exists() else None
 
@@ -1468,12 +1529,20 @@ def golden_config(web_fixtures):
     fixtures' own .json - never from this repo's idea of what they hold.
     """
     records = {
-        plate_type: json.loads((web_fixtures / f"{stem}.json").read_text(encoding="utf-8"))
+        plate_type: json.loads(
+            (web_fixtures / f"{stem}.json").read_text(encoding="utf-8")
+        )
         for plate_type, stem in GOLDEN_STEM.items()
     }
     a = records["positive"]["generation"]
     b = records["negative"]["generation"]
-    for key in ("front_lines", "back_lines", "settings", "cylinder_params", "generated"):
+    for key in (
+        "front_lines",
+        "back_lines",
+        "settings",
+        "cylinder_params",
+        "generated",
+    ):
         assert a[key] == b[key], (
             f"The golden pair disagrees about `{key}`. A and B must be two sides "
             "of ONE configuration or nothing below is a comparison."
@@ -1546,8 +1615,9 @@ def golden_web_layout(golden_config):
 
 
 @pytest.fixture(scope="module")
-def golden_features(_trimesh, golden_scad_stls, web_fixtures,
-                    golden_scad_layout, golden_web_layout):
+def golden_features(
+    _trimesh, golden_scad_stls, web_fixtures, golden_scad_layout, golden_web_layout
+):
     """Vertex clusters for all four meshes, keyed (source, plate_type)."""
     out = {}
     for plate_type, stem in GOLDEN_STEM.items():
@@ -1705,7 +1775,9 @@ class TestGoldenFixtureRecord:
         assert (settings["interpoint_offset_x"], settings["interpoint_offset_y"]) == (
             _scad_constant("interpoint_offset_x_mm"),
             _scad_constant("interpoint_offset_y_mm"),
-        ), "The goldens were cut at a different interpoint offset than this repo defaults to."
+        ), (
+            "The goldens were cut at a different interpoint offset than this repo defaults to."
+        )
 
     def test_the_goldens_are_solid_shells(self, golden_config, golden_meshes):
         """
@@ -1785,8 +1857,10 @@ class TestGoldenConfigurationParity:
             "0.025 mm difference and should be revisited."
         )
         assert (
-            abs(golden_scad_layout["start_angle"] * golden_scad_layout["radius"]
-                - golden_web_layout["start_angle"] * golden_web_layout["radius"])
+            abs(
+                golden_scad_layout["start_angle"] * golden_scad_layout["radius"]
+                - golden_web_layout["start_angle"] * golden_web_layout["radius"]
+            )
             < 1e-9
         ), "The two grids start at different ARC positions, not just different angles."
 
@@ -1801,8 +1875,12 @@ class TestGoldenPositionParity:
 
     @pytest.mark.parametrize(
         ("plate_type", "kind"),
-        [("positive", "raised"), ("positive", "recessed"),
-         ("negative", "raised"), ("negative", "recessed")],
+        [
+            ("positive", "raised"),
+            ("positive", "recessed"),
+            ("negative", "raised"),
+            ("negative", "recessed"),
+        ],
     )
     def test_features_land_at_the_same_arc(
         self, golden_features, golden_scad_layout, golden_web_layout, plate_type, kind
@@ -1823,8 +1901,12 @@ class TestGoldenPositionParity:
 
     @pytest.mark.parametrize(
         ("plate_type", "kind"),
-        [("positive", "raised"), ("positive", "recessed"),
-         ("negative", "raised"), ("negative", "recessed")],
+        [
+            ("positive", "raised"),
+            ("positive", "recessed"),
+            ("negative", "raised"),
+            ("negative", "recessed"),
+        ],
     )
     def test_the_rendered_features_sit_where_the_maths_puts_them(
         self, golden_features, golden_scad_layout, golden_web_layout, plate_type, kind
@@ -1838,7 +1920,9 @@ class TestGoldenPositionParity:
             layout = _layout_for(source, golden_scad_layout, golden_web_layout)
             features = golden_features[(source, plate_type)]
             _pair_arcs(
-                _arcs(features, features.away_from_seam(getattr(features, kind)), layout),
+                _arcs(
+                    features, features.away_from_seam(getattr(features, kind)), layout
+                ),
                 [
                     (angle * layout["radius"], z)
                     for angle, z in _expected_places(layout, plate_type, kind, source)
@@ -1896,9 +1980,13 @@ class TestGoldenFootprintParity:
                 c["r_max"] - layout["radius"]
                 for c in features.clusters(features.away_from_seam(features.raised))
             ]
-            assert heights, f"No raised dots on the {source} {GOLDEN_LABEL[plate_type]}."
+            assert heights, (
+                f"No raised dots on the {source} {GOLDEN_LABEL[plate_type]}."
+            )
             proud[source] = max(heights)
-            assert nominal - GOLDEN_FOOTPRINT_TOL_MM <= min(heights) <= nominal + 1e-9, (
+            assert (
+                nominal - GOLDEN_FOOTPRINT_TOL_MM <= min(heights) <= nominal + 1e-9
+            ), (
                 f"A {source} dot stands {min(heights):.4f} mm proud against a "
                 f"{nominal} mm Option B die."
             )
@@ -1918,7 +2006,8 @@ class TestGoldenFootprintParity:
         are making different parts from one spec.
         """
         bowl_r = (
-            (golden_scad_layout["bowl_dia"] / 2) ** 2 + golden_scad_layout["bowl_depth"] ** 2
+            (golden_scad_layout["bowl_dia"] / 2) ** 2
+            + golden_scad_layout["bowl_depth"] ** 2
         ) / (2 * golden_scad_layout["bowl_depth"])
         cut = {}
         for source in ("scad", "golden"):
@@ -1959,10 +2048,12 @@ class TestGoldenFootprintParity:
             np = emboss.np
             seam_a = emboss.raised & (np.abs(np.abs(emboss.theta) - 180.0) < 10.0)
             seam_b = counter.recessed & (np.abs(np.abs(counter.theta) - 180.0) < 10.0)
-            assert seam_a.any() and seam_b.any(), f"{source}: the seam arrows are missing."
-            assert abs(emboss.r[seam_a].max() - (layout["radius"] + raise_mm)) <= 0.01, (
-                f"{source}: the raised arrow does not stand {raise_mm} mm proud."
+            assert seam_a.any() and seam_b.any(), (
+                f"{source}: the seam arrows are missing."
             )
+            assert (
+                abs(emboss.r[seam_a].max() - (layout["radius"] + raise_mm)) <= 0.01
+            ), f"{source}: the raised arrow does not stand {raise_mm} mm proud."
             depth = layout["radius"] - counter.r[seam_b].min()
             assert recess - 0.01 <= depth <= recess + 0.02, (
                 f"{source}: the arrow recess cuts {depth:.3f} mm, not {recess} mm."
@@ -1991,7 +2082,13 @@ class TestGoldenContainmentProbes:
 
         theta = arc / layout["radius"]
         point = np.array(
-            [[radial * math.cos(theta), radial * math.sin(theta), z + layout["height"] / 2.0]]
+            [
+                [
+                    radial * math.cos(theta),
+                    radial * math.sin(theta),
+                    z + layout["height"] / 2.0,
+                ]
+            ]
         )
         return any(bool(body.contains(point)[0]) for body in bodies)
 
@@ -1999,7 +2096,9 @@ class TestGoldenContainmentProbes:
     def bodies(self, _trimesh, golden_meshes, golden_scad_stls):
         out = {}
         for plate_type in GOLDEN_STEM:
-            out[("golden", plate_type)] = golden_meshes[plate_type].split(only_watertight=False)
+            out[("golden", plate_type)] = golden_meshes[plate_type].split(
+                only_watertight=False
+            )
             out[("scad", plate_type)] = _trimesh.load(
                 golden_scad_stls[plate_type]
             ).split(only_watertight=False)
@@ -2015,14 +2114,20 @@ class TestGoldenContainmentProbes:
         for angle, z in _expected_places(layout, plate_type, "raised", source):
             arc = angle * layout["radius"]
             assert self._solid_at(
-                bodies[(source, plate_type)], layout, arc, z,
+                bodies[(source, plate_type)],
+                layout,
+                arc,
+                z,
                 layout["radius"] + 0.75 * height,
             ), (
                 f"{source} {GOLDEN_LABEL[plate_type]}: no material at 75% of the die "
                 f"height over the dot at arc {arc:.3f} mm, z {z:.3f} mm."
             )
             assert not self._solid_at(
-                bodies[(source, plate_type)], layout, arc, z,
+                bodies[(source, plate_type)],
+                layout,
+                arc,
+                z,
                 layout["radius"] + 1.15 * height,
             ), (
                 f"{source} {GOLDEN_LABEL[plate_type]}: the dot at arc {arc:.3f} mm has "
@@ -2041,7 +2146,10 @@ class TestGoldenContainmentProbes:
         for angle, z in _expected_places(layout, plate_type, "recessed", source):
             arc = angle * layout["radius"]
             assert not self._solid_at(
-                bodies[(source, plate_type)], layout, arc, z,
+                bodies[(source, plate_type)],
+                layout,
+                arc,
+                z,
                 layout["radius"] - 0.5 * bowl_r,
             ), (
                 f"{source} {GOLDEN_LABEL[plate_type]}: solid at half the bowl depth over "
@@ -2049,7 +2157,10 @@ class TestGoldenContainmentProbes:
                 "or a later union filled it back in."
             )
             assert self._solid_at(
-                bodies[(source, plate_type)], layout, arc, z,
+                bodies[(source, plate_type)],
+                layout,
+                arc,
+                z,
                 layout["radius"] - bowl_r - 0.15,
             ), (
                 f"{source} {GOLDEN_LABEL[plate_type]}: no material under the bowl floor "
@@ -2067,21 +2178,39 @@ class TestGoldenContainmentProbes:
         for row in range(int(layout["rows"])):
             z = _row_y(layout, row)
             assert self._solid_at(
-                bodies[(source, "positive")], layout, seam_arc, z,
+                bodies[(source, "positive")],
+                layout,
+                seam_arc,
+                z,
                 layout["radius"] + 0.5 * raise_mm,
-            ), f"{source} Cylinder A: row {row}'s raised arrow is hollow at half its raise."
+            ), (
+                f"{source} Cylinder A: row {row}'s raised arrow is hollow at half its raise."
+            )
             assert not self._solid_at(
-                bodies[(source, "positive")], layout, seam_arc, z,
+                bodies[(source, "positive")],
+                layout,
+                seam_arc,
+                z,
                 layout["radius"] + raise_mm + 0.1,
-            ), f"{source} Cylinder A: row {row}'s arrow stands taller than {raise_mm} mm."
+            ), (
+                f"{source} Cylinder A: row {row}'s arrow stands taller than {raise_mm} mm."
+            )
             assert not self._solid_at(
-                bodies[(source, "negative")], layout, seam_arc, z,
+                bodies[(source, "negative")],
+                layout,
+                seam_arc,
+                z,
                 layout["radius"] - 0.5 * recess,
             ), f"{source} Cylinder B: row {row}'s arrow recess is solid at half depth."
             assert self._solid_at(
-                bodies[(source, "negative")], layout, seam_arc, z,
+                bodies[(source, "negative")],
+                layout,
+                seam_arc,
+                z,
                 layout["radius"] - recess - 0.15,
-            ), f"{source} Cylinder B: row {row}'s arrow recess has cut through the wall."
+            ), (
+                f"{source} Cylinder B: row {row}'s arrow recess has cut through the wall."
+            )
 
 
 class TestGoldenVolumeParity:
@@ -2093,8 +2222,13 @@ class TestGoldenVolumeParity:
 
     @pytest.mark.parametrize("plate_type", list(GOLDEN_STEM))
     def test_feature_volume_matches(
-        self, _trimesh, golden_scad_stls, golden_meshes, golden_config,
-        golden_scad_layout, plate_type
+        self,
+        _trimesh,
+        golden_scad_stls,
+        golden_meshes,
+        golden_config,
+        golden_scad_layout,
+        plate_type,
     ):
         height = golden_config["cylinder_params"]["height"]
         assert height == golden_scad_layout["height"], (
@@ -2166,7 +2300,9 @@ class TestGoldenTopology:
             "has no excuse - this is a real regression."
         )
         emboss = _trimesh.load(golden_scad_stls["positive"])
-        print(f"\nCylinder A watertight (recorded, not asserted): {emboss.is_watertight}")
+        print(
+            f"\nCylinder A watertight (recorded, not asserted): {emboss.is_watertight}"
+        )
 
     def test_every_raised_dot_is_fused_to_the_shell(
         self, _trimesh, golden_scad_stls, golden_meshes
@@ -2182,7 +2318,9 @@ class TestGoldenTopology:
         come unstuck from the shell again.
         """
         for plate_type in GOLDEN_STEM:
-            bodies = _trimesh.load(golden_scad_stls[plate_type]).split(only_watertight=False)
+            bodies = _trimesh.load(golden_scad_stls[plate_type]).split(
+                only_watertight=False
+            )
             assert len(bodies) == 1, (
                 f"{GOLDEN_LABEL[plate_type]} split into {len(bodies)} connected "
                 "bodies; every raised dot is supposed to be fused to the shell by "
@@ -2258,7 +2396,9 @@ class TestBackwardCompatWithDoubleSidedOff:
         reference = fixtures_dir / case_name / "reference.stl"
         if not reference.exists():
             pytest.skip(f"Reference fixture not found: {reference}")
-        params = dict(_cross_platform_params(fixtures_dir, case_name), double_sided="Off")
+        params = dict(
+            _cross_platform_params(fixtures_dir, case_name), double_sided="Off"
+        )
         stl_path, output = _render(ds_runner, tmp_path, params, case_name)
         assert "WARNING:" not in output and "ERROR:" not in output, (
             f"{case_name} no longer renders clean.\noutput (truncated): {output[:800]}"

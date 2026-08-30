@@ -113,21 +113,21 @@ def tool_versions(tests_dir) -> Dict[str, Any]:
 def comparison_config(tests_dir, pytestconfig) -> Dict[str, Any]:
     """Load comparison configuration."""
     import os
-    
+
     # Check for custom config path (CLI option or environment variable)
     custom_config = pytestconfig.getoption("--comparison-config", None)
     if not custom_config:
         custom_config = os.environ.get("COMPARISON_CONFIG", None)
-    
+
     if custom_config:
         config_path = Path(custom_config)
         logger.info(f"Using custom comparison config: {config_path}")
     else:
         config_path = tests_dir / "compare_config.json"
-    
+
     with open(config_path) as f:
         config = json.load(f)
-    
+
     # Log which profile is being used
     profile = config.get("profile", "baseline")
     logger.info(f"Comparison profile: {profile}")
@@ -153,7 +153,7 @@ def test_cases(fixtures_dir) -> Dict[str, Any]:
     test_cases_path = fixtures_dir / "test_cases.json"
     with open(test_cases_path, encoding="utf-8") as f:
         data = json.load(f)
-    
+
     # CI GUARD: Fail fast if any card test cases are found
     # Card tests are disabled until web UI parity is restored
     for test_case in data.get("test_cases", []):
@@ -164,7 +164,7 @@ def test_cases(fixtures_dir) -> Dict[str, Any]:
                 f"Card tests are disabled until web UI parity is restored. "
                 f"Only 'cylinder' shape_type is allowed."
             )
-    
+
     return data
 
 
@@ -177,23 +177,21 @@ def openscad_runner(tool_versions) -> OpenSCADRunner:
     In CI mode (CI=true env var), enforces exact version and Manifold backend.
     """
     import os
-    
+
     try:
         # Check if running in CI mode
         is_ci = os.environ.get("CI", "").lower() in ("true", "1", "yes")
-        
+
         # Get version requirements from tool_versions.yml
         openscad_config = tool_versions.get("required_tools", {}).get("openscad", {})
         required_version = openscad_config.get("ci_version") if is_ci else None
-        
+
         # Create runner with optional version enforcement
-        runner = OpenSCADRunner(
-            enforce_version=required_version if is_ci else None
-        )
-        
+        runner = OpenSCADRunner(enforce_version=required_version if is_ci else None)
+
         version = runner.get_version()
         logger.info(f"OpenSCAD available: {version}")
-        
+
         # Check Manifold backend (require in CI, warn in local)
         if is_ci:
             runner.check_manifold_backend(require_manifold=True)
@@ -203,7 +201,7 @@ def openscad_runner(tool_versions) -> OpenSCADRunner:
                 "⚠ Manifold backend not available - results may differ from CI. "
                 "Consider upgrading to OpenSCAD 2026.01.03+ nightly."
             )
-        
+
         return runner
     except Exception as e:
         pytest.skip(f"OpenSCAD not available: {e}")

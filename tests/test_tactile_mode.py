@@ -355,12 +355,7 @@ def test_column_shift_drops_the_marker_cells_in_tactile_mode(scad_path):
     """Text starts at column 0 in Tactile mode, and the grid stops widening."""
     scad = _read(scad_path)
     expected = COLUMN_SHIFT_WALKS
-    assert (
-        scad.count(
-            "actual_col = tactile_on ? col :\n"
-        )
-        == expected
-    ), (
+    assert scad.count("actual_col = tactile_on ? col :\n") == expected, (
         f"All {expected} braille-cell walks in {scad_path.name} must shift cells with "
         "`actual_col = tactile_on ? col : ...` so Tactile text starts at "
         "column 0 while Visual keeps its +1/+2 marker offset."

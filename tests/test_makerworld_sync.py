@@ -30,7 +30,9 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL = REPO_ROOT / "Braille_Cylinder_STL_Generator.scad"
-MAKERWORLD = REPO_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad"
+MAKERWORLD = (
+    REPO_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad"
+)
 PRESETS = REPO_ROOT / "presets.scad"
 
 # The geometry body starts at this marker and runs to EOF. Everything below it
@@ -124,8 +126,12 @@ def test_geometry_body_is_byte_identical():
     canonical = CANONICAL.read_text(encoding="utf-8")
     makerworld = MAKERWORLD.read_text(encoding="utf-8")
 
-    assert BODY_MARKER in canonical, "BACKWARD COMPATIBILITY marker missing from canonical file"
-    assert BODY_MARKER in makerworld, "BACKWARD COMPATIBILITY marker missing from MakerWorld file"
+    assert BODY_MARKER in canonical, (
+        "BACKWARD COMPATIBILITY marker missing from canonical file"
+    )
+    assert BODY_MARKER in makerworld, (
+        "BACKWARD COMPATIBILITY marker missing from MakerWorld file"
+    )
 
     canonical_body = _body_from_marker(canonical)
     makerworld_body = _body_from_marker(makerworld)
@@ -148,7 +154,9 @@ def test_parameter_defaults_and_ranges_match():
     interpoint offset or footprint and nothing would notice.
     """
     canonical = _declarations(_parameter_region(CANONICAL.read_text(encoding="utf-8")))
-    makerworld = _declarations(_parameter_region(MAKERWORLD.read_text(encoding="utf-8")))
+    makerworld = _declarations(
+        _parameter_region(MAKERWORLD.read_text(encoding="utf-8"))
+    )
 
     missing = sorted(set(canonical) - set(makerworld))
     extra = sorted(set(makerworld) - set(canonical))
@@ -251,9 +259,11 @@ def test_double_sided_tab_reaches_the_customizer():
         "`/* [Hidden] */` group, or none of its controls reach MakerWorld's "
         "Customizer."
     )
-    for name in ["double_sided = ", "interpoint_offset_x_mm = ", "interpoint_offset_y_mm = "] + [
-        f"Back_Line_{n} = " for n in range(1, 11)
-    ]:
+    for name in [
+        "double_sided = ",
+        "interpoint_offset_x_mm = ",
+        "interpoint_offset_y_mm = ",
+    ] + [f"Back_Line_{n} = " for n in range(1, 11)]:
         assert makerworld.index(name) < first_hidden, (
             f"`{name.strip(' =')}` is declared below the first `/* [Hidden] */` "
             "group, so MakerWorld's Customizer will never show it."
