@@ -59,7 +59,7 @@ DEFAULT_CLEARANCE = 0.110
 COUNTERSINK_OFFSET = 2.0
 COUNTERSINK_DEPTH = 2.0
 
-BARREL_D = 30.5
+BARREL_D = 30.8
 BARREL_H = 52.0
 NUB_HEIGHT = 3.0
 NUB_AREA_AT_ZERO = 11.144  # mm^2, the profile area before the clearance inset
@@ -78,7 +78,7 @@ ANTIROT_SOCKET_AREA = {"Embossing Plate": 11.0980, "Counter Plate": 10.8707}
 BOTTOM_PROBE_Z = 8.0
 TOP_PROBE_Z = 45.0
 
-SIZE_NOTE_START = "NOTE: The Version 2 embosser expects a 30.5 mm x 52 mm cylinder."
+SIZE_NOTE_START = "NOTE: The Version 2 embosser expects a 30.8 mm x 52 mm cylinder."
 PROTOTYPE_NOTE_START = "NOTE: Embosser Version 2 is a work-in-progress prototype."
 
 # The web generator's copy of the same numbers. Absent on CI, so the
@@ -525,10 +525,13 @@ def test_the_size_note_speaks_only_off_size_and_never_as_a_warning(
         {
             "plate_type": "Embossing Plate",
             "paper_thickness_preset": "Custom",
-            "cylinder_diameter_mm": 30.8,
+            # 30.5 is the off-size value because it is NOT the preset. It
+            # was the preset until 2026-08-30, when the barrel walked back
+            # to Version 1's 30.8 and the two numbers swapped roles.
+            "cylinder_diameter_mm": 30.5,
         },
     )
-    assert SIZE_NOTE_START in off_size, f"no size note at 30.8 mm:\n{off_size[:600]}"
+    assert SIZE_NOTE_START in off_size, f"no size note at 30.5 mm:\n{off_size[:600]}"
     assert "WARNING:" not in off_size, "the size note must never use the WARNING: token"
     assert stl_path.exists(), (
         "an off-size cylinder must still render - it is a warning, not a gate"
@@ -574,7 +577,7 @@ def test_the_clearance_is_never_preset_owned(source_text):
         end = source_text.index("];", start)
         body = source_text[start:end]
         assert "key_clearance_mm" not in body, f"{table} must not own the clearance"
-        assert '["cylinder_diameter_mm",            30.5]' in body.replace("  ", "  ")
+        assert '["cylinder_diameter_mm",            30.8]' in body.replace("  ", "  ")
         for dropped in (
             "polygon_cutout_radius_mm",
             "polygon_cutout_points",

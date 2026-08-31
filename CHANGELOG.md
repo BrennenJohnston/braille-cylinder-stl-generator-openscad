@@ -26,12 +26,18 @@ signed off the same day, at the end of the session that added them.
   their gear. Cylinder A carries the triangle that mates with gear A1's notch
   and A2's pin; Cylinder B a square for B1 and B2.
   **What it changes** from the Version 1 file: the keyed cutout replaces the
-  polygonal one; the preset barrel is 30.5 x 52 mm rather than 30.8 x 52; there
+  polygonal one; there
   is one new dial, `key_clearance_mm = 0.110; // [0:0.005:0.5]`, under a
   `[Version 2 Keyed Cutouts]` tab; and Integrated Gears, `polygon_cutout_radius_mm`,
   `polygon_cutout_points` and `seam_offset_degrees` are not offered — the gears
   BETA builds the Version 1 one-piece roller, and the other three are inert when
   the keyed hole IS the bore and the keys sit on the arrow column.
+  The preset barrel is **30.8 x 52 mm**, the same as Version 1. It did differ
+  while the size was being found by printing - 30.1, then 30.5 on 2026-08-29 -
+  but a printed 30.5 double-sided pair felt loose and left shallow, uneven dots,
+  the same symptoms the 30.1 pair gave, so on 2026-08-30 it went to the size
+  Version 1 has always used. Nothing about the keys moved with it: every keyed
+  hole and anti-rotation feature is at a fixed radius from the axis.
   **What it keeps**: everything else. The braille, the dot shapes, both paper
   presets, the indicators, the double-sided beta and both-plates mode are the
   Version 1 code, unchanged.

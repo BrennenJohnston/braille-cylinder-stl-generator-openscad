@@ -20,7 +20,8 @@
 //  which is untouched and still supported):
 //   • a keyed through-cutout at both ends instead of the polygonal cutout;
 //   • a 3 mm triangular key nub on the Embossing Plate's top face;
-//   • the cylinder preset is 30.5 x 52 mm, not 30.8 x 52;
+//   • the cylinder preset is 30.8 x 52 mm - the SAME as Version 1 since
+//     2026-08-30, when the barrel walked back from 30.5;
 //   • one new dial, key_clearance_mm, under [Version 2 Keyed Cutouts];
 //   • no Integrated Gears (BETA) — that beta builds the Version 1 one-piece
 //     roller, which is a different part;
@@ -263,13 +264,13 @@ dot_shape = "Rounded"; // [Rounded, Cone]
 indicators = "On"; // [On, Off]
 
 /* [Expert Mode - Cylinder Dimensions] */
-// The Version 2 embosser expects a 30.5 mm x 52 mm cylinder. Other sizes still
+// The Version 2 embosser expects a 30.8 mm x 52 mm cylinder. Other sizes still
 // render - the size is a soft preset, not a rule - but they will not fit the
 // Version 2 housing. The polygonal cutout, its point count and the seam offset
 // are NOT offered here: the keyed hole is the bore, and the keys sit on the
 // arrow column, so turning the seam would put them in the wrong place. They are
 // fixed in the Hidden section below.
-cylinder_diameter_mm = 30.5; // [10:0.1:100] Cylinder outer diameter in mm
+cylinder_diameter_mm = 30.8; // [10:0.1:100] Cylinder outer diameter in mm
 cylinder_height_mm = 52; // [20:1:150] Cylinder height in mm
 
 /* [Expert Mode - Braille Spacing] */
@@ -353,8 +354,9 @@ PI = 3.14159265359;
 // file is SELF-CONTAINED so the same bytes serve the desktop build and
 // MakerWorld, which accepts a single file and no local includes.
 //
-// Two differences from the Version 1 tables, both required by Version 2:
-//   * cylinder_diameter_mm is 30.5, not 30.8;
+// ONE difference from the Version 1 tables, required by Version 2. The
+// diameter used to be a second one - 30.5 against 30.8 - until the barrel
+// walked back on 2026-08-30; the tables agree on it now.
 //   * polygon_cutout_radius_mm, polygon_cutout_points and seam_offset_degrees
 //     are ABSENT. preset_value() falls back to the file-scope constants for a
 //     missing key, and Version 2 fixes those three in the Hidden section.
@@ -396,7 +398,7 @@ PRESET_04 = [
     ["cone_counter_dot_flat_hat",       1.0],
 
     // Cylinder (Version 2 preset barrel)
-    ["cylinder_diameter_mm",            30.5],
+    ["cylinder_diameter_mm",            30.8],
     ["cylinder_height_mm",              52],
 ];
 
@@ -429,7 +431,7 @@ PRESET_03 = [
     ["cone_counter_dot_flat_hat",       0.8],
 
     // Cylinder (Version 2 preset barrel)
-    ["cylinder_diameter_mm",            30.5],
+    ["cylinder_diameter_mm",            30.8],
     ["cylinder_height_mm",              52],
 ];
 
@@ -1617,8 +1619,8 @@ function v2_widest_key_radius(clearance) =
 // "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on that token.
 echo("NOTE: Embosser Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.");
 
-if (active_cylinder_diameter_mm != 30.5 || active_cylinder_height_mm != 52) {
-    echo(str("NOTE: The Version 2 embosser expects a 30.5 mm x 52 mm cylinder. Received ",
+if (active_cylinder_diameter_mm != 30.8 || active_cylinder_height_mm != 52) {
+    echo(str("NOTE: The Version 2 embosser expects a 30.8 mm x 52 mm cylinder. Received ",
              active_cylinder_diameter_mm, " mm x ", active_cylinder_height_mm, " mm."));
 }
 
