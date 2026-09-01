@@ -8,7 +8,8 @@ What this proves about the file the user actually renders:
   * each of the four pockets is the right R14 key, grown by the clearance
     actually rendered, with a flat facing the tactile arrow column;
   * all four mouths carry the same 45 degree countersink;
-  * the key nub is on Cylinder A only, on the arrow column, 3 mm proud;
+  * each plate stands its key nub on the arrow column, 3 mm proud - A the
+    triangle, B the square - over a matching socket in its bottom face;
   * the clearance dial reaches the geometry and its range assert bites;
   * the size note speaks as NOTE:, never WARNING:;
   * the Version 1 files were not touched;
@@ -60,7 +61,9 @@ COUNTERSINK_OFFSET = 2.0
 COUNTERSINK_DEPTH = 2.0
 
 BARREL_D = 30.8
-BARREL_H = 52.0
+# 54 since 2026-08-31: 1 mm of card shelf past each edge of the 52 mm card,
+# Version 2's alone - the project/Version 1 default returned to 52 the same day.
+BARREL_H = 54.0
 NUB_HEIGHT = 3.0
 NUB_AREA_AT_ZERO = 11.144  # mm^2, the profile area before the clearance inset
 ARROW_COLUMN_DEG = 180.0
@@ -78,7 +81,7 @@ ANTIROT_SOCKET_AREA = {"Embossing Plate": 11.0980, "Counter Plate": 10.8707}
 BOTTOM_PROBE_Z = 8.0
 TOP_PROBE_Z = 45.0
 
-SIZE_NOTE_START = "NOTE: The Version 2 embosser expects a 30.8 mm x 52 mm cylinder."
+SIZE_NOTE_START = "NOTE: The Version 2 embosser expects a 30.8 mm x 54 mm cylinder."
 PROTOTYPE_NOTE_START = "NOTE: Embosser Version 2 is a work-in-progress prototype."
 
 # The web generator's copy of the same numbers. Absent on CI, so the
@@ -599,6 +602,38 @@ def test_version2_has_no_integrated_gears(source_text):
     assert "module gear_set" not in code
     assert "assets/" not in code
     assert "gears_on = false;" in code, "the shared code still reads this flag"
+
+
+def test_the_text_input_is_four_rows_per_face(source_text):
+    """
+    Version 2 offers exactly Line_1..4 and Back_Line_1..4 (Brennen 2026-08-31):
+    the Version 2 embosser's standard is 4 rows per face, so the file does not
+    offer fields its cylinder is not meant to hold. Version 1 keeps its 10.
+    """
+    assert "_all_lines = [Line_1, Line_2, Line_3, Line_4];" in source_text
+    assert (
+        "_all_back_lines = [Back_Line_1, Back_Line_2, Back_Line_3, Back_Line_4];"
+        in source_text
+    )
+    code = _strip_comments(source_text)
+    assert "Line_5" not in code, "a fifth front line survived the trim"
+    assert "Back_Line_5" not in code, "a fifth back line survived the trim"
+    assert "grid_rows = 4; // [1:1:4]" in source_text, (
+        "the grid_rows slider must stop at the four fields that exist"
+    )
+
+
+def test_the_barrel_preset_is_the_54_mm_card_shelf(source_text):
+    """
+    30.8 x 54 since 2026-08-31: 1 mm of barrel past each edge of the 52 mm
+    card, Version 2's alone - the Version 1 default returned to 52 the same
+    day. The dial, both preset tables and the size-note gate must agree, or
+    the note contradicts the geometry it describes.
+    """
+    assert "cylinder_height_mm = 54;" in source_text
+    assert len(re.findall(r'\["cylinder_height_mm",\s+54\]', source_text)) == 2
+    assert "active_cylinder_height_mm != 54" in source_text
+    assert "30.8 mm x 54 mm cylinder" in source_text
 
 
 def test_the_version1_files_were_not_touched():

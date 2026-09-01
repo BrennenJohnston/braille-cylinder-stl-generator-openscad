@@ -19,16 +19,22 @@
 //  WHAT DIFFERS FROM Braille_Cylinder_STL_Generator.scad (the Version 1 file,
 //  which is untouched and still supported):
 //   • a keyed through-cutout at both ends instead of the polygonal cutout;
-//   • a 3 mm triangular key nub on the Embossing Plate's top face;
-//   • the cylinder preset is 30.8 x 52 mm - the SAME as Version 1 since
-//     2026-08-30, when the barrel walked back from 30.5;
+//   • a 3 mm key nub on each plate's top face (A the triangle, B the square)
+//     and a matching socket in each bottom face - the anti-rotation features
+//     every gear carries since v7.1;
+//   • the cylinder preset is 30.8 x 54 mm - Version 1's diameter, but 1 mm
+//     taller than the 52 mm card at EACH end, so a slightly mis-rolled card
+//     rides the shelf instead of ruffling over the cylinder edges. Version 1
+//     stays 52: the height is what tells the two cylinders apart;
 //   • one new dial, key_clearance_mm, under [Version 2 Keyed Cutouts];
 //   • no Integrated Gears (BETA) — that beta builds the Version 1 one-piece
 //     roller, which is a different part;
 //   • no polygonal cutout, and no seam offset: the keyed hole IS the bore, and
 //     the keys sit on the arrow column, so turning the seam would break them.
 //  Everything else — the braille, the dot shapes, the presets, the indicators
-//  and the double-sided beta — is identical to the Version 1 file.
+//  and the double-sided beta — matches the Version 1 file, with ONE trim: the
+//  text input offers 4 rows per face (Line_1-4, Back_Line_1-4), the Version 2
+//  embosser's standard, where Version 1 offers 10.
 //
 //  SELF-CONTAINED. The paper-thickness preset tables are inlined below rather
 //  than `include`d, so this single file is also the MakerWorld upload.
@@ -98,8 +104,7 @@
 //  2. Paste pre-translated braille into Line_1, Line_2, etc.
 //  3. Raise grid_rows to at least the number of lines you filled in — only the
 //     first grid_rows lines are rendered, and a "TOO MANY LINES" warning tells
-//     you when text is being left off. Lines 9 and 10 live under the
-//     [More Braille Lines (Advanced)] tab.
+//     you when text is being left off. Version 2 offers 4 lines per face.
 //  4. Choose plate_type: Embossing Plate or Counter Plate
 //  5. Choose dot_shape: Rounded or Cone (affects both plates)
 //  6. Adjust dimensions in Expert Mode if needed
@@ -117,10 +122,10 @@
 //  Parameters are organized to match the web-based generator:
 //
 //  MAIN CONTROLS (always visible):
-//  • Text Input - Pre-Translated Braille (Line_1 - Line_8)
-//  • More Braille Lines (Advanced) (Line_9 - Line_10, the grid_rows maximum)
+//  • Text Input - Pre-Translated Braille (Line_1 - Line_4, the grid_rows
+//    maximum — the Version 2 embosser's standard 4 rows per face)
 //  • Double-Sided Card (BETA) (the double_sided gate, Back_Line_1 -
-//    Back_Line_10, and the two interpoint offsets)
+//    Back_Line_4, and the two interpoint offsets)
 //  • Plate Selection
 //
 //  EXPERT MODE (expandable submenus matching web UI):
@@ -160,21 +165,8 @@ Line_1 = "⠓⠑⠇⠇⠕"; // First line of braille text
 Line_2 = "⠺⠕⠗⠇⠙"; // Second line of braille text
 Line_3 = ""; // Third line of braille text
 Line_4 = ""; // Fourth line of braille text
-Line_5 = ""; // Fifth line of braille text
-Line_6 = ""; // Sixth line of braille text
-Line_7 = ""; // Seventh line of braille text
-Line_8 = ""; // Eighth line of braille text
 // Show TEXT TOO LONG warning and clip rows to the cell capacity. Off = render every pasted character (rows may crowd the seam).
 text_limit_check = "On"; // [On, Off]
-
-/* [More Braille Lines (Advanced)] */
-// Lines 9 and 10 reach the grid_rows maximum of 10. The Customizer cannot add
-// fields on demand, so these live in their own tab rather than lengthening the
-// text input above. Raise grid_rows under [Expert Mode - Braille Spacing] to
-// match, and give the cylinder the height to hold them: 10 rows at the default
-// 10 mm line_spacing needs about 100 mm.
-Line_9 = ""; // Ninth line of braille text
-Line_10 = ""; // Tenth line of braille text
 
 /* [Double-Sided Card (BETA)] */
 // BETA - emboss BOTH faces of one card in a single pass. On turns the two
@@ -187,24 +179,13 @@ Line_10 = ""; // Tenth line of braille text
 double_sided = "Off"; // [Off, On]
 
 // The BACK face's braille, one field per row, in the same row order as
-// Line_1..Line_10 above. Pre-translated Unicode braille, translated exactly the
+// Line_1..Line_4 above. Pre-translated Unicode braille, translated exactly the
 // way the front is (see BRANAH WORKFLOW at the top of this file). Read only
 // while double_sided is On, so filling these changes nothing until you do.
-//
-// All ten rows live in this tab, unlike the front's 8 + 2 split. That split
-// exists to keep the always-visible main text tab at eight fields; this tab is
-// opt-in, so splitting it would only send a double-sided user to a second tab -
-// one that also holds single-sided fields - to finish one job.
 Back_Line_1 = ""; // First line of back-of-card braille text
 Back_Line_2 = ""; // Second line of back-of-card braille text
 Back_Line_3 = ""; // Third line of back-of-card braille text
 Back_Line_4 = ""; // Fourth line of back-of-card braille text
-Back_Line_5 = ""; // Fifth line of back-of-card braille text
-Back_Line_6 = ""; // Sixth line of back-of-card braille text
-Back_Line_7 = ""; // Seventh line of back-of-card braille text
-Back_Line_8 = ""; // Eighth line of back-of-card braille text
-Back_Line_9 = ""; // Ninth line of back-of-card braille text
-Back_Line_10 = ""; // Tenth line of back-of-card braille text
 
 // How far the back grid is shifted from the front grid, so a front dot and a
 // back dot never land on the same patch of paper and flatten each other. The
@@ -264,19 +245,19 @@ dot_shape = "Rounded"; // [Rounded, Cone]
 indicators = "On"; // [On, Off]
 
 /* [Expert Mode - Cylinder Dimensions] */
-// The Version 2 embosser expects a 30.8 mm x 52 mm cylinder. Other sizes still
+// The Version 2 embosser expects a 30.8 mm x 54 mm cylinder. Other sizes still
 // render - the size is a soft preset, not a rule - but they will not fit the
 // Version 2 housing. The polygonal cutout, its point count and the seam offset
 // are NOT offered here: the keyed hole is the bore, and the keys sit on the
 // arrow column, so turning the seam would put them in the wrong place. They are
 // fixed in the Hidden section below.
 cylinder_diameter_mm = 30.8; // [10:0.1:100] Cylinder outer diameter in mm
-cylinder_height_mm = 52; // [20:1:150] Cylinder height in mm
+cylinder_height_mm = 54; // [20:1:150] Cylinder height in mm
 
 /* [Expert Mode - Braille Spacing] */
 // --- Braille Dimensions ---
 grid_columns = 13; // [1:1:20] Text capacity in braille cells per row (matches the web app default of 13 text cells; in Visual indicator mode, 2 extra marker cells are added when Indicator Letters are On, or 1 extra cell for the always-present alignment triangle when Off — up to 14 text cells fit the default cylinder with Indicator Letters Off. Tactile indicator mode adds no marker cells, so up to 14 text cells fit the default cylinder; 15 leaves too little seam gap for the indicator)
-grid_rows = 4; // [1:1:10] Number of lines of braille
+grid_rows = 4; // [1:1:4] Number of lines of braille (the Version 2 embosser's standard; the file offers 4 line fields per face)
 cell_spacing = 6.5; // [2:0.1:15] Horizontal spacing between cells (mm)
 line_spacing = 10.0; // [5:0.1:25] Vertical spacing between lines (mm)
 dot_spacing = 2.5; // [1:0.1:5] Spacing between dots within a cell (mm)
@@ -317,13 +298,16 @@ cone_segments = 16; // [8:1:64] Number of segments for cone shapes
 
 /* [Version 2 Keyed Cutouts] */
 // Wording SIGNED OFF by Brennen 2026-08-28 (S-V11), numbers revised 2026-08-29
-// after the first print test - reword only with his sign-off.
-// Extra room around each gear peg, per side (mm). 0.075 mm suits most printers;
+// after the first print test - reword only with his sign-off. The 0.110 figures
+// below mirror the web app's signed dial text after the second print test
+// (2026-08-30) bracketed the value: too loose at 0.15, too tight at 0.075.
+// Extra room around each gear peg, per side (mm). 0.110 mm suits most printers;
 // raise it if pegs bind. It grows every keyed hole outward. It does NOT move the
 // key nub, which is pinned at V2_NUB_CLEARANCE because gear A1's notch is
 // already cut to it. Raising the dial eats into the margin that stops a peg
-// entering the wrong hole: 0.925 mm at 0.075, 0.50 mm at the 0.5 maximum.
-// The step is 0.005, not 0.01: 0.075 is not a whole number of 0.01 steps.
+// entering the wrong hole: 0.890 mm at 0.110, 0.50 mm at the 0.5 maximum.
+// The step is 0.005: the default must be a whole number of steps above the
+// minimum or the Customizer refuses it - 0.110 / 0.005 = 22.
 key_clearance_mm = 0.110; // [0:0.005:0.5]
 
 /* [Hidden] */
@@ -399,7 +383,7 @@ PRESET_04 = [
 
     // Cylinder (Version 2 preset barrel)
     ["cylinder_diameter_mm",            30.8],
-    ["cylinder_height_mm",              52],
+    ["cylinder_height_mm",              54],
 ];
 
 // --------- 0.3mm Preset (Thinner Paper, Smaller Dots) ---------
@@ -432,7 +416,7 @@ PRESET_03 = [
 
     // Cylinder (Version 2 preset barrel)
     ["cylinder_diameter_mm",            30.8],
-    ["cylinder_height_mm",              52],
+    ["cylinder_height_mm",              54],
 ];
 
 // Low-level table lookup. `search([key], list)` does whole-string matching and
@@ -507,8 +491,7 @@ ds_on = (double_sided == "On") || (double_sided == "on");
 
 // Back-face counterpart of _all_lines, under the same contract: the single
 // source of truth for the back content, so no geometry ever names a Back_Line_N.
-_all_back_lines = [Back_Line_1, Back_Line_2, Back_Line_3, Back_Line_4, Back_Line_5,
-                   Back_Line_6, Back_Line_7, Back_Line_8, Back_Line_9, Back_Line_10];
+_all_back_lines = [Back_Line_1, Back_Line_2, Back_Line_3, Back_Line_4];
 
 // -----------------------------------------------------------------------------
 // D1 - THE INTERPOINT OFFSET (signed off 2026-08-16)
@@ -1081,8 +1064,7 @@ if (tactile_gap_too_small)
 // the content: every capacity check, warning, and geometry loop reads it, never
 // a Line_N name. Adding a row means declaring Line_N in the text input section
 // above, appending it here, and raising the grid_rows slider max to match.
-_all_lines = [Line_1, Line_2, Line_3, Line_4, Line_5,
-              Line_6, Line_7, Line_8, Line_9, Line_10];
+_all_lines = [Line_1, Line_2, Line_3, Line_4];
 
 // Text-capacity check. Text capacity is always active_grid_columns; in Visual mode
 // the grid is widened by 2 marker cells when Indicator Letters are On, or by 1 (the
@@ -1619,8 +1601,8 @@ function v2_widest_key_radius(clearance) =
 // "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on that token.
 echo("NOTE: Embosser Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.");
 
-if (active_cylinder_diameter_mm != 30.8 || active_cylinder_height_mm != 52) {
-    echo(str("NOTE: The Version 2 embosser expects a 30.8 mm x 52 mm cylinder. Received ",
+if (active_cylinder_diameter_mm != 30.8 || active_cylinder_height_mm != 54) {
+    echo(str("NOTE: The Version 2 embosser expects a 30.8 mm x 54 mm cylinder. Received ",
              active_cylinder_diameter_mm, " mm x ", active_cylinder_height_mm, " mm."));
 }
 

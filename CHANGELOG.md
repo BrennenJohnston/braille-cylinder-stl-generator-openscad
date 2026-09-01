@@ -14,6 +14,10 @@ these fold into 2.8.0 before it tags is still his call.
 The `hemisphere_quality`, rounded-dome-weld and MakerWorld-gears entries were
 signed off the same day, at the end of the session that added them.
 
+### Changed
+
+- **Embosser Version 2: the barrel grows to 30.8 × 54 mm and the text input is trimmed to 4 rows per face.** (`Braille_Cylinder_STL_Generator_EmbosserV2.scad` only — every Version 1 file is untouched, and the guard test proves it.) The extra 2 mm is a **1 mm shelf past each edge of the 52 mm card**, so a slightly mis-rolled card rides the shelf instead of ruffling over the cylinder ends; the braille rows center themselves in the height, and the keyed holes, nubs, sockets and countersinks all place from height/2, so no feature moves relative to its face. This matches the web generator, where the 54 mm barrel is Version 2's alone — the project-wide default returned to Version 1's 52 the same day. Text input is now **Line_1–4 and Back_Line_1–4**, the Version 2 embosser's standard four rows per face, replacing the ten-field layout inherited from Version 1 (which keeps its ten); the `grid_rows` slider stops at 4 to match the fields that exist. The size note reads "30.8 mm x 54 mm". Two lagging comments were corrected to the shipped facts: the keyed-cutouts tab now quotes the 0.110 mm clearance (the wording had stayed at the first print test's 0.075; the dial itself was already 0.110) with its 0.890 mm wrong-pair margin, and the header's nub bullet now records the anti-rotation feature on BOTH plates, as the file has cut since the v7.1 gear mirror. Covered by `tests/test_embosser_v2_scad.py` (23 tests, including two new source guards and the cross-repo number mirror). **Not print-tested at 54.**
+
 ### Added
 
 - **Embosser Version 2 (PROTOTYPE): `Braille_Cylinder_STL_Generator_EmbosserV2.scad`.**
