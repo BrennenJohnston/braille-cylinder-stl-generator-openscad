@@ -86,8 +86,6 @@ squares — will enter an R14 hole.
 - Print each cylinder standing on end (the keyed sockets are shaped for a
   vertically printed barrel).
 - The pair works only as a pair made from one set of settings.
-- ⚠ The 54 mm barrel height is not yet print-tested — remove this warning
-  only after the first successful 54 mm pair.
 
 ---
 
@@ -114,11 +112,11 @@ business-card, parametric, openscad
 
 - [ ] Review and sign every **DRAFT** block above (a11y rule: no
       user-facing text ships unsigned).
-- [ ] Print-test a 30.8 × 54 pair; then delete the 54 mm warning.
+- [x] Print-test a 30.8 × 54 pair — done: both cylinders printed from the
+      Version 2 file passed Brennen's inspection (2026-09-01); the 54 mm
+      warning that stood here in the print notes is deleted.
 - [ ] Confirm the print-orientation advice.
 - [ ] Take the five photos/screenshots; approve or rewrite the alt text.
 - [ ] Decide the listing's license and profile settings on MakerWorld.
 - [ ] After posting, update `docs/specifications/EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md`
-      §12 in the web repo ("there is no MakerWorld listing" becomes a link)
-      and the status footnote in the web repo's `docs/KNOWN_ISSUES.md`
-      (its aside still reads "30.5 × 52" — stale since 2026-08-30).
+      §12 in the web repo ("there is no MakerWorld listing" becomes a link).

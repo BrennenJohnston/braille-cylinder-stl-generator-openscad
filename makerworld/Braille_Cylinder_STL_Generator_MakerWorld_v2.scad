@@ -41,7 +41,9 @@
 //
 //  Wording SIGNED OFF by Brennen 2026-08-28 (S-V11) - this header block, the
 //  [Version 2 Keyed Cutouts] tab comment, the NOTE: echoes and the wall warning
-//  below. Reword any of them only with his sign-off.
+//  below. Reword any of them only with his sign-off. The 2026-08-31 revisions
+//  (the 30.8 x 54 barrel, both plates' nubs, the 4-row text input) were signed
+//  off 2026-09-01, after both printed cylinders passed his inspection.
 //
 // =============================================================================
 // WHAT THIS MAKES
@@ -300,7 +302,8 @@ cone_segments = 16; // [8:1:64] Number of segments for cone shapes
 // Wording SIGNED OFF by Brennen 2026-08-28 (S-V11), numbers revised 2026-08-29
 // after the first print test - reword only with his sign-off. The 0.110 figures
 // below mirror the web app's signed dial text after the second print test
-// (2026-08-30) bracketed the value: too loose at 0.15, too tight at 0.075.
+// (2026-08-30) bracketed the value: too loose at 0.15, too tight at 0.075;
+// the rewording was signed off 2026-09-01.
 // Extra room around each gear peg, per side (mm). 0.110 mm suits most printers;
 // raise it if pegs bind. It grows every keyed hole outward. It does NOT move the
 // key nub, which is pinned at V2_NUB_CLEARANCE because gear A1's notch is
