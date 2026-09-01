@@ -636,6 +636,22 @@ def test_the_barrel_preset_is_the_54_mm_card_shelf(source_text):
     assert "30.8 mm x 54 mm cylinder" in source_text
 
 
+def test_no_development_tags_reach_the_public_file(source_text):
+    """
+    The Customizer shows the comment block sitting directly above a parameter
+    as that dial's on-screen description, so internal wording-approval labels
+    ("Wording SIGNED OFF ... reword only with his sign-off") leaked into the
+    public UI until Brennen caught one on a dial (2026-09-01). Sign-off
+    bookkeeping lives in the repos' docs and in these tests' own pins - never
+    in the shipped file, visible or not.
+    """
+    lowered = source_text.lower()
+    assert "signed off" not in lowered, "a sign-off label is back in the public file"
+    assert "sign-off" not in lowered, (
+        "a sign-off instruction is back in the public file"
+    )
+
+
 def test_the_makerworld_copy_is_byte_identical():
     """
     makerworld/ holds the upload file for every listing, so Version 2 keeps a

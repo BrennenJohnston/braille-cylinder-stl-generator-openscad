@@ -39,12 +39,6 @@
 //  SELF-CONTAINED. The paper-thickness preset tables are inlined below rather
 //  than `include`d, so this single file is also the MakerWorld upload.
 //
-//  Wording SIGNED OFF by Brennen 2026-08-28 (S-V11) - this header block, the
-//  [Version 2 Keyed Cutouts] tab comment, the NOTE: echoes and the wall warning
-//  below. Reword any of them only with his sign-off. The 2026-08-31 revisions
-//  (the 30.8 x 54 barrel, both plates' nubs, the 4-row text input) were signed
-//  off 2026-09-01, after both printed cylinders passed his inspection.
-//
 // =============================================================================
 // WHAT THIS MAKES
 // =============================================================================
@@ -65,7 +59,6 @@
 //  marker columns would stand on, and a blind user needs the arrow to tell the
 //  two cylinders apart. Choosing Visual while double_sided is On is overridden,
 //  and the model says so on the console and in red text above the cylinder.
-//  Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 //
 // =============================================================================
 // BEFORE YOU START
@@ -97,7 +90,6 @@
 //
 //  IMPORTANT: If you paste ordinary English letters or see "INVALID CHARACTERS"
 //  warning, re-translate on Branah and ensure Unicode Braille is selected.
-//  Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 //
 // =============================================================================
 // QUICK START GUIDE
@@ -116,7 +108,6 @@
 //     Cylinder_A_<your name>.stl and the Counter Plate as
 //     Cylinder_B_<your name>.stl. The console prints the suggested name for
 //     whichever plate you are rendering.
-//     Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 //
 // =============================================================================
 // PARAMETER ORGANIZATION
@@ -177,7 +168,6 @@ text_limit_check = "On"; // [On, Off]
 // (back text raised, one seat per front dot). Row indicators are forced to
 // Tactile and the counter plate's universal recess grid is replaced by 1:1
 // paired seats. Off is the normal single-sided workflow, unchanged.
-// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 double_sided = "Off"; // [Off, On]
 
 // The BACK face's braille, one field per row, in the same row order as
@@ -205,21 +195,16 @@ interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
 // take on the paired roles the web app uses: "Embossing Plate" IS Cylinder A
 // and "Counter Plate" IS Cylinder B, exported as Cylinder_A_*.stl and
 // Cylinder_B_*.stl. Single-sided keeps these names exactly as they are.
-// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 plate_type = "Embossing Plate"; // [Embossing Plate, Counter Plate]
 
 // BETA - render BOTH plates in one go, standing side by side and spaced apart
 // for printing on one plate: Embossing Plate (Cylinder A) on the left, Counter
 // Plate (Cylinder B) on the right. While this is On the plate_type choice
 // above is ignored. Suggested export name: Cylinder_Pair_<your text>.stl.
-// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
 render_both_plates = "Off"; // [Off, On]
 // Gap between the two cylinders' surfaces (mm) - PRINT spacing only, not the
 // meshed-gear assembly distance (32.0473 mm axis to axis); a printed pair is
-// separated for assembly anyway. With Integrated Gears On, the gear tips
-// overhang the barrel by 0.71 mm each side, so the tip-to-tip gap comes out
-// about 1.4 mm less than this number.
-// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
+// separated for assembly anyway.
 pair_spacing_mm = 10; // [2:1:50]
 
 /* [Indicator Mode] */
@@ -229,11 +214,11 @@ indicator_mode = "Visual"; // [Visual, Tactile]
 tactile_indicator_width = 4.0; // [2:0.1:10]
 // Tactile only: indicator length measured along the cylinder axis (mm). The default is long enough for a fingertip to read the direction of the point in one pass; at the 10 mm default line_spacing it also means each row's arrow meets the base of the one above.
 tactile_indicator_length = 10.0; // [2:0.1:15]
-// Tactile only: how far the embossing plate's arrow stands proud of the surface (mm). Keep this BELOW the braille dot height so the dots — not the indicator — carry the rolling pressure. It also sets the wall: a deeper raise means a deeper counter-plate recess, and the material left between that recess floor and the polygonal cutout gets thinner. 1.2 mm is the printable floor, and the model warns on the console and in red 3D text below it. Wording signed off by Brennen 2026-08-20.
+// Tactile only: how far the embossing plate's arrow stands proud of the surface (mm). Keep this BELOW the braille dot height so the dots — not the indicator — carry the rolling pressure. It also sets the wall: a deeper raise means a deeper counter-plate recess, and the material left between that recess floor and the keyed hole gets thinner. 1.2 mm is the printable floor, and the model warns on the console and in red 3D text below it.
 tactile_indicator_raise = 0.5; // [0:0.1:2]
 // Tactile only: outline margin added around the counter plate's recess (mm), so the arrow still enters the recess when the two cylinders are slightly misaligned.
 tactile_recess_clearance = 0.2; // [0:0.05:1]
-// Tactile only: counter recess depth added on top of the arrow raise (mm). 0 = exact same-depth nesting. Large values thin the wall between the recess and the polygonal cutout.
+// Tactile only: counter recess depth added on top of the arrow raise (mm). 0 = exact same-depth nesting. Large values thin the wall between the recess and the keyed hole.
 tactile_recess_extra_depth = 0.2; // [0:0.05:1]
 
 /* [Paper Thickness Preset] */
@@ -299,19 +284,17 @@ render_quality = "Medium"; // [Low, Medium, High]
 cone_segments = 16; // [8:1:64] Number of segments for cone shapes
 
 /* [Version 2 Keyed Cutouts] */
-// Wording SIGNED OFF by Brennen 2026-08-28 (S-V11), numbers revised 2026-08-29
-// after the first print test - reword only with his sign-off. The 0.110 figures
-// below mirror the web app's signed dial text after the second print test
-// (2026-08-30) bracketed the value: too loose at 0.15, too tight at 0.075;
-// the rewording was signed off 2026-09-01.
 // Extra room around each gear peg, per side (mm). 0.110 mm suits most printers;
-// raise it if pegs bind. It grows every keyed hole outward. It does NOT move the
-// key nub, which is pinned at V2_NUB_CLEARANCE because gear A1's notch is
-// already cut to it. Raising the dial eats into the margin that stops a peg
+// raise it if pegs bind. It grows every keyed hole outward - the key nub does
+// not move with it - and raising it eats into the margin that stops a peg
 // entering the wrong hole: 0.890 mm at 0.110, 0.50 mm at the 0.5 maximum.
-// The step is 0.005: the default must be a whole number of steps above the
-// minimum or the Customizer refuses it - 0.110 / 0.005 = 22.
 key_clearance_mm = 0.110; // [0:0.005:0.5]
+// The two printed rounds bracketed the default: too loose at 0.15, too tight
+// at 0.075. The nub is pinned at V2_NUB_CLEARANCE because gear A1's notch is
+// already cut - re-coupling it to this dial would grow the nub into a notch
+// that cannot be recut. The step is 0.005: a default that is not a whole
+// number of steps above the minimum makes the Customizer refuse the input,
+// and 0.110 / 0.005 = 22.
 
 /* [Hidden] */
 $fn = 32; // Resolution for curved surfaces
@@ -497,7 +480,7 @@ ds_on = (double_sided == "On") || (double_sided == "on");
 _all_back_lines = [Back_Line_1, Back_Line_2, Back_Line_3, Back_Line_4];
 
 // -----------------------------------------------------------------------------
-// D1 - THE INTERPOINT OFFSET (signed off 2026-08-16)
+// D1 - THE INTERPOINT OFFSET
 // -----------------------------------------------------------------------------
 // The back grid sits 1.25 mm diagonally from the front grid. Source: US Patent
 // 5,527,117 (Roy, Impact Devices, 1996). Sweeping the fully-populated
@@ -513,7 +496,7 @@ DS_OFFSET_MAX_MM = 1.35;  // largest offset the guards below accept, mm
 DS_OFFSET_OPTIMUM_MM = 1.25;
 
 // -----------------------------------------------------------------------------
-// D3 - WHICH WAY THE BACK GRID SHIFTS (signed off 2026-08-16)
+// D3 - WHICH WAY THE BACK GRID SHIFTS
 // -----------------------------------------------------------------------------
 // +1 = the back grid slides toward the END of the line; its features land LEFT
 // of Cylinder A's raised arrows, seen from outside the cylinder with the top up.
@@ -525,7 +508,7 @@ DS_OFFSET_OPTIMUM_MM = 1.25;
 DS_BACK_DIRECTION = 1;
 
 // -----------------------------------------------------------------------------
-// D2 - DOUBLE-SIDED FOOTPRINTS, "OPTION B" (signed off 2026-08-16)
+// D2 - DOUBLE-SIDED FOOTPRINTS, "OPTION B"
 // -----------------------------------------------------------------------------
 // Double-sided needs smaller dots than single-sided, because raised dots and
 // recesses now share one surface. At the shipped single-sided sizes only
@@ -796,7 +779,6 @@ ds_printed_ridge_mm = ds_on
 // Active only when double_sided is On. A failed assert stops the render and
 // fails scripts\scad-check.ps1 - that is the point. A pair printed outside these
 // ranges will not register, and nothing in a rendered preview would show it.
-// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 if (ds_on) {
     assert(interpoint_offset_x_mm >= DS_OFFSET_MIN_MM &&
            interpoint_offset_x_mm <= DS_OFFSET_MAX_MM,
@@ -881,10 +863,8 @@ if (ds_forced_tactile)
 // are Cylinder_A_*.stl and Cylinder_B_*.stl; single-sided filenames are never
 // renamed. Deliberately not a WARNING: it is a hint, and scripts\scad-check.ps1
 // treats that token as a failure.
-// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
-// (2026-08-25: gated on !both_on - in both-plates mode one file holds the
-// pair, so the pair hint below speaks instead. Condition change only, the
-// wording is untouched.)
+// Gated on !both_on: in both-plates mode one file holds the pair, so the
+// pair hint below speaks instead.
 if (ds_on && !both_on)
     echo(str("Double-sided: this render is Cylinder ", is_emboss_plate ? "A" : "B",
              " (the ", is_emboss_plate ? "Embossing Plate" : "Counter Plate",
@@ -893,7 +873,6 @@ if (ds_on && !both_on)
 
 // Both-plates mode: one render, one file, one suggested name. Deliberately
 // not a WARNING - scripts\scad-check.ps1 treats that token as a failure.
-// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
 if (both_on) {
     echo(str("Both plates: one STL containing Cylinder A / Embossing Plate (left) ",
              "and Cylinder B / Counter Plate (right), surfaces ", pair_spacing_mm,
@@ -983,7 +962,7 @@ _preset_seam_offset_degrees            = preset_value(paper_thickness_preset, "s
 // Active emboss dot parameters (based on shape selection, using preset-routed values)
 // Note: cone/rounded emboss modules consume the underlying _preset_* constants
 // directly; only the composite height is needed at this layer.
-// Double-sided ships its own FIXED footprint (Option B, signed off 2026-08-16):
+// Double-sided ships its own FIXED footprint (Option B):
 // raised dots and recesses now share one surface, and at the single-sided sizes
 // only 0.118 mm of material would be left between neighbours. So the ds gate
 // wins over both the shape selection and the paper-thickness preset, and no
@@ -1107,7 +1086,6 @@ too_many_rows = rows_used > active_grid_rows;
 // cannot show console output — it relies on the extruded 3D warning text). Each
 // message names the field that actually overflowed, so a double-sided user is
 // never sent hunting through the front text for a back-line problem.
-// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 if (text_limit_check == "On") {
     for (i = [0 : len(_all_lines) - 1])
         if (len(_all_lines[i]) > active_grid_columns)
@@ -1600,7 +1578,6 @@ function v2_widest_key_radius(clearance) =
     max(v2_key_max_radius(V2_KEY_A1, clearance), v2_key_max_radius(V2_KEY_A2, clearance),
         v2_key_max_radius(V2_KEY_B1, clearance), v2_key_max_radius(V2_KEY_B2, clearance));
 
-// Wording SIGNED OFF by Brennen 2026-08-28 (S-V11) - reword only with his sign-off.
 // "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on that token.
 echo("NOTE: Embosser Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.");
 
@@ -1622,11 +1599,9 @@ tactile_seam_wall_mm =
 tactile_seam_wall_too_thin = tactile_on
     && (tactile_seam_wall_mm < TACTILE_SEAM_WALL_MIN);
 
-// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 if (tactile_seam_wall_too_thin)
-    // Wording SIGNED OFF by Brennen 2026-08-28 (S-V11) - re-pointed from the
-    // polygonal cutout to the keyed hole, because the v1 sentence named a cutout
-    // Version 2 does not have. Reword only with his sign-off.
+    // Names the keyed hole: the v1 sentence named a polygonal cutout that
+    // Version 2 does not have.
     echo(str("WARNING: only ", round(tactile_seam_wall_mm * 1000) / 1000,
              " mm of wall is left between the tactile arrow recess and the ",
              "keyed cutout; the printable minimum is ", TACTILE_SEAM_WALL_MIN,
@@ -1812,11 +1787,10 @@ module tactile_gap_warning() {
     }
 }
 
-// Wall between the arrow recess floor and the polygonal cutout too thin to
+// Wall between the arrow recess floor and the keyed cutout too thin to
 // print: warn in 3D, same reasons and same pattern as tactile_gap_warning
 // above. The counter plate is the one that cuts the recess, but both plates
 // call this - the pair is printed from one set of settings.
-// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 module tactile_seam_wall_warning() {
     if (tactile_seam_wall_too_thin) {
         translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + 6 * INVALID_TEXT_STACK_GAP])
@@ -1830,8 +1804,6 @@ module tactile_seam_wall_warning() {
 // The two double-sided warnings, in 3D for the same reason as the ones above:
 // the MakerWorld customizer preview cannot show console output. Stacked one and
 // two steps above TOO MANY LINES, reusing the same placement constants.
-//
-// Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 module ds_mode_warnings() {
     if (ds_forced_tactile) {
         translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + 4 * INVALID_TEXT_STACK_GAP])
