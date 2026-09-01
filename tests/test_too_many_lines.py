@@ -30,7 +30,7 @@ import pytest
 PROJECT_ROOT = Path(__file__).parent.parent
 SCAD_FILE = PROJECT_ROOT / "Braille_Cylinder_STL_Generator.scad"
 MAKERWORLD_FILE = (
-    PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad"
+    PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad"
 )
 
 sys.path.insert(0, str(Path(__file__).parent))

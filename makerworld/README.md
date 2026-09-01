@@ -6,7 +6,7 @@ STL Generator for uploading to
 
 | File | Purpose |
 |------|---------|
-| [`Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`](Braille_Cylinder_STL_Generator_MakerWorld_v2.scad) | The single `.scad` file to upload to MakerWorld. |
+| [`Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`](Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad) | The single `.scad` file to upload to the **Version 1** MakerWorld listing. |
 
 ## Embosser Version 2 (prototype)
 
@@ -21,11 +21,14 @@ his sign-off:**
 
 > Braille Cylinder STL Generator — Embosser Version 2 (keyed gear pegs, prototype)
 
-A note on the two version numbers, which are unrelated: the `_v2` suffix on
-`Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` means the **second
-generation of the MakerWorld FILE**, not Version 2 of the embosser hardware.
-The Version 2 hardware file is the `_EmbosserV2` one, and it has no `_v2`
-suffix of its own.
+A note on the version number: this is the **Version 1 model's** MakerWorld
+build, labeled **v1.5**. Until 2026-09-01 the file was named `_v2`, where the
+suffix meant the second generation of the MakerWorld FILE — a label that
+collided confusingly with Embosser **Version 2**, which is different hardware.
+The rename ends the collision: `v1.x` suffixes belong to this Version 1 file,
+and the Embosser Version 2 upload is the repository root's `_EmbosserV2` file
+(above), which keeps no copy in this folder. The listing text for the Version 2
+posting lives at [`../docs/MAKERWORLD_V2_LISTING_DRAFT.md`](../docs/MAKERWORLD_V2_LISTING_DRAFT.md).
 
 ## Why a separate single-file build?
 
@@ -85,7 +88,7 @@ test run rather than by counting lines.)
    the **Unicode Braille** output (e.g. `⠓⠑⠇⠇⠕`).
 2. Go to MakerWorld → **Create** → **Parametric Model Maker** (a.k.a. the
    OpenSCAD-based customizer).
-3. Upload **only** `Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`.
+3. Upload **only** `Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`.
 4. In the generated parameter panel:
    - Paste braille into `Line_1`, `Line_2`, … (do **not** type plain English).
    - Choose `plate_type`: *Embossing Plate* or *Counter Plate*.
@@ -239,7 +242,7 @@ change. Do it manually (no codegen step is committed) and let
    ```
 
    **to the end of the file**. Paste it over the corresponding region in
-   `Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` so the two are byte-identical.
+   `Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad` so the two are byte-identical.
 
 2. **Re-sync everything else above the marker.** Two parts, both required:
 
@@ -281,7 +284,7 @@ change. Do it manually (no codegen step is committed) and let
 
    ```bash
    pytest tests/test_makerworld_sync.py -v
-   openscad -o /tmp/mw.stl makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad
+   openscad -o /tmp/mw.stl makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad
    ```
 
    The sync test now checks four things, not just the geometry body: the body is
@@ -296,5 +299,5 @@ change. Do it manually (no codegen step is committed) and let
 
    ```bash
    openscad -o /tmp/mw_ds.stl -D 'double_sided="On"' -D 'Back_Line_1="⠙⠑⠋"' \
-     makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad
+     makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad
    ```

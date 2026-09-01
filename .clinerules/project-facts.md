@@ -4,7 +4,7 @@ Offline OpenSCAD companion of the braille-cylinder web app: braille embossing
 and counter plates for cylinders, fully client-free. Working branch: develop.
 
 1. Main model: Braille_Cylinder_STL_Generator.scad. Presets: presets.scad.
-   MakerWorld variant: makerworld\Braille_Cylinder_STL_Generator_MakerWorld_v2.scad
+   MakerWorld variant: makerworld\Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad
    (keep deliberately in sync when the main model changes).
 2. Named checks: powershell -ExecutionPolicy Bypass -File scripts\scad-check.ps1
    (after every .scad edit) and python -m pytest tests/ -v (before commits).

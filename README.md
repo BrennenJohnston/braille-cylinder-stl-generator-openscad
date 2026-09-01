@@ -56,7 +56,7 @@ Want to run this in MakerWorld's **Parametric Model Maker** instead of the
 desktop app? A flattened, single-file build lives in
 [`makerworld/`](makerworld/):
 
-- [`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`](makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad) — one `.scad` file (presets inlined, no `include`), ready to upload. Defaults to the `Rounded` dot shape.
+- [`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`](makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad) — one `.scad` file (presets inlined, no `include`), ready to upload. Defaults to the `Rounded` dot shape.
 - See [`makerworld/README.md`](makerworld/README.md) for upload steps and the maintainer re-flatten procedure.
 - New to the workflow? Start with the [MakerWorld Quick Start Guide](docs/MAKERWORLD_QUICK_START.md) (also as a printable [PDF](docs/MakerWorld_Quick_Start_Guide.pdf)).
 

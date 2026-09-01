@@ -28,7 +28,7 @@ import pytest
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL = PROJECT_ROOT / "Braille_Cylinder_STL_Generator.scad"
 MAKERWORLD = (
-    PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad"
+    PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad"
 )
 
 # The five Tactile-only sliders, with the exact `[min:step:max]` each ships with.

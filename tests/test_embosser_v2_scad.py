@@ -46,7 +46,7 @@ V2_FILE = PROJECT_ROOT / "Braille_Cylinder_STL_Generator_EmbosserV2.scad"
 V1_FILES = (
     "Braille_Cylinder_STL_Generator.scad",
     "presets.scad",
-    "makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad",
+    "makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad",
 )
 
 # Family R14, inlined rather than read from the research folder: the CI machine

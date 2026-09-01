@@ -4,7 +4,7 @@
 
 This guide walks you from "I want a braille label" to a downloadable STL pair
 using the single-file build in
-[`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`](../makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad)
+[`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`](../makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad)
 on [MakerWorld](https://makerworld.com/)'s Parametric Model Maker.
 
 A PDF version of this guide is available:
@@ -98,7 +98,7 @@ end of the first line is preferred; omit it only as a last resort. Tip: omit
 ## 4. Using the Customizer
 
 1. Go to MakerWorld → **Create** → **Parametric Model Maker** and upload
-   **only** `Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`.
+   **only** `Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`.
 2. In the parameter panel:
    - Paste your Unicode braille into `Line_1`, `Line_2`, `Line_3`, `Line_4`
      (leave unused lines empty). Do **not** type plain English. Lines 5–8 are in

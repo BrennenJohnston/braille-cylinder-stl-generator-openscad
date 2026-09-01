@@ -41,7 +41,7 @@ from test_text_too_long import _resolve_openscad_path  # noqa: E402  (shared hel
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCAD_FILE = PROJECT_ROOT / "Braille_Cylinder_STL_Generator.scad"
 MAKERWORLD_FILE = (
-    PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad"
+    PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad"
 )
 
 # The reference roller (assets/GEARS_PROVENANCE.json, and the web generator's
