@@ -112,9 +112,9 @@ business-card, parametric, openscad
 
 - [ ] Review and sign every **DRAFT** block above (a11y rule: no
       user-facing text ships unsigned).
-- [x] Print-test a 30.8 × 54 pair — done: both cylinders printed from the
-      Version 2 file passed Brennen's inspection (2026-09-01); the 54 mm
-      warning that stood here in the print notes is deleted.
+- [x] Print-test a 30.8 × 54 pair — done and **passed** (Brennen,
+      2026-09-01); the 54 mm warning that stood in the print notes is
+      deleted.
 - [ ] Confirm the print-orientation advice.
 - [ ] Take the five photos/screenshots; approve or rewrite the alt text.
 - [ ] Decide the listing's license and profile settings on MakerWorld.
