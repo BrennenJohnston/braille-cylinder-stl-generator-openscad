@@ -7,14 +7,19 @@ STL Generator for uploading to
 | File | Purpose |
 |------|---------|
 | [`Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`](Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad) | The single `.scad` file to upload to the **Version 1** MakerWorld listing. |
+| [`Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`](Braille_Cylinder_STL_Generator_MakerWorld_v2.scad) | The single `.scad` file to upload to the **Embosser Version 2** MakerWorld listing. |
 
 ## Embosser Version 2 (prototype)
 
-`../Braille_Cylinder_STL_Generator_EmbosserV2.scad` needs **no flattening**: it
-was written self-contained, with the preset tables already inlined between the
-same `BEGIN`/`END` sentinels and no `include` directive, so the file at the
-repository root IS the MakerWorld upload. There is no copy of it in this folder,
-and nothing to keep in sync.
+`Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` is the upload for the
+Version 2 listing. Unlike the Version 1 build it needs **no flattening**: the
+canonical `../Braille_Cylinder_STL_Generator_EmbosserV2.scad` was written
+self-contained, with the preset tables already inlined between the same
+`BEGIN`/`END` sentinels and no `include` directive, so the copy here is
+**byte-identical** to the repository-root file — no allowed differences at
+all. `tests/test_embosser_v2_scad.py::test_the_makerworld_copy_is_byte_identical`
+fails the build if the two ever drift; after editing the canonical file,
+re-copy it over this one.
 
 **Listing label (S-V12) — signed off by Brennen 2026-08-28; reword only with
 his sign-off:**
@@ -25,10 +30,11 @@ A note on the version number: this is the **Version 1 model's** MakerWorld
 build, labeled **v1.5**. Until 2026-09-01 the file was named `_v2`, where the
 suffix meant the second generation of the MakerWorld FILE — a label that
 collided confusingly with Embosser **Version 2**, which is different hardware.
-The rename ends the collision: `v1.x` suffixes belong to this Version 1 file,
-and the Embosser Version 2 upload is the repository root's `_EmbosserV2` file
-(above), which keeps no copy in this folder. The listing text for the Version 2
-posting lives at [`../docs/MAKERWORLD_V2_LISTING_DRAFT.md`](../docs/MAKERWORLD_V2_LISTING_DRAFT.md).
+The rename ends the collision: `v1.x` suffixes belong to the Version 1 model's
+file, and `_v2` now means what it sounds like — the **Embosser Version 2**
+upload (above), a guarded byte-identical copy of the root `_EmbosserV2` file.
+The listing text for the Version 2 posting lives at
+[`../docs/MAKERWORLD_V2_LISTING_DRAFT.md`](../docs/MAKERWORLD_V2_LISTING_DRAFT.md).
 
 ## Why a separate single-file build?
 

@@ -636,6 +636,27 @@ def test_the_barrel_preset_is_the_54_mm_card_shelf(source_text):
     assert "30.8 mm x 54 mm cylinder" in source_text
 
 
+def test_the_makerworld_copy_is_byte_identical():
+    """
+    makerworld/ holds the upload file for every listing, so Version 2 keeps a
+    copy there beside the Version 1 build (Brennen, 2026-09-01). The file is
+    self-contained, so unlike Version 1 there is no flattening step and no
+    allowed difference: the copy must be byte-identical to the canonical root
+    file, and any drift is a bug in whichever file changed alone.
+    """
+    copy = (
+        PROJECT_ROOT
+        / "makerworld"
+        / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad"
+    )
+    assert copy.exists(), "the Version 2 MakerWorld copy is missing"
+    assert copy.read_bytes() == V2_FILE.read_bytes(), (
+        "makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad has drifted from "
+        "the canonical Braille_Cylinder_STL_Generator_EmbosserV2.scad - re-copy "
+        "whichever side is stale"
+    )
+
+
 def test_the_version1_files_were_not_touched():
     """Version 2 is a NEW file beside the Version 1 ones, never an edit to them."""
     result = subprocess.run(

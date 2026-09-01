@@ -6,8 +6,9 @@
 > rule: user-facing text is never finalized without his sign-off. The
 > pre-publish checklist is at the bottom.
 
-**Upload file:** `Braille_Cylinder_STL_Generator_EmbosserV2.scad` (repository
-root — self-contained, no copy needed; see `makerworld/README.md`).
+**Upload file:** `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`
+(a byte-identical, test-guarded copy of the canonical root
+`Braille_Cylinder_STL_Generator_EmbosserV2.scad`; see `makerworld/README.md`).
 
 ---
 
