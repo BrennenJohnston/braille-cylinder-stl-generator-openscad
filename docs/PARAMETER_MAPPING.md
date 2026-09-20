@@ -157,6 +157,7 @@ Expert Mode.
 | `tactile_indicator_raise` | `tactile_indicator_raise` | 0.5 mm | 0–2 mm | How far the emboss arrow stands proud. Kept below the braille dot height so the dots carry the rolling pressure |
 | `tactile_recess_clearance` | `tactile_recess_clearance` | 0.2 mm | 0–1 mm | Outline margin around the counter recess |
 | `tactile_recess_extra_depth` | `tactile_recess_extra_depth` | 0.2 mm | 0–1 mm | Counter recess depth beyond the raise; 0 = exact same-depth nesting |
+| *(derived: `paper_thickness_preset == "0.3mm"`)* | `tactile_indicator_layout` | one per row | `per_row`, `three_spaced` | **2026-09-20.** Where the arrows sit along the axis. `"0.4mm"` and `"Custom"` keep one arrow per braille row; `"0.3mm"` places exactly three, at mid-height and `TACTILE_THREE_SPACED_PITCH` (15 mm) above and below it, whatever the row count — so a blind user can tell the presets apart by touch and a 0.3 mm cylinder will not nest with a 0.4 mm one. No slider here: the preset decides. The web UI sends `three_spaced` for its 0.3 preset (and for Custom when 0.3 was the preset last chosen — its radio can flip to Custom by itself, which this Customizer's cannot). An `assert` refuses a barrel too short for the outer arrows, as the web API does. The pitch is pinned across the two repos by `tests/test_tactile_arrow_layout.py`. |
 
 Defaults are asserted equal on the web side
 (`tests/test_smoke.py::test_tactile_settings_defaults_match_openscad`), so the
@@ -166,7 +167,10 @@ there — deliberately.
 The five tactile sliders are **not** preset-driven — same policy as
 `grid_columns`. The paper-thickness presets describe paper and dot geometry;
 the indicator is a mechanical alignment feature and must not move when the
-user switches preset.
+user switches preset. The one exception, since 2026-09-20, is the arrow
+*layout* above: the arrow itself never changes size, but the 0.3mm preset
+places three of them instead of one per row, precisely so the preset can be
+recognised by touch.
 
 ### Paper Thickness Preset
 | OpenSCAD Parameter | Web App Equivalent | Default | Values |
@@ -285,9 +289,12 @@ blind-accessible indicator carried by both plates. Cylinder diameter, height,
 and the polygonal cutout are unchanged — only surface features differ.
 
 - **Placement.** One indicator per braille row, centred in the seam gap
-  between the last and first cell. The grid is centred on angle 0, so that
-  midpoint is always exactly **180°** — and 180° is the fixed point of the
-  counter plate's `mirror([0,1,0])` / angle-negation construction, so the
+  between the last and first cell — or, on the `"0.3mm"` paper-thickness
+  preset since 2026-09-20, exactly three at mid-height and ±15 mm, whatever
+  the row count (`tactile_arrow_y_positions()`; the preset's tactile
+  marking, see the Indicator Mode table). The grid is centred on angle 0, so
+  that midpoint is always exactly **180°** — and 180° is the fixed point of
+  the counter plate's `mirror([0,1,0])` / angle-negation construction, so the
   emboss arrow and the counter recess self-align radially with no extra maths,
   at any rotation of the paired cylinders.
 - **Shape.** An isosceles triangle, **symmetric circumferentially** (so the

@@ -1052,6 +1052,33 @@ TACTILE_BASE_EMBED = 0.2;
 // never leaves coplanar faces behind.
 TACTILE_RECESS_OVERCUT = 1;
 
+// Arrow layout along the axis (Brennen, 2026-09-20). The "0.4mm" preset keeps
+// one arrow per braille row; the "0.3mm" preset marks its cylinders with
+// exactly three arrows, at mid-height and TACTILE_THREE_SPACED_PITCH above and
+// below it, whatever the row count - so a blind user can tell the presets
+// apart by touch (three separated arrows against a chain of four touching
+// ones) and a 0.3mm cylinder will not nest with a 0.4mm one: the middle
+// arrow's 4 mm base lands where the per-row recess chain is only 2.2 mm wide.
+// "Custom" is an explicit choice here (no auto-detection, unlike the web UI),
+// so it keeps one per row like the default. 15 mm was chosen over the
+// quarter-height points: the same 40 mm span as the four-row chain, 5 mm gaps
+// that are easy to count, one number for the 52 and 54 mm barrels alike.
+// Keep in lockstep with the web repo's app/geometry_spec.py
+// TACTILE_THREE_SPACED_PITCH_MM; tests/test_tactile_mode.py pins it.
+tactile_three_spaced = (paper_thickness_preset == "0.3mm");
+TACTILE_THREE_SPACED_PITCH = 15;
+
+// The three fixed arrows must stay on the barrel. Measured on the larger,
+// clearance-grown recess outline so both plates of a pair pass or fail
+// together; a rejection, not a warning, to match the web generator (Brennen,
+// 2026-09-20). Both presets set the cylinder to 52 mm, so the shipped defaults
+// pass at every slider setting (the slider maxima need 45 mm).
+assert(!(tactile_on && tactile_three_spaced)
+       || active_cylinder_height_mm >= 2 * (TACTILE_THREE_SPACED_PITCH
+                                            + tactile_indicator_length / 2
+                                            + tactile_recess_clearance),
+       "The 0.3mm preset's three tactile arrows need a taller cylinder: at least 2 x (15 + tactile_indicator_length / 2 + tactile_recess_clearance) mm.");
+
 // Grid dimensions. In Visual indicator mode the triangle alignment marker column
 // is ALWAYS present (it has no user-facing toggle) and the indicator letter/square
 // column is added only when Indicator Letters are On. Tactile mode has no marker
@@ -1572,20 +1599,23 @@ module ds_mode_warnings() {
     }
 }
 
-// One tactile indicator per braille row, at the same row pitch the Visual
-// marker columns use.
+// Tactile indicator heights along the axis, top first: one per braille row at
+// the same row pitch the Visual marker columns use, or - on the "0.3mm"
+// preset - three fixed ones about mid-height that follow neither the row
+// count nor braille_y_adjust (a preset marking, not a row marking; see
+// TACTILE_THREE_SPACED_PITCH).
+function tactile_arrow_y_positions() =
+    tactile_three_spaced
+        ? [TACTILE_THREE_SPACED_PITCH, 0, -TACTILE_THREE_SPACED_PITCH]
+        : [for (row = [0 : active_grid_rows - 1])
+              active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust];
+
 module tactile_rows_raised() {
-    for (row = [0 : active_grid_rows - 1]) {
-        y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
-        tactile_raised(y_pos);
-    }
+    for (y_pos = tactile_arrow_y_positions()) tactile_raised(y_pos);
 }
 
 module tactile_rows_recessed() {
-    for (row = [0 : active_grid_rows - 1]) {
-        y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
-        tactile_recess_cut(y_pos);
-    }
+    for (y_pos = tactile_arrow_y_positions()) tactile_recess_cut(y_pos);
 }
 
 // =============================================================================
@@ -2053,7 +2083,8 @@ module cylinder_emboss_plate() {
                     text(str("TOO MANY LINES: ", rows_used, "/", active_grid_rows), size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
                 }
 
-                // Tactile mode: raised alignment arrows in the seam gap, one per row.
+                // Tactile mode: raised alignment arrows in the seam gap - one per
+                // row, or three fixed ones on the "0.3mm" preset.
                 if (tactile_on) {
                     tactile_rows_raised();
                 }

@@ -184,6 +184,17 @@ def _row_y(layout, row):
     return layout["height"] / 2 - layout["top_margin"] - row * layout["line"]
 
 
+def _arrow_zs(layout, package):
+    """
+    Seam-arrow heights from mid-height: one per row, or - on the "0.3mm"
+    package since 2026-09-20 - three fixed ones at 0 and +/-15 mm, the preset's
+    tactile marking (tests/test_tactile_arrow_layout.py measures them).
+    """
+    if package == "0.3mm":
+        return [15.0, 0.0, -15.0]
+    return [_row_y(layout, row) for row in range(int(layout["rows"]))]
+
+
 def _dots_of(char):
     """Unicode braille -> the six 0/1 flags, dot 1 first."""
     pattern = ord(char) - 0x2800
@@ -2175,8 +2186,9 @@ class TestGoldenContainmentProbes:
         raise_mm = layout["arrow_raise"]
         recess = raise_mm + layout["arrow_extra_depth"]
         seam_arc = math.pi * layout["radius"]
-        for row in range(int(layout["rows"])):
-            z = _row_y(layout, row)
+        # The goldens are the 0.3 mm package, so since 2026-09-20 they carry
+        # the three fixed arrows, not one per row.
+        for z in _arrow_zs(layout, GOLDEN_PACKAGE):
             assert self._solid_at(
                 bodies[(source, "positive")],
                 layout,
@@ -2184,7 +2196,7 @@ class TestGoldenContainmentProbes:
                 z,
                 layout["radius"] + 0.5 * raise_mm,
             ), (
-                f"{source} Cylinder A: row {row}'s raised arrow is hollow at half its raise."
+                f"{source} Cylinder A: the raised arrow at z {z} is hollow at half its raise."
             )
             assert not self._solid_at(
                 bodies[(source, "positive")],
@@ -2193,7 +2205,7 @@ class TestGoldenContainmentProbes:
                 z,
                 layout["radius"] + raise_mm + 0.1,
             ), (
-                f"{source} Cylinder A: row {row}'s arrow stands taller than {raise_mm} mm."
+                f"{source} Cylinder A: the arrow at z {z} stands taller than {raise_mm} mm."
             )
             assert not self._solid_at(
                 bodies[(source, "negative")],
@@ -2201,7 +2213,7 @@ class TestGoldenContainmentProbes:
                 seam_arc,
                 z,
                 layout["radius"] - 0.5 * recess,
-            ), f"{source} Cylinder B: row {row}'s arrow recess is solid at half depth."
+            ), f"{source} Cylinder B: the arrow recess at z {z} is solid at half depth."
             assert self._solid_at(
                 bodies[(source, "negative")],
                 layout,
@@ -2209,7 +2221,7 @@ class TestGoldenContainmentProbes:
                 z,
                 layout["radius"] - recess - 0.15,
             ), (
-                f"{source} Cylinder B: row {row}'s arrow recess has cut through the wall."
+                f"{source} Cylinder B: the arrow recess at z {z} has cut through the wall."
             )
 
 

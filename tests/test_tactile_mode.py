@@ -143,6 +143,58 @@ def test_tactile_modules_present(scad_path):
         assert module in scad, f"Missing `{module}` in {scad_path.name}"
 
 
+@pytest.mark.parametrize(
+    "scad_path",
+    [
+        CANONICAL,
+        MAKERWORLD,
+        PROJECT_ROOT / "Braille_Cylinder_STL_Generator_EmbosserV2.scad",
+    ],
+    ids=["canonical", "makerworld", "embosser_v2"],
+)
+def test_arrow_layout_follows_the_paper_thickness_preset(scad_path):
+    """
+    2026-09-20: the "0.3mm" preset marks its cylinders with three fixed arrows
+    (mid-height and 15 mm either side) instead of one per row, so a blind user
+    can tell the presets apart by touch and a 0.3 mm cylinder will not nest with
+    a 0.4 mm one. "0.4mm" and "Custom" keep one arrow per row. The pitch is
+    pinned against the web generator in tests/test_tactile_arrow_layout.py.
+    """
+    scad = _read(scad_path)
+    assert 'tactile_three_spaced = (paper_thickness_preset == "0.3mm");' in scad, (
+        "the three-arrow layout must be keyed to the 0.3mm preset and nothing else"
+    )
+    assert "TACTILE_THREE_SPACED_PITCH = 15;" in scad
+    assert "function tactile_arrow_y_positions() =" in scad
+    assert "[TACTILE_THREE_SPACED_PITCH, 0, -TACTILE_THREE_SPACED_PITCH]" in scad
+
+    # Both plates draw their heights from the ONE function, so the recesses can
+    # never sit at different heights from the arrows they nest.
+    for module in (
+        "module tactile_rows_raised() {",
+        "module tactile_rows_recessed() {",
+    ):
+        body = scad[scad.index(module) :]
+        body = body[: body.index("\n}")]
+        assert "for (y_pos = tactile_arrow_y_positions())" in body, module
+
+    # The barrel-fit guard is an assert (a refusal, like the web generator's),
+    # declared after everything it reads - a forward reference would be undef
+    # and the guard would silently never fire.
+    assert "assert(!(tactile_on && tactile_three_spaced)" in scad
+    declared = scad.index('tactile_three_spaced = (paper_thickness_preset == "0.3mm");')
+    for name in (
+        "tactile_on",
+        "active_cylinder_height_mm",
+        "tactile_indicator_length",
+        "tactile_recess_clearance",
+    ):
+        m = re.search(rf"^{re.escape(name)}\s*=", scad, re.MULTILINE)
+        assert m and m.start() < declared, (
+            f"`{name}` must be declared before the arrow-layout guard"
+        )
+
+
 @BOTH_BUILDS
 def test_arrow_apex_points_at_the_cylinder_top(scad_path):
     """Axial asymmetry is the whole point: the user feels which end is up.

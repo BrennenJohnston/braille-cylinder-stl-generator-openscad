@@ -183,7 +183,7 @@ features change, so **both plates must use the same mode**.
 
 | | Visual (default) | Tactile |
 |---|---|---|
-| Where | Marker cells at the start of every row | One indicator per row, centred in the seam gap |
+| Where | Marker cells at the start of every row | One indicator per row (three evenly spaced on the 0.3mm preset), centred in the seam gap |
 | Emboss plate | Recessed triangle (+ square when `indicators` is On) | Raised arrow pointing at the cylinder top |
 | Counter plate | Mirrored recesses | Matching arrow recess the arrow nests into |
 | Cells used for markers | 2 (On) or 1 (Off) | 0 |
