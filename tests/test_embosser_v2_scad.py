@@ -659,13 +659,17 @@ def test_no_development_tags_reach_the_public_file(source_text):
     )
 
 
-def test_the_makerworld_copy_is_byte_identical():
+def test_the_makerworld_copy_hides_the_gear_switch(source_text):
     """
     makerworld/ holds the upload file for every listing, so Version 2 keeps a
-    copy there beside the Version 1 build (Brennen, 2026-09-01). The file is
-    self-contained, so unlike Version 1 there is no flattening step and no
-    allowed difference: the copy must be byte-identical to the canonical root
-    file, and any drift is a bug in whichever file changed alone.
+    copy there beside the Version 1 build (Brennen, 2026-09-01). Until phase O5
+    the copy was byte-identical; since the fused Version 2 roller exists it
+    follows the Version 1 build's three-layer sync model instead
+    (tests/test_makerworld_sync.py, both pairs): the geometry body byte-identical
+    from the BACKWARD COMPATIBILITY marker to EOF, every declaration above it
+    equal - and the ONE allowed presentation difference is that the copy's
+    `integrated_gears` lives in a Hidden tab, because MakerWorld cannot ship
+    assets/. This test pins that difference.
     """
     copy = (
         PROJECT_ROOT
@@ -673,11 +677,21 @@ def test_the_makerworld_copy_is_byte_identical():
         / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad"
     )
     assert copy.exists(), "the Version 2 MakerWorld copy is missing"
-    assert copy.read_bytes() == V2_FILE.read_bytes(), (
-        "makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad has drifted from "
-        "the canonical Braille_Cylinder_STL_Generator_EmbosserV2.scad - re-copy "
-        "whichever side is stale"
-    )
+    makerworld = copy.read_text(encoding="utf-8")
+    declaration = 'integrated_gears = "Off"; // [Off, On]'
+    assert makerworld.count(declaration) == 1
+    assert source_text.count(declaration) == 1
+
+    def tab_above(text):
+        head = text[: text.index(declaration)]
+        return head[head.rindex("/* [") :].splitlines()[0]
+
+    assert tab_above(makerworld) == "/* [Hidden] */"
+    assert tab_above(source_text) == "/* [Integrated Gears] */"
+    assert "/* [Integrated Gears] */" not in makerworld
+    assert "MAKERWORLD SINGLE-FILE BUILD" in makerworld
+    lowered = makerworld.lower()
+    assert "signed off" not in lowered and "sign-off" not in lowered
 
 
 def test_the_version1_files_were_not_touched():

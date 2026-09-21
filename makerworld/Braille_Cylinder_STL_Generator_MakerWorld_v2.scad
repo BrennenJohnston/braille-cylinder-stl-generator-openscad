@@ -1,5 +1,26 @@
-// Braille Cylinder STL Generator — Embosser Version 2 (OpenSCAD)
+// Braille Cylinder STL Generator — Embosser Version 2 (OpenSCAD) — MakerWorld Single-File Build
 // Generates embossing plates and counter plates for cylindrical objects
+//
+// =============================================================================
+// MAKERWORLD SINGLE-FILE BUILD — EMBOSSER VERSION 2
+// =============================================================================
+//  This file is the upload for the Embosser Version 2 listing on MakerWorld's
+//  Parametric Model Maker, which accepts exactly one `.scad` file and cannot
+//  take a mesh file beside it.
+//
+//  The canonical DESKTOP version lives in the repository root:
+//    ../Braille_Cylinder_STL_Generator_EmbosserV2.scad
+//
+//  This file is identical to that file from the `BACKWARD COMPATIBILITY`
+//  marker to EOF (the geometry body). Above the marker there is ONE difference
+//  besides this header: the `integrated_gears` switch is declared in a Hidden
+//  tab here instead of its own visible tab, because the fused Version 2 roller
+//  needs assets/v2_gears_a.stl and assets/v2_gears_b.stl, which MakerWorld has
+//  no way to carry. Every parameter default and slider range is the same.
+//  tests/test_makerworld_sync.py guards byte-identity of the geometry body
+//  against the canonical file AND compares every declaration above the marker,
+//  so a value cannot drift on one side unnoticed. See ./README.md for the
+//  maintainer re-sync procedure.
 //
 // =============================================================================
 // EMBOSSER VERSION 2 — KEYED GEAR-PEG CUTOUTS (PROTOTYPE)
@@ -39,7 +60,13 @@
 //  embosser's standard, where Version 1 offers 10.
 //
 //  SELF-CONTAINED. The paper-thickness preset tables are inlined below rather
-//  than `include`d, so this single file is also the MakerWorld upload.
+//  than `include`d. The MakerWorld upload,
+//  makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad, is this file
+//  with ONE difference above the BACKWARD COMPATIBILITY marker: its
+//  `integrated_gears` switch sits in a Hidden tab, because MakerWorld cannot
+//  ship the gear assets. tests/test_makerworld_sync.py holds the two in step -
+//  the geometry body byte-identical from that marker to EOF, and every
+//  declaration above it equal in value and range. See makerworld/README.md.
 //
 // =============================================================================
 // WHAT THIS MAKES
@@ -192,15 +219,6 @@ interpoint_offset_x_mm = 1.25; // [1.15:0.01:1.35]
 // (mm) - back rows sit this far above the front rows.
 interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
 
-/* [Integrated Gears] */
-// Adds the Version 2 drive gears to each cylinder as one solid piece. The
-// barrel prints solid with no keyed holes; the cylinder must stay 30.8 mm x
-// 54 mm. Needs assets/v2_gears_a.stl and assets/v2_gears_b.stl, which ship
-// with the desktop build.
-// COMPATIBILITY: Version 2 fixed gears fit only the Version 2 fixed-gear
-// housing. The standard Version 2 housing takes the standard keyed cylinders.
-integrated_gears = "Off"; // [Off, On]
-
 /* [Plate Selection] */
 // Choose which plate to generate. In DOUBLE-SIDED (BETA) mode the two names
 // take on the paired roles the web app uses: "Embossing Plate" IS Cylinder A
@@ -325,6 +343,18 @@ $fn = 32; // Resolution for curved surfaces
 polygon_cutout_radius_mm = 0;
 polygon_cutout_points = 12;
 seam_offset_degrees = 0.0;
+
+// The desktop generator ships assets/v2_gears_a.stl and assets/v2_gears_b.stl
+// and offers this as a visible dropdown under [Integrated Gears]. This
+// single-file build has no assets folder, so switching it on would render a
+// plate with NO gears and only a console warning to say why. It is declared -
+// because tests/test_makerworld_sync.py requires both builds to carry the same
+// parameter set, and the geometry body below is byte-identical - but it lives
+// in this Hidden tab so the Customizer never offers it. MakerWorld's Parametric
+// Model Maker (v1.1.0, checked 2026-08-25) has no way to upload a mesh at all,
+// so no version of this build could carry the gears; fused Version 2 rollers
+// come from the desktop OpenSCAD build or the web app.
+integrated_gears = "Off"; // [Off, On]
 
 // Normalized gate for the `integrated_gears` dropdown, read exactly the way
 // ds_on reads its own: the Customizer sends "On"/"Off" and the test system

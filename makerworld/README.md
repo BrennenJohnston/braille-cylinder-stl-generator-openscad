@@ -12,14 +12,31 @@ STL Generator for uploading to
 ## Embosser Version 2 (prototype)
 
 `Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` is the upload for the
-Version 2 listing. Unlike the Version 1 build it needs **no flattening**: the
-canonical `../Braille_Cylinder_STL_Generator_EmbosserV2.scad` was written
-self-contained, with the preset tables already inlined between the same
-`BEGIN`/`END` sentinels and no `include` directive, so the copy here is
-**byte-identical** to the repository-root file — no allowed differences at
-all. `tests/test_embosser_v2_scad.py::test_the_makerworld_copy_is_byte_identical`
-fails the build if the two ever drift; after editing the canonical file,
-re-copy it over this one.
+Version 2 listing. It needs **no flattening**: the canonical
+`../Braille_Cylinder_STL_Generator_EmbosserV2.scad` was written
+self-contained, with the preset tables inlined and no `include` directive.
+Since 2026-09-21 it follows the **same three-layer sync model as the Version 1
+build** rather than being a byte copy, because the canonical file can now fuse
+the Version 2 drive gears (`[Integrated Gears]`, reading
+`../assets/v2_gears_a.stl` / `_b.stl`) and MakerWorld cannot carry those
+assets:
+
+- everything from the `// BACKWARD COMPATIBILITY` marker to EOF (the geometry
+  body) is **byte-identical** to the canonical file;
+- every parameter default and slider range above the marker is the same;
+- the **two** presentation differences, both above the marker: a MakerWorld
+  header block, and `integrated_gears` declared in the first `[Hidden]` tab
+  (with the reason beside it) instead of its own visible tab, so the Customizer
+  never offers a switch that would render a gearless plate.
+
+`tests/test_makerworld_sync.py` runs its body and declaration layers over this
+pair too (the `v2` id), and
+`tests/test_embosser_v2_scad.py::test_the_makerworld_copy_hides_the_gear_switch`
+pins the hidden switch. **Re-sync after editing the canonical file:** copy it
+from the marker to EOF over this file's body, carry across any changed
+declaration above the marker, and keep `integrated_gears` in the Hidden tab.
+Then render this file once headless (`scripts\scad-check.ps1 -File
+makerworld\Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`).
 
 **Listing label (S-V12) — signed off by Brennen 2026-08-28; reword only with
 his sign-off:**
@@ -32,7 +49,7 @@ suffix meant the second generation of the MakerWorld FILE — a label that
 collided confusingly with Embosser **Version 2**, which is different hardware.
 The rename ends the collision: `v1.x` suffixes belong to the Version 1 model's
 file, and `_v2` now means what it sounds like — the **Embosser Version 2**
-upload (above), a guarded byte-identical copy of the root `_EmbosserV2` file.
+upload (above), a test-guarded build of the root `_EmbosserV2` file.
 The listing text for the Version 2 posting lives at
 [`../docs/MAKERWORLD_V2_LISTING_DRAFT.md`](../docs/MAKERWORLD_V2_LISTING_DRAFT.md).
 
@@ -138,9 +155,14 @@ STL at all).
 
 If you want geared cylinders, use either:
 
-- the **desktop OpenSCAD build** — [`../Braille_Cylinder_STL_Generator.scad`](../Braille_Cylinder_STL_Generator.scad),
-  which reads its gear meshes from the `assets/` folder beside it, or
+- the **desktop OpenSCAD build** — [`../Braille_Cylinder_STL_Generator.scad`](../Braille_Cylinder_STL_Generator.scad)
+  for Version 1, or [`../Braille_Cylinder_STL_Generator_EmbosserV2.scad`](../Braille_Cylinder_STL_Generator_EmbosserV2.scad)
+  for the fused Embosser Version 2 roller — each reads its gear meshes from
+  the `assets/` folder beside it, or
 - the **web app**, which generates them in the browser.
+
+The same limit applies to the Version 2 upload above: its `integrated_gears`
+switch is hidden for the same reason.
 
 Everything else on this page — braille, both plates, double-sided cards, the
 tactile indicators — works here exactly as it does on the desktop.

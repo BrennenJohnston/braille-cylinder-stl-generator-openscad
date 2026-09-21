@@ -39,7 +39,13 @@
 //  embosser's standard, where Version 1 offers 10.
 //
 //  SELF-CONTAINED. The paper-thickness preset tables are inlined below rather
-//  than `include`d, so this single file is also the MakerWorld upload.
+//  than `include`d. The MakerWorld upload,
+//  makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad, is this file
+//  with ONE difference above the BACKWARD COMPATIBILITY marker: its
+//  `integrated_gears` switch sits in a Hidden tab, because MakerWorld cannot
+//  ship the gear assets. tests/test_makerworld_sync.py holds the two in step -
+//  the geometry body byte-identical from that marker to EOF, and every
+//  declaration above it equal in value and range. See makerworld/README.md.
 //
 // =============================================================================
 // WHAT THIS MAKES

@@ -7,8 +7,10 @@
 > pre-publish checklist is at the bottom.
 
 **Upload file:** `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`
-(a byte-identical, test-guarded copy of the canonical root
-`Braille_Cylinder_STL_Generator_EmbosserV2.scad`; see `makerworld/README.md`).
+(a test-guarded build of the canonical root
+`Braille_Cylinder_STL_Generator_EmbosserV2.scad` under the same three-layer
+sync model as the Version 1 upload, with the fixed-gear switch hidden because
+MakerWorld cannot carry the gear assets; see `makerworld/README.md`).
 
 ---
 

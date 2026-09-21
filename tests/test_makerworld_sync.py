@@ -7,6 +7,14 @@ support `include <...>`, so `makerworld/Braille_Cylinder_STL_Generator_MakerWorl
 is a flattened copy of the canonical main file with presets.scad inlined and
 `dot_shape` defaulting to "Rounded".
 
+Since 2026-09-21 (OpenSCAD parity plan phase O6) the Embosser Version 2 pair
+is held to the same model: `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`
+is the self-contained `Braille_Cylinder_STL_Generator_EmbosserV2.scad` with its
+`integrated_gears` switch moved into a Hidden tab (MakerWorld cannot ship the
+gear assets). Layers 1 and 2 below run over BOTH pairs; layer 3 is Version 1
+only, because the Version 2 file has no presets.scad to inline - its tables are
+part of the file and fall under layer 2.
+
 These tests prevent geometry drift between the two files, in three layers:
 
 1. The geometry body (from the BACKWARD COMPATIBILITY marker to EOF) must be
@@ -28,12 +36,24 @@ import difflib
 import re
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL = REPO_ROOT / "Braille_Cylinder_STL_Generator.scad"
 MAKERWORLD = (
     REPO_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad"
 )
 PRESETS = REPO_ROOT / "presets.scad"
+V2_CANONICAL = REPO_ROOT / "Braille_Cylinder_STL_Generator_EmbosserV2.scad"
+V2_MAKERWORLD = (
+    REPO_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad"
+)
+
+# (canonical, MakerWorld build) for every listing; layers 1 and 2 run over each.
+PAIRS = [
+    pytest.param(CANONICAL, MAKERWORLD, id="v1.5"),
+    pytest.param(V2_CANONICAL, V2_MAKERWORLD, id="v2"),
+]
 
 # The geometry body starts at this marker and runs to EOF. Everything below it
 # must be identical between the canonical file and the MakerWorld flattened copy.
@@ -117,14 +137,18 @@ def _declarations(region: str) -> dict:
     return decls
 
 
-def test_makerworld_file_exists():
-    assert MAKERWORLD.exists(), f"Missing MakerWorld single-file build: {MAKERWORLD}"
+@pytest.mark.parametrize(("canonical_file", "makerworld_file"), PAIRS)
+def test_makerworld_file_exists(canonical_file, makerworld_file):
+    assert makerworld_file.exists(), (
+        f"Missing MakerWorld single-file build: {makerworld_file}"
+    )
 
 
-def test_geometry_body_is_byte_identical():
-    """The geometry body (marker -> EOF) must match the canonical main file."""
-    canonical = CANONICAL.read_text(encoding="utf-8")
-    makerworld = MAKERWORLD.read_text(encoding="utf-8")
+@pytest.mark.parametrize(("canonical_file", "makerworld_file"), PAIRS)
+def test_geometry_body_is_byte_identical(canonical_file, makerworld_file):
+    """The geometry body (marker -> EOF) must match the canonical file."""
+    canonical = canonical_file.read_text(encoding="utf-8")
+    makerworld = makerworld_file.read_text(encoding="utf-8")
 
     assert BODY_MARKER in canonical, (
         "BACKWARD COMPATIBILITY marker missing from canonical file"
@@ -137,13 +161,15 @@ def test_geometry_body_is_byte_identical():
     makerworld_body = _body_from_marker(makerworld)
 
     assert makerworld_body == canonical_body, (
-        "MakerWorld geometry body has drifted from the canonical main file. "
-        "Re-flatten per makerworld/README.md (copy the canonical file from the "
-        "BACKWARD COMPATIBILITY marker to EOF over the MakerWorld file's body)."
+        f"{makerworld_file.name}'s geometry body has drifted from "
+        f"{canonical_file.name}. Re-sync per makerworld/README.md (copy the "
+        "canonical file from the BACKWARD COMPATIBILITY marker to EOF over the "
+        "MakerWorld file's body)."
     )
 
 
-def test_parameter_defaults_and_ranges_match():
+@pytest.mark.parametrize(("canonical_file", "makerworld_file"), PAIRS)
+def test_parameter_defaults_and_ranges_match(canonical_file, makerworld_file):
     """Every declaration above the marker must carry the same value in both builds.
 
     This is the half the body guard cannot see. It covers the Customizer
@@ -153,9 +179,11 @@ def test_parameter_defaults_and_ranges_match():
     only, so without this the flattened build could carry a different
     interpoint offset or footprint and nothing would notice.
     """
-    canonical = _declarations(_parameter_region(CANONICAL.read_text(encoding="utf-8")))
+    canonical = _declarations(
+        _parameter_region(canonical_file.read_text(encoding="utf-8"))
+    )
     makerworld = _declarations(
-        _parameter_region(MAKERWORLD.read_text(encoding="utf-8"))
+        _parameter_region(makerworld_file.read_text(encoding="utf-8"))
     )
 
     missing = sorted(set(canonical) - set(makerworld))
@@ -167,7 +195,8 @@ def test_parameter_defaults_and_ranges_match():
     )
 
     assert not (missing or extra or changed), (
-        "MakerWorld parameter declarations have drifted from the canonical file.\n"
+        f"{makerworld_file.name}'s parameter declarations have drifted from "
+        f"{canonical_file.name}.\n"
         f"  missing from MakerWorld: {missing}\n"
         f"  only in MakerWorld: {extra}\n"
         f"  different value or range:\n    " + "\n    ".join(changed)
