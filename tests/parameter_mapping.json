@@ -467,7 +467,7 @@
       "default": 13,
       "range": [1, 20],
       "section": "Expert Mode - Braille Spacing",
-      "description": "Text capacity in braille cells per row (matches the web app default of 13 text cells). Visual indicator mode adds 2 marker cells when Indicator Letters are On, or 1 (the alignment triangle) when Off; Tactile mode adds none. Up to 14 text cells fit the default cylinder in either of the narrower layouts."
+      "description": "Text capacity in braille cells per row (matches the web app default of 13 text cells). Visual indicator mode adds 2 marker cells when Indicator Letters are On, or 1 (the alignment triangle) when Off; Tactile mode adds none. Up to 14 text cells fit the default cylinder in either of the narrower layouts, but a 90 mm card loaded at the tactile alignment arrow holds only 13 (the model says so, since 2026-09-21)."
     },
     {
       "openscad_name": "grid_rows",

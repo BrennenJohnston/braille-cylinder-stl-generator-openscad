@@ -234,9 +234,11 @@ Lower `grid_columns` or raise `cylinder_diameter_mm` to clear it.
   matching the web app). In Visual indicator mode, 2 extra marker cells
   (triangle + square) are added automatically when `indicators` is On, or just
   the always-present triangle cell when Off. Tactile indicator mode adds no
-  marker cells at all. Text capacity is unchanged in every case, and either of
-  the narrower layouts fits up to 14 text cells on the default 30.8 mm
-  cylinder.
+  marker cells at all. Text capacity is unchanged in every case; the
+  Indicator-Letters-off layout fits up to 14 text cells on the default 30.8 mm
+  cylinder, and Tactile mode fits 14 on the cylinder but only **13 on a 90 mm
+  card** loaded at the alignment arrow — the model shows a red
+  `TEXT RUNS OFF CARD` badge when a row would run off.
 - The `grid_columns` / `grid_rows` sliders always govern capacity; the paper
   thickness presets deliberately do **not** override them.
 - If any line exceeds the capacity, red 3D text appears above the cylinder

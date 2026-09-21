@@ -145,6 +145,24 @@ def _layout_from(radius, cols, rows, package, height=None, table="PRESET_04"):
     line = _preset_value("line_spacing", table=table)
     dot = _preset_value("dot_spacing", table=table)
 
+    # The tactile arrow's lead-in (2026-09-21, web decisions D-T1..D-T4): the
+    # arrow sits width/2 + clearance + margin + the cell's dot footprint before
+    # the first cell, its arc from the seam centre whatever the half gap has to
+    # spare. In this module's (-180, 180] theta the arrow's |theta| is 180
+    # minus that arc on BOTH plates and in BOTH generators - this generator's
+    # physical angle and the golden's un-negated spec angle are mirror images -
+    # so one number serves every seam window below.
+    gap = 2.0 * math.pi * radius - (cols - 1) * cell
+    footprint = dot / 2.0 + max(
+        _scad_constant("DS_DOT_BASE_DIA") / 2.0, PACKAGES[package]["bowl_dia"] / 2.0
+    )
+    lead_in = (
+        _scad_constant("tactile_indicator_width") / 2.0
+        + _scad_constant("tactile_recess_clearance")
+        + _scad_constant("TACTILE_LEAD_IN_MARGIN_MM")
+        + footprint
+    )
+    arrow_arc = max(0.0, gap / 2.0 - lead_in)
     return {
         "radius": radius,
         "height": height,
@@ -166,6 +184,8 @@ def _layout_from(radius, cols, rows, package, height=None, table="PRESET_04"):
         "arrow_raise": _scad_constant("tactile_indicator_raise"),
         "arrow_length": _scad_constant("tactile_indicator_length"),
         "arrow_extra_depth": _scad_constant("tactile_recess_extra_depth"),
+        "arrow_arc": arrow_arc,
+        "arrow_abs_deg": 180.0 - math.degrees(arrow_arc / radius),
     }
 
 
@@ -303,7 +323,15 @@ class _Features:
     translated up by half its height on the way out, which is undone here).
     """
 
-    def __init__(self, trimesh_module, stl_path, layout):
+    def __init__(self, trimesh_module, stl_path, layout, arrow_sign=-1):
+        """
+        arrow_sign: which side of angle 0 this mesh's tactile arrow is on. This
+        generator's Cylinder A carries it at -arrow_abs_deg (physical
+        180 + s/R since the 2026-09-21 lead-in) and Cylinder B at
+        +arrow_abs_deg; the web goldens are their mirror images (un-negated
+        spec angles), so A is +, B is -. Until the lead-in both plates sat at
+        180, where the sign made no difference.
+        """
         import numpy as np
 
         mesh = trimesh_module.load(stl_path)  # merges duplicate vertices
@@ -314,6 +342,8 @@ class _Features:
         # from the known height, never from the bounding box: a render carrying a
         # warning extrusion is taller than the cylinder.
         self.z_origin = layout["height"] / 2.0
+        # The tactile arrow's angle on this plate, signed (see _layout_from).
+        self.arrow_deg = arrow_sign * layout["arrow_abs_deg"]
         self.r = np.hypot(v[:, 0], v[:, 1])
         self.theta = np.degrees(np.arctan2(v[:, 1], v[:, 0]))
         self.z = v[:, 2] - self.z_origin
@@ -355,9 +385,20 @@ class _Features:
             )
         return out
 
+    def near_arrow(self, max_deg):
+        """Vertices within `max_deg` of this plate's arrow centre, the short way round."""
+        diff = ((self.theta - self.arrow_deg + 180.0) % 360.0) - 180.0
+        return self.np.abs(diff) < max_deg
+
     def away_from_seam(self, mask, min_deg=10.0):
-        """Drop everything near 180 deg, where the tactile arrows live."""
-        return mask & (self.np.abs(self.np.abs(self.theta) - 180.0) > min_deg)
+        """
+        Drop everything near the tactile arrow. The arrow spans 7.4 deg either
+        side of its centre and the nearest dot edge is 11.9 deg out (the
+        lead-in keeps half the arrow, the recess clearance and 1 mm clear), so
+        10 deg separates the two cleanly. One-sided on purpose: the far side of
+        the seam carries the other grid's dots, not an arrow.
+        """
+        return mask & ~self.near_arrow(min_deg)
 
 
 def _match(clusters, expected, label):
@@ -493,7 +534,7 @@ class TestCylinderAGeometry:
         fifth arrow, or a missing one, still fails.
         """
         np = ds_features.np
-        seam = ds_features.raised & (np.abs(np.abs(ds_features.theta) - 180.0) < 10.0)
+        seam = ds_features.raised & (ds_features.near_arrow(10.0))
         assert seam.any(), "No raised material at the seam: the arrows are missing."
 
         half = layout["arrow_length"] / 2.0
@@ -658,7 +699,7 @@ def ds_b_features(ds_runner, _trimesh, layout, tmp_path_factory):
         ds_runner, tmp_path, _ds_params(plate_type="negative"), "cylinder_b"
     )
     assert "ERROR:" not in output, f"Render reported an error:\n{output[:800]}"
-    return _Features(_trimesh, stl_path, layout)
+    return _Features(_trimesh, stl_path, layout, arrow_sign=+1)
 
 
 class TestCylinderBGeometry:
@@ -734,9 +775,7 @@ class TestCylinderBGeometry:
         CSG vertices may sit up to the face sagitta deeper than nominal).
         """
         np = ds_b_features.np
-        seam = ds_b_features.recessed & (
-            np.abs(np.abs(ds_b_features.theta) - 180.0) < 10.0
-        )
+        seam = ds_b_features.recessed & (ds_b_features.near_arrow(10.0))
         assert seam.any(), (
             "No recessed material at the seam: the arrow recesses are missing."
         )
@@ -853,8 +892,7 @@ class TestForcedTactile:
 
     def test_arrows_are_rendered_anyway(self, forced, layout):
         features, _ = forced
-        np = features.np
-        seam = features.raised & (np.abs(np.abs(features.theta) - 180.0) < 0.5)
+        seam = features.raised & features.near_arrow(0.5)
         assert seam.any(), "Forced tactile did not render the seam arrows."
 
     def test_marker_columns_are_still_dropped(self, forced, layout):
@@ -1586,6 +1624,10 @@ def golden_scad_stls(ds_runner, golden_config, tmp_path_factory):
                 grid_rows=settings["grid_rows"],
                 interpoint_offset_x_mm=settings["interpoint_offset_x"],
                 interpoint_offset_y_mm=settings["interpoint_offset_y"],
+                # The goldens are 14-column geometry references declared for a
+                # 100 mm card (a 14-cell row runs off a 90 mm one and would
+                # grow the red badge - loose letter bodies and 300 mm^3).
+                CARD_LENGTH_MM=settings["card_width"],
             ),
             f"golden_config_{plate_type}",
         )
@@ -1632,11 +1674,20 @@ def golden_features(
     """Vertex clusters for all four meshes, keyed (source, plate_type)."""
     out = {}
     for plate_type, stem in GOLDEN_STEM.items():
+        # This generator: A's arrow on the negative side, B's on the positive;
+        # the goldens are their mirror images (see _Features).
+        scad_sign = -1 if plate_type == "positive" else +1
         out[("scad", plate_type)] = _Features(
-            _trimesh, golden_scad_stls[plate_type], golden_scad_layout
+            _trimesh,
+            golden_scad_stls[plate_type],
+            golden_scad_layout,
+            arrow_sign=scad_sign,
         )
         out[("golden", plate_type)] = _Features(
-            _trimesh, web_fixtures / f"{stem}.stl", golden_web_layout
+            _trimesh,
+            web_fixtures / f"{stem}.stl",
+            golden_web_layout,
+            arrow_sign=-scad_sign,
         )
     return out
 
@@ -2056,9 +2107,8 @@ class TestGoldenFootprintParity:
             layout = _layout_for(source, golden_scad_layout, golden_web_layout)
             emboss = golden_features[(source, "positive")]
             counter = golden_features[(source, "negative")]
-            np = emboss.np
-            seam_a = emboss.raised & (np.abs(np.abs(emboss.theta) - 180.0) < 10.0)
-            seam_b = counter.recessed & (np.abs(np.abs(counter.theta) - 180.0) < 10.0)
+            seam_a = emboss.raised & emboss.near_arrow(10.0)
+            seam_b = counter.recessed & counter.near_arrow(10.0)
             assert seam_a.any() and seam_b.any(), (
                 f"{source}: the seam arrows are missing."
             )
@@ -2185,14 +2235,20 @@ class TestGoldenContainmentProbes:
         layout = _layout_for(source, golden_scad_layout, golden_web_layout)
         raise_mm = layout["arrow_raise"]
         recess = raise_mm + layout["arrow_extra_depth"]
-        seam_arc = math.pi * layout["radius"]
+        # The arrow's arc from angle 0, signed: this generator's Cylinder A
+        # carries it on the negative side of the seam (physical 180 + s/R since
+        # the lead-in), the golden's on the positive (its un-negated spec
+        # angle), and Cylinder B is each one's reflection.
+        arrow_abs_arc = math.radians(layout["arrow_abs_deg"]) * layout["radius"]
+        arc_a = arrow_abs_arc if source == "golden" else -arrow_abs_arc
+        arc_b = -arc_a
         # The goldens are the 0.3 mm package, so since 2026-09-20 they carry
         # the three fixed arrows, not one per row.
         for z in _arrow_zs(layout, GOLDEN_PACKAGE):
             assert self._solid_at(
                 bodies[(source, "positive")],
                 layout,
-                seam_arc,
+                arc_a,
                 z,
                 layout["radius"] + 0.5 * raise_mm,
             ), (
@@ -2201,7 +2257,7 @@ class TestGoldenContainmentProbes:
             assert not self._solid_at(
                 bodies[(source, "positive")],
                 layout,
-                seam_arc,
+                arc_a,
                 z,
                 layout["radius"] + raise_mm + 0.1,
             ), (
@@ -2210,14 +2266,14 @@ class TestGoldenContainmentProbes:
             assert not self._solid_at(
                 bodies[(source, "negative")],
                 layout,
-                seam_arc,
+                arc_b,
                 z,
                 layout["radius"] - 0.5 * recess,
             ), f"{source} Cylinder B: the arrow recess at z {z} is solid at half depth."
             assert self._solid_at(
                 bodies[(source, "negative")],
                 layout,
-                seam_arc,
+                arc_b,
                 z,
                 layout["radius"] - recess - 0.15,
             ), (

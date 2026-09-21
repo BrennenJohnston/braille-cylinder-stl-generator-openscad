@@ -130,8 +130,17 @@ surface features change.
   either plate; raised-vs-recessed tells you which cylinder is the embosser
 - **Crush-safe**: the 0.5 mm default raise sits below the 1.0 mm braille dot
   height, so the dots — not the indicator — carry the rolling pressure
-- **No marker cells**, so up to 14 text cells fit the default cylinder. The
-  Indicator Letters toggle is ignored in this mode
+- **No marker cells**, so 14 text cells fit the default cylinder — but the
+  card is the tighter limit: it is loaded with its leading edge at the arrow,
+  and 14 cells need 92 mm of a 90 mm card, so **13** is the most that fits
+  and the model says so (a red `TEXT RUNS OFF CARD` badge and a console NOTE)
+  when a row would run off. The Indicator Letters toggle is ignored in this
+  mode
+- **The arrow sits a short lead-in before the first cell** (since 2.8.1): half
+  its width, the recess clearance, 1 mm and the cell's dot footprint — 5.35 mm
+  at the 0.4mm preset — so a card loaded at the arrow spends no paper on an
+  empty start; whatever the seam gap has to spare falls after the last cell.
+  The counter plate's recess mirrors it, so the pair still meets at the nip
 - Five sliders tune it: `tactile_indicator_width` / `_length` / `_raise`, plus
   `tactile_recess_clearance` and `tactile_recess_extra_depth` for the counter
   plate's fit

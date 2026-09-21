@@ -348,7 +348,22 @@ and the polygonal cutout are unchanged — only surface features differ.
   lose ~0.13 mm at its edges to the chord sagitta — large next to the 0.2 mm
   nesting margin.
 - **Capacity.** No marker cells, so `actual_grid_columns == grid_columns` and
-  up to 14 text cells fit the default cylinder. `indicators` is ignored.
+  14 text cells fit the default cylinder — but a 90 mm card loaded at the
+  alignment arrow holds only 13 (`CARD_LENGTH_MM`, a Hidden constant; the web
+  app reads its `card_width` field): 14 cells need 92 mm, and both plates
+  render a red `TEXT RUNS OFF CARD: 92/90mm` badge plus a console NOTE, never a
+  stop. `indicators` is ignored.
+- **Lead-in (2026-09-21, web decisions D-T1..D-T4).** The arrow no longer sits
+  at the 180° seam-gap centre but `tactile_indicator_width/2 +
+  tactile_recess_clearance + TACTILE_LEAD_IN_MARGIN_MM (1.0) + the cell's dot
+  footprint` before the first cell — 5.35 mm at the 0.4mm preset — at the
+  PHYSICAL angle `180 + s/R` on the emboss plate and `180 − s/R` on the counter
+  plate (`s = max(0, gap/2 − lead_in)`, 195.0° / 165.0° at 13 cells), the
+  counter recess placed outside the mirror at its own angle so the pair still
+  meets at the nip. A gap too small for the lead-in keeps the arrow at 180°
+  with the seam-gap guard below. The web generator's `tactile_arrow_theta()`
+  is the same number in its dot convention (`π ∓ s/R`). The slicer seam
+  channel sits behind the arrow in tactile mode since the same change.
 - **Seam-gap guard.** When the gap drops below
   `tactile_indicator_width + 5 mm`, both plates render a red
   `TACTILE GAP TOO SMALL: <gap>mm` extrusion above the cylinder and the desktop

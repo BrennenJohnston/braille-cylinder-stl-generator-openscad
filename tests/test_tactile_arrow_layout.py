@@ -81,12 +81,28 @@ def _render(binary, tmp_path, name, defines):
     return stl_path, (result.stdout or "") + "\n" + (result.stderr or "")
 
 
+def arrow_angle_deg(output, raised):
+    """
+    The plate's arrow angle, from the NOTE the render prints: since the lead-in
+    of 2026-09-21 the arrow sits before column 0, not at the 180 deg seam
+    centre, at a different angle on each plate.
+    """
+    match = re.search(
+        r"arrow at ([0-9.]+) deg on the emboss plate, ([0-9.]+) deg on the counter plate",
+        output,
+    )
+    assert match, f"no tactile arrow NOTE in the render output:\n{output[:800]}"
+    return float(match.group(1) if raised else match.group(2))
+
+
 def _seam_column(trimesh_module, stl_path, output, raised):
     """
-    (z, dtheta) of every vertex on the seam column that stands proud of the
+    (z, dtheta) of every vertex on the arrow column that stands proud of the
     shell (raised) or sits below it (recessed), z measured from mid-height and
-    dtheta in degrees from the 180 deg seam centre. The bore, the end faces and
-    the braille dots (which never come within 10 deg of the seam) are excluded.
+    dtheta in degrees from the plate's arrow angle (arrow_angle_deg). The bore,
+    the end faces and the braille dots (which never come within 8 deg of the
+    arrow - the lead-in keeps a full cell footprint plus 1 mm clear) are
+    excluded.
     """
     import numpy as np
 
@@ -94,11 +110,14 @@ def _seam_column(trimesh_module, stl_path, output, raised):
     assert "WARNING:" not in output, f"OpenSCAD reported a warning:\n{output[:800]}"
     assert stl_path.exists(), f"no STL was written:\n{output[:800]}"
 
+    centre = arrow_angle_deg(output, raised)
     v = trimesh_module.load(stl_path).vertices
     r = np.hypot(v[:, 0], v[:, 1])
-    dtheta = (np.degrees(np.arctan2(v[:, 1], v[:, 0])) % 360.0) - 180.0
+    dtheta = (
+        (np.degrees(np.arctan2(v[:, 1], v[:, 0])) - centre + 180.0) % 360.0
+    ) - 180.0
     z = v[:, 2] - HEIGHT / 2.0
-    band = (np.abs(dtheta) < 10.0) & (np.abs(z) < HEIGHT / 2.0 - 0.01)
+    band = (np.abs(dtheta) < 8.0) & (np.abs(z) < HEIGHT / 2.0 - 0.01)
     if raised:
         mask = band & (r > RADIUS + 0.05)
     else:

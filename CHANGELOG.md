@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Entries drafted 2026-09-21; wording awaits Brennen's sign-off.
+
+### Changed
+
+- **The tactile alignment arrow sits a fixed lead-in before the first cell,
+  and the slicer seam channel moves behind it** (both files, the MakerWorld
+  copies with them; web decisions D-T1..D-T4 after Brennen's printed card ran
+  out of paper at the end of every row while its start lay blank). The
+  embosser is loaded with the card's leading edge at the arrow, and the arrow
+  sat at the seam-gap midpoint. It now sits `tactile_indicator_width/2 +
+  tactile_recess_clearance + TACTILE_LEAD_IN_MARGIN_MM + the cell footprint`
+  (5.35 mm at the 0.4mm preset) before the first cell, at the physical angle
+  `180 + s/R` on the emboss plate and `180 − s/R` on the counter plate — the
+  recess now placed outside the mirror at its own angle, so the pair still
+  meets at the nip; 180° remains the fallback for a gap too small to honour
+  the lead-in. **Every tactile render changes** (195.0° / 165.0° at 13 cells);
+  visual renders do not. The render prints a `NOTE:` with the lead-in and both
+  angles.
+
+### Added
+
+- **A card-fit check for tactile rows.** `CARD_LENGTH_MM = 90` (Hidden): when
+  `lead-in + grid + footprint` exceeds it — 14 cells need 92 mm — both plates
+  render a red `TEXT RUNS OFF CARD: 92/90mm` badge and the console says
+  `NOTE: this row needs 92 mm of card from the alignment arrow; the card is
+  90 mm. Lower grid_columns to 13 or fewer.` Never a stop. The `grid_columns`
+  description says 13 is what a 90 mm card holds in Tactile mode. New
+  `tests/test_tactile_lead_in_scad.py`.
+
 ## [2.8.0] - 2026-09-21
 
 Everything since 2.7.0, tagged on Brennen's go-ahead after his print tests

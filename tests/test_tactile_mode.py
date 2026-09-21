@@ -11,7 +11,7 @@ They cover the three things most likely to silently break the feature:
 
 1. The Customizer surface (dropdown + the five tactile sliders, in both the
    canonical desktop build and the MakerWorld single-file build).
-2. The geometry invariants the nesting fit depends on — the 180 deg placement,
+2. The geometry invariants the nesting fit depends on — the lead-in placement,
    the curvature-conforming shell band, and the recess clearance offset.
 3. The Visual code path staying gated behind ``!tactile_on`` so the default
    mode is untouched.
@@ -212,18 +212,85 @@ def test_arrow_apex_points_at_the_cylinder_top(scad_path):
 
 
 @BOTH_BUILDS
-def test_indicator_sits_at_the_mirror_invariant_angle(scad_path):
-    """180 deg is the fixed point of the counter plate's mirror/angle negation.
-
-    Placing both the arrow and its recess there is what makes them self-align
-    without any extra bookkeeping, so the literal angle is load-bearing.
+def test_indicator_sits_a_lead_in_before_column_0(scad_path):
+    """
+    Since 2026-09-21 (web decisions D-T1..D-T4, after a printed card ran out
+    of paper) the arrow is not at 180 deg - the seam-gap centre, the mirror's
+    fixed point - but a fixed lead-in before the first cell, at a PHYSICAL
+    angle each plate computes for itself: the emboss plate toward column 0
+    (180 + s/R), the counter plate its reflection (180 - s/R), placed outside
+    the mirror so the two still meet at the nip. The formula is load-bearing:
+    it is the web generator's tactile_arrow_theta() in this file's frame.
     """
     scad = _read(scad_path)
-    assert "place_cylinder_marker(180, y_pos, radius + span / 2, span, 0)" in scad, (
-        "Expected the tactile prism placed at 180 deg (the seam-gap centre and "
-        "the fixed point of the counter plate's mirror([0,1,0]) construction) "
-        "with the child origin landing exactly on the shell surface."
+    assert "TACTILE_LEAD_IN_MARGIN_MM = 1.0;" in scad
+    assert "CARD_LENGTH_MM = 90;" in scad
+    assert (
+        "tactile_lead_in_mm = tactile_indicator_width / 2 + tactile_recess_clearance\n"
+        "    + TACTILE_LEAD_IN_MARGIN_MM + seam_channel_footprint_mm;"
+    ) in scad
+    assert (
+        "tactile_arrow_arc_mm = max(0, seam_gap_mm / 2 - tactile_lead_in_mm);" in scad
     )
+    assert (
+        "tactile_arrow_theta_emboss_deg  = 180 + (tactile_arrow_arc_mm / radius) * 180 / PI;"
+        in scad
+    )
+    assert (
+        "tactile_arrow_theta_counter_deg = 180 - (tactile_arrow_arc_mm / radius) * 180 / PI;"
+        in scad
+    )
+    assert "module tactile_surface_prism(y_pos, span, theta_deg) {" in scad
+    assert "place_cylinder_marker(theta_deg, y_pos, radius + span / 2, span, 0)" in scad
+    assert (
+        "tactile_surface_prism(y_pos, TACTILE_PRISM_SPAN, tactile_arrow_theta_emboss_deg)"
+        in scad
+    )
+    assert (
+        "tactile_surface_prism(y_pos, TACTILE_PRISM_SPAN, tactile_arrow_theta_counter_deg)"
+        in scad
+    )
+    assert "place_cylinder_marker(180," not in scad, (
+        "an arrow is still pinned to the seam-gap centre"
+    )
+    # The card fit: a NOTE and a badge at stack slot 8, never a stop.
+    assert (
+        "tactile_card_need_mm = tactile_lead_in_mm + grid_width + seam_channel_footprint_mm;"
+        in scad
+    )
+    assert (
+        "tactile_card_too_long = tactile_on && (tactile_card_need_mm > CARD_LENGTH_MM);"
+        in scad
+    )
+    assert 'echo(str("NOTE: this row needs "' in scad
+    assert "8 * INVALID_TEXT_STACK_GAP" in scad
+    assert scad.count("card_fit_warning();") == 2, "both plates carry the badge"
+
+
+@BOTH_BUILDS
+def test_lead_in_margin_mirrors_the_web_generator(scad_path):
+    """
+    app/geometry_spec.py owns TACTILE_LEAD_IN_MARGIN_MM; this file mirrors it.
+    Skipped when the web repository is not checked out beside this one.
+    """
+    web = (
+        PROJECT_ROOT.parent
+        / "braille-cylinder-stl-generator"
+        / "app"
+        / "geometry_spec.py"
+    )
+    if not web.exists():
+        pytest.skip(f"the web generator is not checked out at {web}")
+    web_text = web.read_text(encoding="utf-8")
+    web_match = re.search(
+        r"^TACTILE_LEAD_IN_MARGIN_MM = ([0-9.]+)", web_text, re.MULTILINE
+    )
+    assert web_match, "TACTILE_LEAD_IN_MARGIN_MM not found in the web generator"
+    scad_match = re.search(
+        r"^TACTILE_LEAD_IN_MARGIN_MM = ([0-9.]+);", _read(scad_path), re.MULTILINE
+    )
+    assert scad_match, "TACTILE_LEAD_IN_MARGIN_MM not found in the .scad"
+    assert float(scad_match.group(1)) == float(web_match.group(1))
 
 
 @BOTH_BUILDS

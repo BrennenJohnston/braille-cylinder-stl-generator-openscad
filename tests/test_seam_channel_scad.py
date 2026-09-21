@@ -203,7 +203,14 @@ S_C3_HEAD = "The seam channel was left out: the cylinder wall would be thinner t
 # Worked numbers from the web spec (SURFACE_DIMENSIONS_SPECIFICATIONS.md 2.6),
 # 30.8 mm, 0.4 preset: the PHYSICAL groove angles in the exported STL, as
 # (embossing, counter). 15 visual columns = 13 text cells + 2 marker columns.
-GROOVE_DEG = {("visual", 15): (181.67, 178.33), ("tactile", 14): (191.50, 168.50)}
+# Physical angles (emboss, counter). Tactile: behind the arrow since the lead-in
+# of 2026-09-21 - a fixed 2.70 mm behind the seam centre on the last-cell side,
+# so 13 and 14 cells share the angle (was 191.50 / 168.50 on the column-0 side).
+GROOVE_DEG = {
+    ("visual", 15): (181.67, 178.33),
+    ("tactile", 14): (169.95, 190.05),
+    ("tactile", 13): (169.95, 190.05),
+}
 RADIUS = 15.4
 HEIGHT = 52.0
 FLOOR_R = RADIUS - 0.5
@@ -273,6 +280,8 @@ def trimesh_module():
         ("visual", 15, "Counter Plate", 1),
         ("tactile", 14, "Embossing Plate", 0),
         ("tactile", 14, "Counter Plate", 1),
+        ("tactile", 13, "Embossing Plate", 0),
+        ("tactile", 13, "Counter Plate", 1),
     ],
 )
 def test_v1_groove_sits_at_the_web_angle(
@@ -284,7 +293,12 @@ def test_v1_groove_sits_at_the_web_angle(
         "indicator_mode": "Tactile" if mode == "tactile" else "Visual",
     }
     if mode == "tactile":
-        defines["grid_columns"] = 14
+        defines["grid_columns"] = columns
+        if columns == 14:
+            # 14 cells run off a 90 mm card and grow the red badge (its
+            # letters are loose bodies). The groove is what is under test,
+            # so declare a longer card - the geometry below is unchanged.
+            defines["CARD_LENGTH_MM"] = 100
     stl_path = tmp_path / "plate.stl"
     output = _render(openscad_binary, V1_FILE, stl_path, defines)
     assert "ERROR:" not in output and "WARNING:" not in output, output[:800]

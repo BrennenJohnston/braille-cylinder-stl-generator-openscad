@@ -5,6 +5,7 @@
 |------|---------|---------|
 | 2024-12-09 | 1.0 | Initial specification document |
 | 2026-09-21 | 1.1 | Section 3.6: the slicer seam channel's angle, and why the web spec's `theta` is negated on the way to the STL |
+| 2026-09-21 | 1.2 | Section 3.6: the tactile arrow's lead-in (195.0° / 165.0° at 13 cells) and the groove behind it (169.95° / 190.05°) |
 
 ---
 
@@ -190,13 +191,18 @@ the groove floor in the exported STL:
 
 | Plate | Angle | Default 15-column Visual layout (30.8 mm) | 14-column Tactile |
 |-------|-------|--------------------------------------------|-------------------|
-| Embossing | `180 + (s / radius) * 180 / PI` | 181.67° | 191.50° |
-| Counter | `180 − (s / radius) * 180 / PI` | 178.33° | 168.50° |
+| Embossing | `180 + (s / radius) * 180 / PI` | 181.67° | 169.95° |
+| Counter | `180 − (s / radius) * 180 / PI` | 178.33° | 190.05° |
 
 where `s` is the signed arc (mm) from the seam centre toward column 0, at the
 middle of the free window between the last cell's dots and column 0's marker
-(Visual) or between the arrow recess and the first cell's dots (Tactile). The
-two plates mirror: their angles sum to 360°.
+(Visual) or — since 2026-09-21 — between the last cell's dots and the arrow
+recess (Tactile: the groove sits BEHIND the arrow, a fixed 2.70 mm behind the
+seam centre at both 13 and 14 cells, because the arrow itself now sits a
+fixed lead-in before column 0 at `tactile_arrow_theta_emboss_deg` = `180 +
+(s_arrow / radius) * 180 / PI`, 195.0° at 13 cells, its recess at the
+reflected angle on the counter plate). The two plates mirror: their angles
+sum to 360°.
 
 **Why the web spec's number is not the same number.** The web generator's
 `app/geometry_spec.py` emits `seam_channel.theta` in its *dot convention* —
