@@ -83,16 +83,14 @@ def _render(binary, tmp_path, name, defines):
 
 def arrow_angle_deg(output, raised):
     """
-    The plate's arrow angle, from the NOTE the render prints: since the lead-in
-    of 2026-09-21 the arrow sits before column 0, not at the 180 deg seam
-    centre, at a different angle on each plate.
+    The plate's arrow angle: 180 on both plates, the seam-gap centre, which
+    the render's NOTE states (a lead-in before column 0 was tried and reverted
+    on 2026-09-21, web decision D-T6).
     """
-    match = re.search(
-        r"arrow at ([0-9.]+) deg on the emboss plate, ([0-9.]+) deg on the counter plate",
-        output,
+    assert "NOTE: tactile arrow at 180 deg on both plates" in output, (
+        f"no tactile arrow NOTE in the render output:\n{output[:800]}"
     )
-    assert match, f"no tactile arrow NOTE in the render output:\n{output[:800]}"
-    return float(match.group(1) if raised else match.group(2))
+    return 180.0
 
 
 def _seam_column(trimesh_module, stl_path, output, raised):
@@ -100,8 +98,9 @@ def _seam_column(trimesh_module, stl_path, output, raised):
     (z, dtheta) of every vertex on the arrow column that stands proud of the
     shell (raised) or sits below it (recessed), z measured from mid-height and
     dtheta in degrees from the plate's arrow angle (arrow_angle_deg). The bore,
-    the end faces and the braille dots (which never come within 8 deg of the
-    arrow - the lead-in keeps a full cell footprint plus 1 mm clear) are
+    the end faces, the braille dots (which never come within 8 deg of the
+    arrow - the 5 mm clear zone) and the seam channel's floor (it shares this
+    column since D-T6, 0.5 mm down; the recess floor is 0.7 mm down) are
     excluded.
     """
     import numpy as np
@@ -121,7 +120,8 @@ def _seam_column(trimesh_module, stl_path, output, raised):
     if raised:
         mask = band & (r > RADIUS + 0.05)
     else:
-        mask = band & (r < RADIUS - 0.05) & (r > RADIUS - 1.0)
+        groove_floor = np.abs(r - (RADIUS - 0.5)) < 0.03
+        mask = band & (r < RADIUS - 0.05) & (r > RADIUS - 1.0) & ~groove_floor
     order = np.argsort(z[mask])
     return z[mask][order], dtheta[mask][order]
 

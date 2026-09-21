@@ -351,7 +351,7 @@ def test_the_fused_shell_keeps_only_the_seam_channel(source_text):
     code = _strip_comments(source_text)
     shell = code.split("module cylinder_shell_v2(")[1].split("\nmodule ")[0]
     gate = shell.index("if (!gears_on) {")
-    assert shell.index("seam_channel_cut(channel_theta_deg)") < gate
+    assert shell.index("seam_channel_cuts(channel_theta_deg, channel_stretches)") < gate
     for cut in ("keyed_half_cutout(", "mouth_countersink(", "bottom_key_socket("):
         assert shell.index(cut) > gate, f"{cut} is cut even while the gears are on"
 

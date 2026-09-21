@@ -11,30 +11,37 @@ Entries drafted 2026-09-21; wording awaits Brennen's sign-off.
 
 ### Changed
 
-- **The tactile alignment arrow sits a fixed lead-in before the first cell,
-  and the slicer seam channel moves behind it** (both files, the MakerWorld
-  copies with them; web decisions D-T1..D-T4 after Brennen's printed card ran
-  out of paper at the end of every row while its start lay blank). The
-  embosser is loaded with the card's leading edge at the arrow, and the arrow
-  sat at the seam-gap midpoint. It now sits `tactile_indicator_width/2 +
-  tactile_recess_clearance + TACTILE_LEAD_IN_MARGIN_MM + the cell footprint`
-  (5.35 mm at the 0.4mm preset) before the first cell, at the physical angle
-  `180 + s/R` on the emboss plate and `180 − s/R` on the counter plate — the
-  recess now placed outside the mirror at its own angle, so the pair still
-  meets at the nip; 180° remains the fallback for a gap too small to honour
-  the lead-in. **Every tactile render changes** (195.0° / 165.0° at 13 cells);
-  visual renders do not. The render prints a `NOTE:` with the lead-in and both
-  angles.
+- **In Tactile mode the slicer seam channel runs down the arrow column
+  itself, and the alignment arrow sits at the seam-gap centre** (both files,
+  the MakerWorld copies with them; web decision D-T6, 2026-09-21, after
+  Brennen's test of the one-day lead-in build). A fixed lead-in before the
+  first cell with the groove behind the arrow was built and reverted the same
+  day: the groove sat beside the arrows and a large trailing space followed
+  the last cell. The arrow is back at 180° on both plates — equal space either
+  side of it — and the tactile groove is cut at 180° in two stretches that
+  stop `SEAM_CHANNEL_ARROW_MARGIN_MM` (0.3 mm) short of the arrow chain: from
+  each end face to ±20.3 mm about mid-height on the emboss plate at the
+  defaults, −20.5 / +21.32 on the counter plate (its mitred recess apex
+  reaches 1.02 mm further). A stretch under `SEAM_CHANNEL_MIN_SEGMENT_MM`
+  (1.0 mm) is dropped, and a plate with none leaves the groove out with the
+  web generator's NOTE and a `SEAM CHANNEL LEFT OUT: arrows` badge (wording
+  awaits sign-off). Visual renders are unchanged. The render prints a `NOTE:`
+  with both plates' stretches. In the Version 1 file `GEAR_ARROW_WELD_MM`
+  moved up beside `gears_on` (the stretches read it at top level), as the
+  Version 2 file already had it.
 
 ### Added
 
-- **A card-fit check for tactile rows.** `CARD_LENGTH_MM = 90` (Hidden): when
-  `lead-in + grid + footprint` exceeds it — 14 cells need 92 mm — both plates
-  render a red `TEXT RUNS OFF CARD: 92/90mm` badge and the console says
-  `NOTE: this row needs 92 mm of card from the alignment arrow; the card is
-  90 mm. Lower grid_columns to 13 or fewer.` Never a stop. The `grid_columns`
-  description says 13 is what a 90 mm card holds in Tactile mode. New
-  `tests/test_tactile_lead_in_scad.py`.
+- **A card-fit check for tactile rows.** `CARD_LENGTH_MM = 90` (Hidden): the
+  card's leading edge sits at the arrow, at the middle of the seam gap, so a
+  row needs `gap/2 + grid + footprint` of card — 14 cells need 92.8 mm — and
+  when that exceeds the card both plates render a red
+  `TEXT RUNS OFF CARD: 92.8/90mm` badge and the console says `NOTE: this row
+  needs 92.8 mm of card from the alignment arrow; the card is 90 mm. Lower
+  grid_columns to 13 or fewer.` Never a stop. The `grid_columns` description
+  says 13 is what a 90 mm card holds in Tactile mode. Renders pinned by
+  `tests/test_tactile_lead_in_scad.py` (named for the reverted lead-in it was
+  written for).
 
 ## [2.8.0] - 2026-09-21
 

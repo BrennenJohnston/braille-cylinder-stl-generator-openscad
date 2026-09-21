@@ -145,24 +145,11 @@ def _layout_from(radius, cols, rows, package, height=None, table="PRESET_04"):
     line = _preset_value("line_spacing", table=table)
     dot = _preset_value("dot_spacing", table=table)
 
-    # The tactile arrow's lead-in (2026-09-21, web decisions D-T1..D-T4): the
-    # arrow sits width/2 + clearance + margin + the cell's dot footprint before
-    # the first cell, its arc from the seam centre whatever the half gap has to
-    # spare. In this module's (-180, 180] theta the arrow's |theta| is 180
-    # minus that arc on BOTH plates and in BOTH generators - this generator's
-    # physical angle and the golden's un-negated spec angle are mirror images -
-    # so one number serves every seam window below.
-    gap = 2.0 * math.pi * radius - (cols - 1) * cell
-    footprint = dot / 2.0 + max(
-        _scad_constant("DS_DOT_BASE_DIA") / 2.0, PACKAGES[package]["bowl_dia"] / 2.0
-    )
-    lead_in = (
-        _scad_constant("tactile_indicator_width") / 2.0
-        + _scad_constant("tactile_recess_clearance")
-        + _scad_constant("TACTILE_LEAD_IN_MARGIN_MM")
-        + footprint
-    )
-    arrow_arc = max(0.0, gap / 2.0 - lead_in)
+    # The tactile arrow sits at the seam-gap centre, 180 deg, on both plates
+    # and in both generators (a lead-in before the first cell was tried and
+    # reverted on 2026-09-21, web decision D-T6). Kept as an arc from the seam
+    # centre - 0 - so the signed seam windows below still read one number.
+    arrow_arc = 0.0
     return {
         "radius": radius,
         "height": height,
@@ -325,12 +312,13 @@ class _Features:
 
     def __init__(self, trimesh_module, stl_path, layout, arrow_sign=-1):
         """
-        arrow_sign: which side of angle 0 this mesh's tactile arrow is on. This
-        generator's Cylinder A carries it at -arrow_abs_deg (physical
-        180 + s/R since the 2026-09-21 lead-in) and Cylinder B at
-        +arrow_abs_deg; the web goldens are their mirror images (un-negated
-        spec angles), so A is +, B is -. Until the lead-in both plates sat at
-        180, where the sign made no difference.
+        arrow_sign: which side of angle 0 this mesh's tactile arrow would be
+        on if it ever left the seam-gap centre: this generator's Cylinder A
+        carries it at -arrow_abs_deg and Cylinder B at +arrow_abs_deg; the
+        web goldens are their mirror images (un-negated spec angles), so A is
+        +, B is -. At the centre (180, since D-T6 reverted the one-day
+        lead-in) the sign makes no difference, but the windows stay signed
+        and one-sided so a moved arrow can never clip the far grid's dots.
         """
         import numpy as np
 
@@ -353,8 +341,15 @@ class _Features:
         # end faces, and the warning text that floats above the top.
         inside = np.abs(self.z) < layout["height"] / 2.0
         band = (self.r > self.radius - 1.0) & (self.r < self.radius + 2.0) & inside
+        # The seam channel shares the arrow column since D-T6: its floor is
+        # 0.5 mm down at exactly the arrow angle, and its two tactile stretches
+        # end INSIDE the barrel (0.3 mm short of the arrow chain), so their end
+        # vertices would otherwise cluster as recesses at 180.
+        groove_floor = (np.abs(self.r - (self.radius - 0.5)) < 0.03) & self.near_arrow(
+            0.5
+        )
         self.raised = band & (self.r > self.radius + 0.05)
-        self.recessed = band & (self.r < self.radius - 0.05)
+        self.recessed = band & (self.r < self.radius - 0.05) & ~groove_floor
 
     def clusters(self, mask, tol=1.0):
         """Single-linkage clusters of the masked vertices, `tol` mm apart."""
@@ -392,11 +387,12 @@ class _Features:
 
     def away_from_seam(self, mask, min_deg=10.0):
         """
-        Drop everything near the tactile arrow. The arrow spans 7.4 deg either
-        side of its centre and the nearest dot edge is 11.9 deg out (the
-        lead-in keeps half the arrow, the recess clearance and 1 mm clear), so
-        10 deg separates the two cleanly. One-sided on purpose: the far side of
-        the seam carries the other grid's dots, not an arrow.
+        Drop everything near the tactile arrow - and, since D-T6, the seam
+        channel's floor on the same column. The arrow spans 7.4 deg either
+        side of its centre and the nearest dot edge is 11.9 deg out (the 5 mm
+        clear zone), so 10 deg separates the two cleanly. One-sided on
+        purpose: the far side of the seam carries the other grid's dots, not
+        an arrow.
         """
         return mask & ~self.near_arrow(min_deg)
 
@@ -2236,9 +2232,9 @@ class TestGoldenContainmentProbes:
         raise_mm = layout["arrow_raise"]
         recess = raise_mm + layout["arrow_extra_depth"]
         # The arrow's arc from angle 0, signed: this generator's Cylinder A
-        # carries it on the negative side of the seam (physical 180 + s/R since
-        # the lead-in), the golden's on the positive (its un-negated spec
-        # angle), and Cylinder B is each one's reflection.
+        # would carry it on the negative side of the seam, the golden's on the
+        # positive (its un-negated spec angle), and Cylinder B is each one's
+        # reflection - at the seam-gap centre (D-T6) all four coincide.
         arrow_abs_arc = math.radians(layout["arrow_abs_deg"]) * layout["radius"]
         arc_a = arrow_abs_arc if source == "golden" else -arrow_abs_arc
         arc_b = -arc_a

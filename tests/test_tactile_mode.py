@@ -11,8 +11,9 @@ They cover the three things most likely to silently break the feature:
 
 1. The Customizer surface (dropdown + the five tactile sliders, in both the
    canonical desktop build and the MakerWorld single-file build).
-2. The geometry invariants the nesting fit depends on — the lead-in placement,
-   the curvature-conforming shell band, and the recess clearance offset.
+2. The geometry invariants the nesting fit depends on — the seam-centre
+   placement, the curvature-conforming shell band, and the recess clearance
+   offset — and the tactile seam channel's stretches down the arrow column.
 3. The Visual code path staying gated behind ``!tactile_on`` so the default
    mode is untouched.
 
@@ -212,50 +213,26 @@ def test_arrow_apex_points_at_the_cylinder_top(scad_path):
 
 
 @BOTH_BUILDS
-def test_indicator_sits_a_lead_in_before_column_0(scad_path):
+def test_indicator_sits_at_the_seam_gap_centre(scad_path):
     """
-    Since 2026-09-21 (web decisions D-T1..D-T4, after a printed card ran out
-    of paper) the arrow is not at 180 deg - the seam-gap centre, the mirror's
-    fixed point - but a fixed lead-in before the first cell, at a PHYSICAL
-    angle each plate computes for itself: the emboss plate toward column 0
-    (180 + s/R), the counter plate its reflection (180 - s/R), placed outside
-    the mirror so the two still meet at the nip. The formula is load-bearing:
-    it is the web generator's tactile_arrow_theta() in this file's frame.
+    The arrow sits at 180 deg on both plates - the seam-gap centre, the
+    mirror's fixed point - with equal space either side of it (a fixed lead-in
+    before the first cell was tried and reverted the same day, 2026-09-21,
+    web decision D-T6). The card, not the arrow, bounds a tactile row: a NOTE
+    and a badge at stack slot 8 when a row would run off CARD_LENGTH_MM,
+    measured from the seam-gap centre, never a stop.
     """
     scad = _read(scad_path)
-    assert "TACTILE_LEAD_IN_MARGIN_MM = 1.0;" in scad
     assert "CARD_LENGTH_MM = 90;" in scad
-    assert (
-        "tactile_lead_in_mm = tactile_indicator_width / 2 + tactile_recess_clearance\n"
-        "    + TACTILE_LEAD_IN_MARGIN_MM + seam_channel_footprint_mm;"
-    ) in scad
-    assert (
-        "tactile_arrow_arc_mm = max(0, seam_gap_mm / 2 - tactile_lead_in_mm);" in scad
+    assert "module tactile_surface_prism(y_pos, span) {" in scad
+    assert "place_cylinder_marker(180, y_pos, radius + span / 2, span, 0)" in scad
+    assert scad.count("tactile_surface_prism(y_pos, TACTILE_PRISM_SPAN)") == 2
+    assert "tactile_arrow_theta" not in scad, (
+        "an arrow is placed off the seam-gap centre"
     )
+    assert "lead_in" not in scad and "LEAD_IN" not in scad
     assert (
-        "tactile_arrow_theta_emboss_deg  = 180 + (tactile_arrow_arc_mm / radius) * 180 / PI;"
-        in scad
-    )
-    assert (
-        "tactile_arrow_theta_counter_deg = 180 - (tactile_arrow_arc_mm / radius) * 180 / PI;"
-        in scad
-    )
-    assert "module tactile_surface_prism(y_pos, span, theta_deg) {" in scad
-    assert "place_cylinder_marker(theta_deg, y_pos, radius + span / 2, span, 0)" in scad
-    assert (
-        "tactile_surface_prism(y_pos, TACTILE_PRISM_SPAN, tactile_arrow_theta_emboss_deg)"
-        in scad
-    )
-    assert (
-        "tactile_surface_prism(y_pos, TACTILE_PRISM_SPAN, tactile_arrow_theta_counter_deg)"
-        in scad
-    )
-    assert "place_cylinder_marker(180," not in scad, (
-        "an arrow is still pinned to the seam-gap centre"
-    )
-    # The card fit: a NOTE and a badge at stack slot 8, never a stop.
-    assert (
-        "tactile_card_need_mm = tactile_lead_in_mm + grid_width + seam_channel_footprint_mm;"
+        "tactile_card_need_mm = seam_gap_mm / 2 + grid_width + seam_channel_footprint_mm;"
         in scad
     )
     assert (
@@ -268,10 +245,54 @@ def test_indicator_sits_a_lead_in_before_column_0(scad_path):
 
 
 @BOTH_BUILDS
-def test_lead_in_margin_mirrors_the_web_generator(scad_path):
+def test_tactile_seam_channel_runs_down_the_arrow_column_in_stretches(scad_path):
     """
-    app/geometry_spec.py owns TACTILE_LEAD_IN_MARGIN_MM; this file mirrors it.
-    Skipped when the web repository is not checked out beside this one.
+    D-T6: in tactile mode the groove is at 180 on both plates, as stretches
+    that stop SEAM_CHANNEL_ARROW_MARGIN_MM short of the arrow chain - one set
+    per plate, because the counter plate's mitred recess reaches further -
+    and a plate with no stretch leaves it out with the web generator's S-C4.
+    """
+    scad = _read(scad_path)
+    assert "SEAM_CHANNEL_ARROW_MARGIN_MM = 0.3;" in scad
+    assert "SEAM_CHANNEL_MIN_SEGMENT_MM  = 1.0;" in scad
+    assert (
+        "seam_channel_fits = tactile_on || (seam_channel_free_mm >= seam_channel_need_mm);"
+        in scad
+    )
+    assert (
+        "seam_channel_s_mm = tactile_on ? 0 : (seam_channel_lo_mm + seam_channel_hi_mm) / 2;"
+        in scad
+    )
+    assert "function tactile_channel_stretches(delta) =" in scad
+    assert (
+        "seam_channel_stretches_emboss  = tactile_on ? "
+        "tactile_channel_stretches(gears_on ? GEAR_ARROW_WELD_MM : 0) : undef;"
+    ) in scad
+    assert (
+        "seam_channel_stretches_counter = tactile_on ? "
+        "tactile_channel_stretches(tactile_recess_clearance) : undef;"
+    ) in scad
+    assert "module seam_channel_cuts(theta_deg, stretches) {" in scad
+    assert "channel_stretches = seam_channel_stretches_emboss" in scad
+    assert "channel_stretches = seam_channel_stretches_counter" in scad
+    assert (
+        'echo("NOTE: The seam channel was left out: the tactile arrows leave no '
+        'room for it along the cylinder.");'
+    ) in scad
+    # GEAR_ARROW_WELD_MM is read by the stretches at top level, so it is
+    # declared beside gears_on, ahead of them (OpenSCAD evaluates top-level
+    # assignments in source order).
+    assert scad.index("GEAR_ARROW_WELD_MM = 0.005;") < scad.index(
+        "seam_channel_stretches_emboss  = "
+    )
+
+
+@BOTH_BUILDS
+def test_seam_channel_arrow_constants_mirror_the_web_generator(scad_path):
+    """
+    app/geometry_spec.py owns SEAM_CHANNEL_ARROW_MARGIN_MM and
+    SEAM_CHANNEL_MIN_SEGMENT_MM; this file mirrors them. Skipped when the web
+    repository is not checked out beside this one.
     """
     web = (
         PROJECT_ROOT.parent
@@ -282,15 +303,13 @@ def test_lead_in_margin_mirrors_the_web_generator(scad_path):
     if not web.exists():
         pytest.skip(f"the web generator is not checked out at {web}")
     web_text = web.read_text(encoding="utf-8")
-    web_match = re.search(
-        r"^TACTILE_LEAD_IN_MARGIN_MM = ([0-9.]+)", web_text, re.MULTILINE
-    )
-    assert web_match, "TACTILE_LEAD_IN_MARGIN_MM not found in the web generator"
-    scad_match = re.search(
-        r"^TACTILE_LEAD_IN_MARGIN_MM = ([0-9.]+);", _read(scad_path), re.MULTILINE
-    )
-    assert scad_match, "TACTILE_LEAD_IN_MARGIN_MM not found in the .scad"
-    assert float(scad_match.group(1)) == float(web_match.group(1))
+    scad = _read(scad_path)
+    for name in ("SEAM_CHANNEL_ARROW_MARGIN_MM", "SEAM_CHANNEL_MIN_SEGMENT_MM"):
+        web_match = re.search(rf"^{name} = ([0-9.]+)", web_text, re.MULTILINE)
+        assert web_match, f"{name} not found in the web generator"
+        scad_match = re.search(rf"^{name}\s*= ([0-9.]+);", scad, re.MULTILINE)
+        assert scad_match, f"{name} not found in the .scad"
+        assert float(scad_match.group(1)) == float(web_match.group(1))
 
 
 @BOTH_BUILDS

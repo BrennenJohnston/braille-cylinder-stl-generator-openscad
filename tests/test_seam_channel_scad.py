@@ -203,13 +203,15 @@ S_C3_HEAD = "The seam channel was left out: the cylinder wall would be thinner t
 # Worked numbers from the web spec (SURFACE_DIMENSIONS_SPECIFICATIONS.md 2.6),
 # 30.8 mm, 0.4 preset: the PHYSICAL groove angles in the exported STL, as
 # (embossing, counter). 15 visual columns = 13 text cells + 2 marker columns.
-# Physical angles (emboss, counter). Tactile: behind the arrow since the lead-in
-# of 2026-09-21 - a fixed 2.70 mm behind the seam centre on the last-cell side,
-# so 13 and 14 cells share the angle (was 191.50 / 168.50 on the column-0 side).
+# Physical angles (emboss, counter). Tactile: down the arrow column itself at
+# 180 on both plates since 2026-09-21 (web decision D-T6), in two stretches
+# that stop 0.3 mm short of the arrow chain - they reach both end caps, which
+# is where this file measures; tests/test_tactile_lead_in_scad.py measures
+# the stretches themselves.
 GROOVE_DEG = {
     ("visual", 15): (181.67, 178.33),
-    ("tactile", 14): (169.95, 190.05),
-    ("tactile", 13): (169.95, 190.05),
+    ("tactile", 14): (180.0, 180.0),
+    ("tactile", 13): (180.0, 180.0),
 }
 RADIUS = 15.4
 HEIGHT = 52.0
@@ -314,10 +316,10 @@ def test_v1_groove_sits_at_the_web_angle(
 
 
 @pytest.mark.slow
-def test_v1_groove_is_left_out_when_the_tactile_gap_is_too_narrow(
+def test_v1_groove_is_left_out_when_the_visual_gap_is_too_narrow(
     openscad_binary, trimesh_module, tmp_path
 ):
-    """15 columns in tactile mode: no room (the web omits it too) - NOTE, badge, no floor."""
+    """16 visual columns (14 cells + 2 markers): no window (the web omits it too) - NOTE, badge, no floor."""
     stl_path = tmp_path / "plate.stl"
     output = _render(
         openscad_binary,
@@ -325,8 +327,8 @@ def test_v1_groove_is_left_out_when_the_tactile_gap_is_too_narrow(
         stl_path,
         {
             "plate_type": "Embossing Plate",
-            "indicator_mode": "Tactile",
-            "grid_columns": 15,
+            "indicator_mode": "Visual",
+            "grid_columns": 14,
         },
     )
     assert f"NOTE: {S_C2}" in output
@@ -340,6 +342,28 @@ def test_v1_groove_is_left_out_when_the_tactile_gap_is_too_narrow(
         )
         > 1
     )
+
+
+@pytest.mark.slow
+def test_v1_tactile_15_columns_keep_the_groove_on_the_arrow_column(
+    openscad_binary, trimesh_module, tmp_path
+):
+    """Tactile mode has no window (D-T6): 15 cells trip the seam-GAP warning, never the channel's."""
+    stl_path = tmp_path / "plate.stl"
+    output = _render(
+        openscad_binary,
+        V1_FILE,
+        stl_path,
+        {
+            "plate_type": "Embossing Plate",
+            "indicator_mode": "Tactile",
+            "grid_columns": 15,
+        },
+    )
+    assert "Tactile indicator needs a seam gap of at least" in output
+    assert "NOTE: The seam channel" not in output
+    angles = _groove_cap_angles(trimesh_module, stl_path)
+    assert angles and all(abs(a - 180.0) < 0.05 for a in angles), angles
 
 
 @pytest.mark.slow
@@ -410,7 +434,7 @@ def test_v2_declares_the_same_switch_constants_and_sentences():
     assert "DRAFT" not in description and "Brennen" not in description
     # Cut first in the Version 2 shell, before the keyed halves.
     shell = text.split("module cylinder_shell_v2(")[1].split("keyed_half_cutout(")[0]
-    assert "seam_channel_cut(channel_theta_deg)" in shell
+    assert "seam_channel_cuts(channel_theta_deg, channel_stretches)" in shell
 
 
 def _groove_cap_angles_at(trimesh_module, stl_path, height):
