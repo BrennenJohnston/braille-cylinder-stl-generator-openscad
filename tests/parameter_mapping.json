@@ -727,7 +727,7 @@
       "openscad_name": "pair_spacing_mm",
       "web_api_name": null,
       "web_ui_label": null,
-      "type": "number",
+      "type": "integer",
       "default": 10,
       "range": [2, 50],
       "section": "Plate Selection",
