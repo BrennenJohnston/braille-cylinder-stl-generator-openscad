@@ -1,0 +1,36 @@
+{
+  "_note": "Geometry signature of the two default Version 2 plates (integrated_gears Off, seam_channel On) rendered from Braille_Cylinder_STL_Generator_EmbosserV2.scad as committed at 0f1dd48 on 2026-09-21, BEFORE the fixed-gear switch existed (OpenSCAD parity plan phase O5). Recorded with the exact command in README.md; tests/test_embosser_v2_gears_scad.py::test_gears_off_is_the_pre_gears_geometry must reproduce it.",
+  "recorded": "2026-09-21",
+  "source_commit": "0f1dd48",
+  "openscad": "2026.01.03 (Nightly, Manifold backend)",
+  "flags": [
+    "--hardwarnings",
+    "--check-parameter-ranges=true",
+    "--export-format",
+    "binstl"
+  ],
+  "Embossing Plate": {
+    "defines": {
+      "plate_type": "Embossing Plate"
+    },
+    "signature": {
+      "tri_count": 26430,
+      "unique_vertex_count": 13215,
+      "vertex_sha256": "e1e5b497753e67e9ca658c788a18f2b6ab565b014b57f3a02a51fb5c3dea1818",
+      "volume_mm3": 29424.807973,
+      "area_mm2": 9523.205902
+    }
+  },
+  "Counter Plate": {
+    "defines": {
+      "plate_type": "Counter Plate"
+    },
+    "signature": {
+      "tri_count": 163664,
+      "unique_vertex_count": 81832,
+      "vertex_sha256": "3db0afb563133eb7f96c22eabe3516cd007de52169ec6653c0c57e1f2fdb3db3",
+      "volume_mm3": 29651.872152,
+      "area_mm2": 10091.131697
+    }
+  }
+}

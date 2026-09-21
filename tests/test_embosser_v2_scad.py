@@ -548,8 +548,11 @@ def test_the_size_note_speaks_only_off_size_and_never_as_a_warning(
 
 def test_the_version2_file_is_self_contained(source_text):
     """
-    No include/use/import directive, so the one file serves desktop and
-    MakerWorld alike.
+    No include/use directive, so the one file serves desktop and MakerWorld
+    alike. The ONE import is the fixed-gear assets inside gear_set_v2 (phase
+    O5), evaluated only while integrated_gears is On - the same shape as the
+    Version 1 file, whose MakerWorld build carries the gear code and hides the
+    switch because MakerWorld cannot ship assets/.
 
     Comments are stripped first: the file explains what it inlined by quoting
     `include <presets.scad>;` in prose, and a naive grep matches that.
@@ -557,7 +560,8 @@ def test_the_version2_file_is_self_contained(source_text):
     code = _strip_comments(source_text)
     assert "include <" not in code
     assert "use <" not in code
-    assert "import(" not in code
+    assert code.count("import(") == 1, "only the gear assets may be imported"
+    assert 'import(emboss ? "assets/v2_gears_a.stl" : "assets/v2_gears_b.stl");' in code
     assert "// INLINED PRESETS - BEGIN" in source_text
     assert "// INLINED PRESETS - END" in source_text
 
@@ -589,19 +593,22 @@ def test_the_clearance_is_never_preset_owned(source_text):
             assert dropped not in body, f"{table} still carries {dropped}"
 
 
-def test_version2_has_no_integrated_gears(source_text):
+def test_version2_has_its_own_integrated_gears(source_text):
     """
-    The gears BETA is Version 1 only (D-V6).
-
-    `gears_on` and GEAR_ARROW_WELD_MM survive as Hidden constants so the shared
-    tactile code reads exactly as it does in the Version 1 file, so the pin is
-    on the parameter, the module and the assets - not on the identifiers.
+    D-V6 ("Version 2 never has integrated gears") was RETIRED on 2026-09-21:
+    the Version 2 gear set exists (assets/v2_gears_{a,b}.stl) and the file
+    fuses it with its own gear_set_v2, never the Version 1 gear_set or the
+    Version 1 assets. The fused roller's own proofs live in
+    tests/test_embosser_v2_gears_scad.py.
     """
     code = _strip_comments(source_text)
-    assert "integrated_gears" not in code, "the gears parameter must be gone"
-    assert "module gear_set" not in code
-    assert "assets/" not in code
-    assert "gears_on = false;" in code, "the shared code still reads this flag"
+    assert 'integrated_gears = "Off";' in code, "the gears switch is missing"
+    assert "module gear_set_v2(" in code
+    assert "module gear_set(" not in code, (
+        "the Version 1 gear module does not belong here"
+    )
+    assert "assets/gears_a.stl" not in code and "assets/gears_b.stl" not in code
+    assert "gears_on = false;" not in code, "the D-V6 constant is back"
 
 
 def test_the_text_input_is_four_rows_per_face(source_text):

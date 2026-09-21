@@ -27,8 +27,10 @@
 //     rides the shelf instead of ruffling over the cylinder edges. Version 1
 //     stays 52: the height is what tells the two cylinders apart;
 //   • one new dial, key_clearance_mm, under [Version 2 Keyed Cutouts];
-//   • no Integrated Gears (BETA) — that beta builds the Version 1 one-piece
-//     roller, which is a different part;
+//   • an Integrated Gears switch that fuses the VERSION 2 drive gears to the
+//     barrel (assets/v2_gears_a.stl and _b.stl, desktop build only): the
+//     barrel then prints solid with no keyed holes, nub or socket, and each
+//     top gear's notch is filled by hidden material so no void is sealed in;
 //   • no polygonal cutout, and no seam offset: the keyed hole IS the bore, and
 //     the keys sit on the arrow column, so turning the seam would break them.
 //  Everything else — the braille, the dot shapes, the presets, the indicators
@@ -190,6 +192,15 @@ interpoint_offset_x_mm = 1.25; // [1.15:0.01:1.35]
 // (mm) - back rows sit this far above the front rows.
 interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
 
+/* [Integrated Gears] */
+// Adds the Version 2 drive gears to each cylinder as one solid piece. The
+// barrel prints solid with no keyed holes; the cylinder must stay 30.8 mm x
+// 54 mm. Needs assets/v2_gears_a.stl and assets/v2_gears_b.stl, which ship
+// with the desktop build.
+// COMPATIBILITY: Version 2 fixed gears fit only the Version 2 fixed-gear
+// housing. The standard Version 2 housing takes the standard keyed cylinders.
+integrated_gears = "Off"; // [Off, On]
+
 /* [Plate Selection] */
 // Choose which plate to generate. In DOUBLE-SIDED (BETA) mode the two names
 // take on the paired roles the web app uses: "Embossing Plate" IS Cylinder A
@@ -315,10 +326,14 @@ polygon_cutout_radius_mm = 0;
 polygon_cutout_points = 12;
 seam_offset_degrees = 0.0;
 
-// Version 2 never has integrated gears (D-V6): that beta builds the Version 1
-// one-piece roller, a different part. The flag is kept as a constant so the
-// shared code below reads exactly as it does in the Version 1 file.
-gears_on = false;
+// Normalized gate for the `integrated_gears` dropdown, read exactly the way
+// ds_on reads its own: the Customizer sends "On"/"Off" and the test system
+// passes lowercase with -D. Deliberately NOT a preset-owned key, so -D reaches
+// it headlessly (a -D on a preset-owned key silently loses and the render still
+// looks fine). D-V6 ("Version 2 never has integrated gears") was retired on
+// 2026-09-21 when the Version 2 gear set arrived as assets/v2_gears_{a,b}.stl;
+// the shared code below reads this flag exactly as the Version 1 file does.
+gears_on = (integrated_gears == "On") || (integrated_gears == "on");
 GEAR_ARROW_WELD_MM = 0.005;
 
 // Mathematical constants
@@ -1652,7 +1667,9 @@ module top_key_nub(top_face_z, emboss) {
 
 // The Version 2 barrel: SOLID, minus the two key halves and the four mouths.
 // No polygonal cutout and no wall-thickness hollowing - the keyed hole IS the
-// bore, so anything else would open into the key pockets.
+// bore, so anything else would open into the key pockets. While the gears are
+// on nothing but the seam channel is cut: the gears' own pegs and pins arrive
+// inside the imported solids, so a keyed hole would only open into them (D-6).
 // The seam channel cutter, the web worker's createSeamChannelManifold and
 // the Version 1 file's seam_channel_cut: a V section in the radial plane
 // (X radial, Y tangential) - apex SEAM_CHANNEL_DEPTH_MM below the surface,
@@ -1683,19 +1700,171 @@ module cylinder_shell_v2(emboss, channel_theta_deg = undef) {
             seam_channel_cut(channel_theta_deg);
         }
 
-        // The two halves meet at the mid-plane as ONE through-hole (D-V2).
-        keyed_half_cutout(v2_bottom_key(emboss), -half_h, 0);
-        keyed_half_cutout(v2_top_key(emboss), 0, half_h);
+        // The keyed hole, its mouths and the socket exist only for separately
+        // printed gears; the fused roller keeps the barrel solid.
+        if (!gears_on) {
+            // The two halves meet at the mid-plane as ONE through-hole (D-V2).
+            keyed_half_cutout(v2_bottom_key(emboss), -half_h, 0);
+            keyed_half_cutout(v2_top_key(emboss), 0, half_h);
 
-        // All four mouths, same rule.
-        mouth_countersink(v2_bottom_key(emboss), -half_h, true);
-        mouth_countersink(v2_top_key(emboss), half_h, false);
+            // All four mouths, same rule.
+            mouth_countersink(v2_bottom_key(emboss), -half_h, true);
+            mouth_countersink(v2_top_key(emboss), half_h, false);
 
-        // The anti-rotation socket, cut HERE in the shell stage beside the
-        // halves and the mouths, because it is material removed from the barrel
-        // and every stage after this one only unions things on.
-        bottom_key_socket(-half_h, emboss);
+            // The anti-rotation socket, cut HERE in the shell stage beside the
+            // halves and the mouths, because it is material removed from the
+            // barrel and every stage after this one only unions things on.
+            bottom_key_socket(-half_h, emboss);
+        }
     }
+}
+
+// =============================================================================
+// INTEGRATED GEARS - the fused Version 2 roller
+// =============================================================================
+// The Version 2 drive gears fused to the barrel, so a plate exports as ONE
+// solid roller. assets/v2_gears_a.stl (Cylinder A: gear A1 on top, A2 below)
+// and assets/v2_gears_b.stl (Cylinder B: B1, B2) are 1:1 replicas of the v8
+// Version 2 gear set, derived from the web generator's packed assets by
+// tests/test_gear_assets.py and pinned by assets/GEARS_PROVENANCE.json. They
+// are in this generator's base-at-zero frame (barrel z 0..54, gear bodies
+// z -10..0 and 54..64, the 15 mm keyed pegs INSIDE the barrel) and are never
+// rotated or scaled here.
+//
+// While the gears are on the barrel is SOLID: no keyed holes, no mouths, no
+// nub and no socket - the gears' own pegs and pins are already in the imported
+// solids (D-6). The seam channel is still cut. One thing is left over: each
+// TOP gear (A1, B1) carries its anti-rotation NOTCH in the barrel-facing face,
+// and a solid barrel face over an open notch seals a void nothing can drain.
+// So the notch is filled by hidden material - notch_fill() below.
+//
+// DESKTOP BUILD ONLY: the MakerWorld copy ships without assets/.
+
+// The reference barrel. The gears are baked at fixed heights and do NOT move
+// with the barrel, so any other size is refused rather than silently
+// mis-built: a shorter barrel exports as three loose bodies (each closed, so
+// it still reports watertight) and a taller one swallows the teeth. 30.8 x 54
+// is the Version 2 preset, so the shipped defaults pass.
+V2_GEAR_BARREL_DIAMETER_MM = 30.8;
+V2_GEAR_BARREL_HEIGHT_MM = 54;
+V2_GEAR_SIZE_TOLERANCE_MM = 0.001;
+
+// Hidden weld ring at each gear/barrel interface - the Version 1 file's
+// GEAR_WELD_RING_*. The gear meets the barrel on an exactly coincident face,
+// which the printability rules forbid and float32 STL rounding can turn into a
+// pinch edge. Entirely buried: near their barrel-facing face all four Version 2
+// gears are solid at every angle over r 8.0..9.5 and, outside the notch
+// windows, over r 10..13.5 (measured 2026-09-20), so the ring changes no
+// external surface.
+GEAR_WELD_RING_R_IN = 8.0;
+GEAR_WELD_RING_R_OUT = 13.0;
+GEAR_WELD_RING_H = 0.1;
+
+// The top gears' notch depth, MEASURED on gear v7.2 (= v8): 3.15, up from 3.0
+// on v7.1. The same number as V2_SOCKET_DEPTH today but a different fact - the
+// socket is pin height plus one clearance, the notch is what the gear was cut
+// to - so it is not derived from it.
+V2_GEAR_NOTCH_DEPTH = 3.15;
+
+// The notch fill: the top gear's raw notch outline (the triangle inset by
+// V2_GEAR_TRIANGLE_INSET on A, the measured square on B - the same outlines
+// the socket and the nub are built from) grown outward by V2_NOTCH_FILL_GROWTH
+// as an EXACT parallel curve, offset(r = ...), so it overlaps the notch walls
+// by that much on every face. A mitred offset(delta = ...) would push A's
+// 60 degree apex out by growth / sin(30) = 0.10 mm, twice the growth. It is
+// extruded from just inside the barrel's top face to just past the notch
+// floor, overlapping both solids by V2_NOTCH_FILL_OVERLAP so no two share an
+// exact plane.
+V2_NOTCH_FILL_GROWTH = 0.05;
+V2_NOTCH_FILL_OVERLAP = 0.05;
+
+// The fill's outer edge must never reach the other roller. At the Version 1
+// operating distance of 32.0473 mm the mating gear's tip circle passes
+// 32.0473 - 16.1093702290795 = 15.938 mm from this axis, so the cap keeps
+// 1.99 mm clear. The Version 2 operating distance is not yet measured; on
+// gear A the notch is open air past the 13.66 mm root circle anyway, so
+// nothing beyond it needs filling.
+V2_NOTCH_FILL_MAX_RADIUS = 13.95;
+V1_OPERATING_AXIS_DISTANCE_MM = 32.0473;
+GEAR_TIP_RADIUS_MM = 16.1093702290795;
+assert(V2_NOTCH_FILL_MAX_RADIUS < V1_OPERATING_AXIS_DISTANCE_MM - GEAR_TIP_RADIUS_MM,
+       "the notch fill cap would reach the other roller");
+
+// How far each fill reaches from the axis. A: the inset triangle's apex sits
+// V2_GEAR_TRIANGLE_INSET / sin(half apex angle) inside the nominal apex, and
+// the parallel curve adds the growth radially. B: the grown square's far
+// corner. Both are held under the cap - the guard the web generator's
+// notch_fill_outline() raises.
+V2_NUB_HALF_APEX_DEG = atan((V2_NUB_SIDE / 2) / (V2_NUB_APEX_R - V2_NUB_BASE_R));
+function v2_notch_fill_reach(emboss) =
+    emboss
+        ? V2_NUB_APEX_R - V2_GEAR_TRIANGLE_INSET / sin(V2_NUB_HALF_APEX_DEG) + V2_NOTCH_FILL_GROWTH
+        : sqrt(pow(V2_ANTIROT_B1_NOTCH[1], 2) + pow(V2_ANTIROT_B1_NOTCH[2], 2)) + V2_NOTCH_FILL_GROWTH;
+assert(v2_notch_fill_reach(true) <= V2_NOTCH_FILL_MAX_RADIUS
+       && v2_notch_fill_reach(false) <= V2_NOTCH_FILL_MAX_RADIUS,
+       "a notch fill reaches past V2_NOTCH_FILL_MAX_RADIUS");
+
+// The size gate, the web generator's own sentence for the Version 2 gears: a
+// HARD STOP covering both dimensions, judged by output text like the Version 1
+// file's. OpenSCAD cannot test whether an imported file exists, so this is the
+// guard that matters.
+assert(!gears_on
+       || (abs(active_cylinder_height_mm - V2_GEAR_BARREL_HEIGHT_MM) <= V2_GEAR_SIZE_TOLERANCE_MM
+           && abs(active_cylinder_diameter_mm - V2_GEAR_BARREL_DIAMETER_MM) <= V2_GEAR_SIZE_TOLERANCE_MM),
+       "Fixed gears for the Version 2 embosser fit only a 30.8 mm x 54 mm cylinder.");
+
+// The console copy of the housing note above the switch, so a CLI render says
+// it too. "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on that token.
+if (gears_on) {
+    echo("NOTE: Version 2 fixed gears fit only the Version 2 fixed-gear housing. The standard Version 2 housing takes the standard keyed cylinders.");
+}
+
+// The raw notch outline of this plate's TOP gear, grown for the fill.
+module notch_fill_2d(emboss) {
+    offset(r = V2_NOTCH_FILL_GROWTH, $fn = V2_ARC_FN)
+        if (emboss)
+            nub_2d(V2_GEAR_TRIANGLE_INSET);
+        else
+            radial_rect_2d(V2_ANTIROT_B1_NOTCH, 0);
+}
+
+// The fill prism in the plate modules' LOCAL frame (barrel -h/2..+h/2): from
+// V2_NOTCH_FILL_OVERLAP inside the top face to the same past the notch floor.
+module notch_fill(emboss) {
+    half_h = active_cylinder_height_mm / 2;
+    translate([0, 0, half_h - V2_NOTCH_FILL_OVERLAP])
+        linear_extrude(height = V2_GEAR_NOTCH_DEPTH + 2 * V2_NOTCH_FILL_OVERLAP)
+            notch_fill_2d(emboss);
+}
+
+// Both gears, their two weld rings and the top notch fill, in the plate
+// modules' LOCAL frame - the Version 1 file's gear_set with the fill added.
+//
+// The plates build centred and then translate up by h/2, so inside that
+// translated context the barrel spans -h/2..+h/2 and the interfaces sit at
+// z = +/-h/2. The asset file is in the base-at-zero frame, hence the shift down
+// by h/2 before importing.
+//
+// Which gear set is a parameter, not a read of the global plate selection:
+// v2_gears_b's teeth are clocked to mesh with v2_gears_a's, so each plate
+// module names its own set - which also lets a single render build both plates.
+module gear_set_v2(emboss = is_emboss_plate) {
+    half_h = active_cylinder_height_mm / 2;
+
+    translate([0, 0, -half_h])
+        import(emboss ? "assets/v2_gears_a.stl" : "assets/v2_gears_b.stl");
+
+    for (z = [-half_h, half_h]) {
+        translate([0, 0, z])
+            difference() {
+                cylinder(h = GEAR_WELD_RING_H, r = GEAR_WELD_RING_R_OUT, center = true, $fn = CYLINDER_SHELL_FN);
+                // Taller than the ring so the bore is cut cleanly through,
+                // never leaving coplanar faces behind.
+                cylinder(h = GEAR_WELD_RING_H + 0.2, r = GEAR_WELD_RING_R_IN, center = true, $fn = CYLINDER_SHELL_FN);
+            }
+    }
+
+    notch_fill(emboss);
 }
 
 // The furthest any key corner reaches from the axis, used by the wall guard
@@ -1727,7 +1896,8 @@ tactile_seam_wall_mm =
         * cos(180 / CYLINDER_SHELL_FN)
     - v2_widest_key_radius(key_clearance_mm);
 
-tactile_seam_wall_too_thin = tactile_on
+// Gear mode has no keyed hole, so there is no wall for this guard to protect.
+tactile_seam_wall_too_thin = tactile_on && !gears_on
     && (tactile_seam_wall_mm < TACTILE_SEAM_WALL_MIN);
 
 if (tactile_seam_wall_too_thin)
@@ -2298,13 +2468,23 @@ module cylinder_emboss_plate() {
                 // hole is this barrel's only bore.
                 cylinder_shell_v2(emboss = true, channel_theta_deg = seam_channel_theta_emboss_deg);
 
+                // Integrated gears: the top and bottom Version 2 drive gears,
+                // their weld rings and the top notch fill, so this plate
+                // exports as one solid roller.
+                if (gears_on) {
+                    gear_set_v2(emboss = true);
+                }
+
                 // The key nub, unioned into the RAISED stage right after the
                 // base - before raised dots and markers, and well before any
                 // recess is cut, so the order shell -> union raised -> subtract
                 // recesses is untouched. BOTH plates carry a nub since
                 // 2026-08-29 - the shapes differ, a triangle here and a square
                 // on the Counter Plate, and the emboss flag is what picks them.
-                top_key_nub(active_cylinder_height_mm / 2, true);
+                // The fused roller has no nub: gear A1 is already on.
+                if (!gears_on) {
+                    top_key_nub(active_cylinder_height_mm / 2, true);
+                }
 
                 // INVALID CHARACTERS warning — covers the back lines too while
                 // double-sided is on (see invalid_characters_warning above).
@@ -2436,11 +2616,20 @@ module cylinder_counter_plate() {
                 // OTHER two keys.
                 cylinder_shell_v2(emboss = false, channel_theta_deg = seam_channel_theta_counter_deg);
 
+                // Integrated gears: the B set, same stage as on the Embossing
+                // Plate.
+                if (gears_on) {
+                    gear_set_v2(emboss = false);
+                }
+
                 // This plate's anti-rotation nub - the SQUARE that mates with
                 // gear B1's notch. New on 2026-08-29: the Counter Plate had no
                 // nub while gear A1 was the only gear with a notch, and every
-                // gear has an anti-rotation feature now.
-                top_key_nub(active_cylinder_height_mm / 2, false);
+                // gear has an anti-rotation feature now. The fused roller has
+                // no nub: gear B1 is already on.
+                if (!gears_on) {
+                    top_key_nub(active_cylinder_height_mm / 2, false);
+                }
 
                 // Double-sided: this cylinder's own raised dots - the BACK
                 // text it embosses. Unioned in before any recess is subtracted
