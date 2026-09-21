@@ -255,8 +255,8 @@ seam_offset_degrees = 0.0; // [0:1:360] Seam offset (degrees) — Rotates starti
 // Slicer seam channel (OpenSCAD parity plan phase O1, 2026-09-21; web decisions
 // D-1, D-2, D-13..D-15). Size is not a dial: the six SEAM_CHANNEL_* constants
 // below the sync marker mirror the web generator's app/geometry_spec.py and
-// tests/test_seam_channel_scad.py diffs them. Description wording S-O2 (DRAFT,
-// awaiting Brennen's sign-off).
+// tests/test_seam_channel_scad.py diffs them. The description below is the
+// web generator's note for the same switch (its string S-C1), kept identical.
 
 // A shallow groove beside the row markers where the slicer hides its layer seam, keeping it off the dots. Turn Off for a plain surface.
 seam_channel = "On"; // [On, Off]
@@ -1107,8 +1107,8 @@ seam_channel_theta_emboss_deg  = 180 + (seam_channel_s_mm / radius) * 180 / PI;
 seam_channel_theta_counter_deg = 180 - (seam_channel_s_mm / radius) * 180 / PI;
 
 // The console copies of the two omission sentences, S-C2 and S-C3 - the web
-// generator's own words, signed off by Brennen 2026-09-21; reword only with
-// his sign-off. "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on
+// generator's own words, quoted verbatim and pinned by the tests; keep them
+// identical. "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on
 // that token.
 if (seam_channel_on && !seam_channel_fits)
     echo("NOTE: The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.");
@@ -1533,7 +1533,7 @@ module ds_mode_warnings() {
 
 // The seam channel was left out: warn in 3D, same reasons and same pattern as
 // tactile_gap_warning above, on both plates (one set of settings serves the
-// pair). Wording S-O1 (DRAFT, awaiting Brennen's sign-off).
+// pair). Wording S-O1 in the OpenSCAD parity plan.
 module seam_channel_warning() {
     if (seam_channel_on && !seam_channel_present) {
         translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + 7 * INVALID_TEXT_STACK_GAP])

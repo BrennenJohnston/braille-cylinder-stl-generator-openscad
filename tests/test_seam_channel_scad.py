@@ -372,3 +372,61 @@ def test_v1_groove_survives_gear_mode(openscad_binary, trimesh_module, tmp_path)
     # The gear faces meet the groove at the barrel ends: floor vertices at z 0 and 52.
     angles = _groove_cap_angles(trimesh_module, stl_path)
     assert angles and all(abs(a - 181.67) < 0.05 for a in angles), angles
+
+
+# ---------------------------------------------------------------------------
+# Phase O2: the channel in the Version 2 file (54 mm barrel, keyed bore)
+# ---------------------------------------------------------------------------
+
+V2_FILE = PROJECT_ROOT / "Braille_Cylinder_STL_Generator_EmbosserV2.scad"
+V2_HEIGHT = 54.0
+
+
+def test_v2_declares_the_same_switch_constants_and_sentences():
+    """The self-contained Version 2 file carries the identical port."""
+    text = V2_FILE.read_text(encoding="utf-8")
+    assert re.search(r'^seam_channel = "On"; // \[On, Off\]$', text, re.MULTILINE)
+    assert {
+        name: _scad_constant(text, name) for name in SEAM_CONSTANTS
+    } == SEAM_CONSTANTS
+    assert f'echo("NOTE: {S_C2}");' in text
+    assert f'"NOTE: {S_C3_HEAD}"' in text
+    description = text.split('seam_channel = "On";')[0].splitlines()[-1]
+    assert description.startswith("// A shallow groove"), description
+    assert "DRAFT" not in description and "Brennen" not in description
+    # Cut first in the Version 2 shell, before the keyed halves.
+    shell = text.split("module cylinder_shell_v2(")[1].split("keyed_half_cutout(")[0]
+    assert "seam_channel_cut(channel_theta_deg)" in shell
+
+
+def _groove_cap_angles_at(trimesh_module, stl_path, height):
+    import numpy as np
+
+    v = trimesh_module.load(str(stl_path), force="mesh").vertices
+    r = np.hypot(v[:, 0], v[:, 1])
+    caps = (np.abs(v[:, 2]) < 0.01) | (np.abs(v[:, 2] - height) < 0.01)
+    floor = caps & (r > FLOOR_R - 0.03) & (r < FLOOR_R + 0.03)
+    return sorted(
+        set(np.round(np.degrees(np.arctan2(v[floor, 1], v[floor, 0])) % 360.0, 2))
+    )
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    ("plate", "expected"),
+    [("Embossing Plate", 181.67), ("Counter Plate", 178.33)],
+)
+def test_v2_groove_sits_at_the_web_angle(
+    openscad_binary, trimesh_module, tmp_path, plate, expected
+):
+    """Same physical angles on the 54 mm barrel; the keyed bore never reaches the floor."""
+    stl_path = tmp_path / "plate.stl"
+    output = _render(openscad_binary, V2_FILE, stl_path, {"plate_type": plate})
+    assert "ERROR:" not in output and "WARNING:" not in output, output[:800]
+    assert "NOTE: The seam channel" not in output
+    angles = _groove_cap_angles_at(trimesh_module, stl_path, V2_HEIGHT)
+    assert angles and all(abs(a - expected) < 0.05 for a in angles), (
+        f"groove at {angles}, expected {expected}"
+    )
+    mesh = trimesh_module.load(str(stl_path), force="mesh")
+    assert len(mesh.split(only_watertight=False)) == 1
