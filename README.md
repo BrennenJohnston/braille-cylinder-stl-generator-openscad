@@ -57,12 +57,14 @@ desktop app? A flattened, single-file build lives in
 [`makerworld/`](makerworld/):
 
 - [`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`](makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad) — one `.scad` file (presets inlined, no `include`), ready to upload. Defaults to the `Rounded` dot shape.
+- [`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`](makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad) — the **Embosser Version 2** upload, built from the root `_EmbosserV2` file under the same sync model (its fixed-gear switch is hidden there, because MakerWorld cannot carry the gear meshes).
 - See [`makerworld/README.md`](makerworld/README.md) for upload steps and the maintainer re-flatten procedure.
 - New to the workflow? Start with the [MakerWorld Quick Start Guide](docs/MAKERWORLD_QUICK_START.md) (also as a printable [PDF](docs/MakerWorld_Quick_Start_Guide.pdf)).
 
 The dual-file desktop version in the repository root remains the canonical
-source of truth; the MakerWorld file's geometry body is kept byte-identical to
-it by `tests/test_makerworld_sync.py`.
+source of truth; each MakerWorld file's geometry body is kept byte-identical to
+its canonical file, and every parameter default above it equal, by
+`tests/test_makerworld_sync.py`.
 
 ---
 
@@ -136,6 +138,22 @@ surface features change.
 
 Text capacity always stays at `grid_columns` in every mode.
 
+### Slicer Seam Channel
+
+Every cylinder carries a shallow **V groove, 1.0 mm wide × 0.5 mm deep**, the
+full height of the outer surface, in the seam gap beside the row markers. A
+slicer's default *Aligned* seam mode snaps each layer's seam to a concave
+corner, and on a smooth barrel the only corners are where dots meet the
+surface — a seam inside a dot ruins that dot on paper. The groove gives the
+slicer a better corner, so no seam painting is needed. It is **On by default**
+on both plates (`seam_channel` in **[Expert Mode - Cylinder Dimensions]**; set
+it to `Off` for a plain surface). Its size is a constant, not a dial, the same
+numbers as the web app. When it cannot fit — the free window under 1.5 mm, as
+with 15 columns in Tactile mode, or too little wall under it — it is left out
+and the model says so: a console `NOTE:` and a red `SEAM CHANNEL LEFT OUT`
+badge above the cylinder. Leave your slicer's seam mode on *Aligned*; a profile
+set to *Back* / *Rear* ignores the groove, so switch it once.
+
 ### Double-Sided Card (BETA)
 
 `double_sided` pairs the two plates so one pass embosses braille on **both**
@@ -173,6 +191,7 @@ dropdown still offers `Cone`):
 - Height: 52mm
 - Polygonal Cutout: 13mm radius, 12 points/sides
 - Seam Offset: 0°
+- Slicer seam channel: On (V groove 1.0 × 0.5 mm; a constant, not a dial)
 
 ### Braille Grid
 - Cells per row: 13 (available for text; in Visual indicator mode 2 additional cells are reserved when Indicator Letters is On — matches the web app default — or 1 for the triangle alone when Off. Tactile indicator mode reserves none. Either narrower layout fits up to 14 text cells on the default cylinder)
@@ -325,6 +344,18 @@ Things worth knowing before you switch it on:
 - The gears are **not adjustable**. They replicate the reference set exactly, so
   that a roller printed here meshes with one printed from the web app.
 
+**Embosser Version 2 has its own fixed-gear option** (since 2026-09-21).
+`Braille_Cylinder_STL_Generator_EmbosserV2.scad` offers the same switch under
+**[Integrated Gears]**, and it fuses the **Version 2** gear set —
+`assets/v2_gears_a.stl` / `assets/v2_gears_b.stl` — to the 30.8 × 54 mm
+Version 2 barrel (any other size is refused). While it is On the barrel prints
+solid with **no keyed holes, nub or socket**: the gears' own pegs and pins are
+already inside the imported gears, and each top gear's anti-rotation notch is
+filled by hidden material so no void is sealed in. The seam channel is still
+cut. Version 2 fixed gears fit only the Version 2 fixed-gear housing; the
+standard Version 2 housing takes the standard keyed cylinders. The MakerWorld
+Version 2 upload hides the switch for the same reason as the Version 1 build.
+
 ## 🔄 Rendering Both Plates At Once
 
 `render_both_plates = On` (in **[Plate Selection]**) builds the **complete pair
@@ -350,6 +381,8 @@ Troubleshooting below if the preview feels slow.
 - **Perimeters**: 3-4 for strength
 - **Orientation**: Print upright as oriented in preview
 - **Speed**: Slower outer walls (≤30mm/s) for smoother dots
+- **Seam**: leave the slicer's seam mode on *Aligned* — the seam channel
+  catches it. A profile set to *Back* / *Rear* ignores the groove; switch it once
 
 ---
 
@@ -453,8 +486,12 @@ cut, so none of them follows the clearance dial.
 
 The Version 1 files are untouched and remain the default. Use
 `Braille_Cylinder_STL_Generator.scad` unless you are building the Version 2
-embosser. **The same Version 2 file is also the MakerWorld upload** — it is
-self-contained, with the preset tables inlined and no `include` directive.
+embosser. The file is self-contained (preset tables inlined, no `include`), and
+since 2026-09-21 it also offers **[Integrated Gears]** — the fused Version 2
+roller, see [Integrated Gears](#️-integrated-gears-beta). The MakerWorld
+Version 2 upload, `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`,
+is this file with that switch hidden, kept in step by
+`tests/test_makerworld_sync.py`.
 
 ## Rendering feels very slow
 

@@ -14,11 +14,54 @@ these fold into 2.8.0 before it tags is still his call.
 The `hemisphere_quality`, rounded-dome-weld and MakerWorld-gears entries were
 signed off the same day, at the end of the session that added them.
 
+The three 2026-09-21 entries (the slicer seam channel, Version 2 fixed gears,
+the MakerWorld Version 2 sync model) are drafted and await Brennen's sign-off.
+
 ### Added
+
+- **Slicer seam channel, both files** (`Braille_Cylinder_STL_Generator.scad`
+  and `_EmbosserV2.scad`; 2026-09-21, OpenSCAD parity with the web app's
+  2026-09-20 programme). Every cylinder now carries a V groove 1.0 mm wide ×
+  0.5 mm deep the full height of the outer surface, in the seam gap beside the
+  row markers, where a slicer's default *Aligned* seam mode hides each layer's
+  seam instead of in a dot. New `seam_channel = "On"; // [On, Off]` in
+  **[Expert Mode - Cylinder Dimensions]**; the size is a constant
+  (`SEAM_CHANNEL_*`, the web's numbers, diffed by a test), not a dial. Cut from
+  the bare cylinder before the cutout, the keyed halves, the gears or anything
+  unioned on, at the web spec's angle taken as a physical angle (181.67° /
+  178.33° at 15 visual columns). Left out — with a console `NOTE:` and a red
+  `SEAM CHANNEL LEFT OUT: gap X mm` / `wall X mm` badge — when the free window
+  is under 1.5 mm or the wall under it under 1.2 mm. `Off` reproduces the
+  pre-channel geometry exactly (`tests/fixtures/seam_channel/`). Both MakerWorld
+  builds carry it.
+- **Embosser Version 2 fixed gears** (`Braille_Cylinder_STL_Generator_EmbosserV2.scad`,
+  2026-09-21). New **[Integrated Gears]** tab, `integrated_gears = "Off"; // [Off, On]`.
+  On, the plate exports as ONE solid roller with the Version 2 gear set fused
+  on — `assets/v2_gears_a.stl` / `v2_gears_b.stl`, 1:1 replicas of the v8
+  Version 2 gears derived from the web repo's packed assets and pinned by
+  `assets/GEARS_PROVENANCE.json`, gear bodies at z −10..0 and 54..64 with the
+  15 mm keyed pegs inside the barrel. The barrel is solid: no keyed halves,
+  mouths, nub or socket (the gears carry their own pegs and pins), and each top
+  gear's anti-rotation notch is filled by hidden material — the raw notch
+  outline grown 0.05 mm as an exact parallel curve, capped at r 13.95 mm — so no
+  void is sealed in. The two hidden weld rings are the Version 1 ones. Cylinder
+  size is a hard stop at 30.8 × 54 mm (the web app's sentence). D-V6 ("Version 2
+  never has integrated gears") is retired. `Off` is the previous file exactly
+  (`tests/fixtures/version2_gears/`). New `tests/test_embosser_v2_gears_scad.py`.
 
 - **The tactile seam arrows now tell the two paper-thickness presets apart by touch.** In `indicator_mode = "Tactile"`, the **`"0.4mm"`** preset keeps one arrow per braille row exactly as before, while the **`"0.3mm"`** preset places **exactly three arrows, evenly spaced** — at the cylinder's mid-height and 15 mm above and below it (`TACTILE_THREE_SPACED_PITCH`) — whatever the row count. Three separated arrows against a chain of four touching ones can be counted with a fingertip, and a mixed pair will not nest by hand: a 0.4mm emboss cylinder's second and third arrows meet bare surface on a 0.3mm counter, and a 0.3mm emboss cylinder's middle arrow stands proud on a 0.4mm one. `"Custom"` keeps one per row (it is an explicit choice in this Customizer, unlike the web UI's auto-detected one, which follows the preset last chosen). Both row modules now draw their heights from one `tactile_arrow_y_positions()` function, so the counter recesses can never sit at different heights from the arrows they nest; an `assert` refuses a barrel too short for the outer arrows, matching the web generator's rejection (the presets' 52 mm barrel passes at every slider setting). Applied to all four files: the canonical Version 1 file, its `_v1.5` MakerWorld flattening (body re-synced), the Embosser Version 2 file and its byte-identical `_v2` MakerWorld copy. Covered by new source guards in `tests/test_tactile_mode.py` and a new render suite, `tests/test_tactile_arrow_layout.py`, which measures the STL on both plates and pins the 15 mm pitch against the web repository's `TACTILE_THREE_SPACED_PITCH_MM`. Positions, the Custom rule and the rejection were decided by Brennen on 2026-09-20; the web generator carries the same change (`tactile_indicator_layout`, sent only for its 0.3 preset).
 
 ### Changed
+
+- **The MakerWorld Embosser Version 2 upload is no longer a byte copy**
+  (`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`, 2026-09-21).
+  Because the canonical Version 2 file can now fuse its gears and MakerWorld
+  cannot carry the gear meshes, the upload follows the Version 1 build's
+  three-layer sync model: the geometry body byte-identical from the
+  `BACKWARD COMPATIBILITY` marker to EOF, every declaration above it equal, and
+  two presentation differences above the marker — a MakerWorld header block and
+  `integrated_gears` declared in a `[Hidden]` tab. `tests/test_makerworld_sync.py`
+  now runs its body and declaration layers over both pairs.
 
 - **Embosser Version 2: the barrel grows to 30.8 × 54 mm and the text input is trimmed to 4 rows per face.** (`Braille_Cylinder_STL_Generator_EmbosserV2.scad` only — every Version 1 file is untouched, and the guard test proves it.) The extra 2 mm is a **1 mm shelf past each edge of the 52 mm card**, so a slightly mis-rolled card rides the shelf instead of ruffling over the cylinder ends; the braille rows center themselves in the height, and the keyed holes, nubs, sockets and countersinks all place from height/2, so no feature moves relative to its face. This matches the web generator, where the 54 mm barrel is Version 2's alone — the project-wide default returned to Version 1's 52 the same day. Text input is now **Line_1–4 and Back_Line_1–4**, the Version 2 embosser's standard four rows per face, replacing the ten-field layout inherited from Version 1 (which keeps its ten); the `grid_rows` slider stops at 4 to match the fields that exist. The size note reads "30.8 mm x 54 mm". Two lagging comments were corrected to the shipped facts: the keyed-cutouts tab now quotes the 0.110 mm clearance (the wording had stayed at the first print test's 0.075; the dial itself was already 0.110) with its 0.890 mm wrong-pair margin, and the header's nub bullet now records the anti-rotation feature on BOTH plates, as the file has cut since the v7.1 gear mirror. Covered by `tests/test_embosser_v2_scad.py` (23 tests, including two new source guards and the cross-repo number mirror). **A 30.8 × 54 pair printed from this file passed Brennen's print test on 2026-09-01, and the wording revisions were signed off the same day.**
 

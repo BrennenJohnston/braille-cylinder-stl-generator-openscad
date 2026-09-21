@@ -3,7 +3,7 @@
   "title": "OpenSCAD to Web API Parameter Mapping",
   "description": "Machine-readable mapping between OpenSCAD customizer variables and web API parameters. Source of truth for cross-platform validation.",
   "version": "2.6.0",
-  "last_updated": "2026-08-28",
+  "last_updated": "2026-09-21",
   "documentation": "See docs/PARAMETER_MAPPING.md for human-readable version",
   
   "ui_parameter_format": {
@@ -448,6 +448,18 @@
       "description": "Seam offset (degrees) — Rotates starting position around cylinder"
     },
     {
+      "openscad_name": "seam_channel",
+      "web_api_name": "seam_channel_enabled",
+      "web_ui_label": "Slicer seam channel",
+      "type": "enum",
+      "default": "On",
+      "values": ["On", "Off"],
+      "test_system_values": ["on", "off"],
+      "section": "Expert Mode - Cylinder Dimensions",
+      "description": "A shallow V groove, 1.0 mm wide x 0.5 mm deep, the full height of the outer surface, in the seam gap beside the row markers, where a slicer's default aligned seam mode hides each layer's seam instead of in a dot. On by default on every cylinder, both plates; Off gives the plain surface. Left out - with a console NOTE and a red badge on the model - when the free window is under 1.5 mm or the wall under the groove would be under 1.2 mm.",
+      "note": "Web schema home seam_channel.enabled (default true); on the wire the flat integer seam_channel_enabled is sent ONLY as 0 (the Expert Mode switch turned off) - On adds nothing to the request. The groove's size is not a dial in either implementation: SEAM_CHANNEL_WIDTH_MM 1.0, DEPTH 0.5, MARGIN 0.25, OVERSHOOT 1.0, LIP 0.5, MIN_WALL 1.2 in app/geometry_spec.py and in both .scad files (tests/test_seam_channel_scad.py diffs them). The angle is the web spec's theta as a PHYSICAL angle here: emboss 180 + s/R, counter 180 - s/R, e.g. 181.67 / 178.33 degrees at 15 visual columns on 30.8 mm. Present in the Version 2 file too, under the same tab."
+    },
+    {
       "openscad_name": "grid_columns",
       "web_api_name": "grid_columns",
       "web_ui_label": "Number of Braille Cells",
@@ -697,7 +709,7 @@
       "default": "Off",
       "section": "Integrated Gears (BETA)",
       "description": "Build the cylinder as one solid piece with its drive gears already attached, instead of a bare barrel that separately printed gears push onto. The gears are a 1:1 replica of the reference set and are not adjustable, so the cylinder is locked to 30.8 x 52 mm while this is On and any other size is refused rather than mis-built. The barrel also prints solid: the polygonal cutout is dropped.",
-      "note": "DESKTOP BUILD ONLY. The gear meshes are real files (assets/gears_a.stl, assets/gears_b.stl) that must sit beside the .scad, so the MakerWorld single-file build declares this parameter in a [Hidden] tab and never offers it - MakerWorld's customizer has no way to accept a mesh at all (tested 2026-08-25). Schema home gear_rollers.enabled; on the wire it is the flat integer gear_rollers_enabled (0/1)."
+      "note": "DESKTOP BUILD ONLY. The gear meshes are real files (assets/gears_a.stl, assets/gears_b.stl) that must sit beside the .scad, so the MakerWorld single-file build declares this parameter in a [Hidden] tab and never offers it - MakerWorld's customizer has no way to accept a mesh at all (tested 2026-08-25). Schema home gear_rollers.enabled; on the wire it is the flat integer gear_rollers_enabled (0/1). Since 2026-09-21 the Version 2 file (Braille_Cylinder_STL_Generator_EmbosserV2.scad) offers the same switch under [Integrated Gears] (no BETA tag): the fused Version 2 roller from assets/v2_gears_a.stl and assets/v2_gears_b.stl, the cylinder locked to 30.8 x 54 mm (refused otherwise, with the web generator's own sentence), the barrel solid with no keyed holes, nub or socket, and each top gear's notch filled by hidden material. On the web that is gear_rollers_enabled 1 together with embosser_version 2. The MakerWorld Version 2 upload hides the switch the same way."
     },
     {
       "openscad_name": "render_both_plates",
@@ -740,10 +752,9 @@
     "not_present": [
       "polygon_cutout_radius_mm",
       "polygon_cutout_points",
-      "seam_offset_degrees",
-      "integrated_gears"
+      "seam_offset_degrees"
     ],
-    "reason": "The keyed cutout IS the bore, so there is no polygonal cutout to size; the keys sit on the tactile arrow column, so turning the seam would put them in the wrong place; and the integrated-gears beta builds the Version 1 one-piece roller, a different part."
+    "reason": "The keyed cutout IS the bore, so there is no polygonal cutout to size; the keys sit on the tactile arrow column, so turning the seam would put them in the wrong place. integrated_gears IS present since 2026-09-21: the Version 2 file fuses the Version 2 gear set, see that parameter's note."
   },
   
   "removed_parameters": {
@@ -813,6 +824,7 @@
     "All spatial units are millimeters (mm)",
     "All angular units are degrees (°)",
     "Back_Line_1..Back_Line_10 are a COMPOSITE mapping onto the web app's single top-level back_lines array (settings-file spelling text.back_lines, Python keyword back_lines=), the same way Line_1..Line_10 map onto lines. OpenSCAD needs one fixed field per row because the Customizer cannot add fields on demand",
-    "Double-sided dot and bowl footprints have no Customizer entry ON PURPOSE. They are fixed and keyed to paper_thickness_preset: '0.3mm' renders Option B, anything else renders Q2 (research memory FD-8/FD-9, 2026-08-20). Keep them in lockstep with app/geometry/interpoint.py DS_FOOTPRINTS_BY_PRESET in the web repo"
+    "Double-sided dot and bowl footprints have no Customizer entry ON PURPOSE. They are fixed and keyed to paper_thickness_preset: '0.3mm' renders Option B, anything else renders Q2 (research memory FD-8/FD-9, 2026-08-20). Keep them in lockstep with app/geometry/interpoint.py DS_FOOTPRINTS_BY_PRESET in the web repo",
+    "2026-09-21 (unreleased): seam_channel switch in both files (Expert Mode - Cylinder Dimensions, On by default; the groove size is a constant, not a dial); the Version 2 file gains its own [Integrated Gears] switch for the fused Version 2 roller (assets/v2_gears_a.stl, v2_gears_b.stl); the MakerWorld Version 2 upload follows the Version 1 build's three-layer sync model with the switch hidden."
   ]
 }

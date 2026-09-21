@@ -40,8 +40,10 @@ Version 2 equivalent to map:
 | `polygon_cutout_points` | same |
 | `seam_offset_degrees` | the keys sit on the tactile arrow column; turning the seam would put them in the wrong place |
 
-`integrated_gears` is also absent: that beta builds the Version 1 one-piece
-geared roller, which is a different part.
+`integrated_gears` is **present** in the Version 2 file too (since 2026-09-21),
+under a tab named `[Integrated Gears]`: it fuses the **Version 2** gear set,
+not the Version 1 one — see [Integrated Gears](#integrated-gears-beta) below.
+On the web that is `gear_rollers_enabled: 1` together with `embosser_version: 2`.
 
 On the web side these ride inside `settings` as the flat names
 `embosser_version` (integer 1 or 2) and `v2_key_clearance_mm`, and nothing is
@@ -139,6 +141,21 @@ a `[Hidden]` tab, so its Customizer never offers it. That is not a packaging
 choice that could be worked around: MakerWorld's Parametric Model Maker has no
 way to accept a mesh file at all (tested 2026-08-25).
 
+**Embosser Version 2 (`Braille_Cylinder_STL_Generator_EmbosserV2.scad`, since
+2026-09-21).** The same switch, under a tab named `[Integrated Gears]` (no BETA
+tag), fuses the **Version 2** gear set — `assets/v2_gears_a.stl` /
+`assets/v2_gears_b.stl`, derived from the web repo's packed assets and pinned by
+`assets/GEARS_PROVENANCE.json` — with the cylinder locked to **30.8 mm × 54 mm**
+(any other size is refused with the web generator's own sentence, "Fixed gears
+for the Version 2 embosser fit only a 30.8 mm x 54 mm cylinder."). While it is
+On the barrel is solid with **no keyed holes, nub or socket** — the gears' own
+pegs and pins are inside the imported solids — and each top gear's anti-rotation
+notch is filled by hidden material (the measured notch outline grown 0.05 mm as
+an exact parallel curve, capped at r 13.95 mm) so no void is sealed in. The seam
+channel is still cut. On the web the same roller is `gear_rollers_enabled: 1`
+with `embosser_version: 2`. The MakerWorld Version 2 upload hides the switch
+exactly as the Version 1 build does.
+
 ### Indicator Mode
 
 This mode originated here and the web app has since ported it, so every
@@ -193,6 +210,24 @@ recognised by touch.
 | `polygon_cutout_radius_mm` | Cutout Radius | 13.0 mm | 0-50 mm |
 | `polygon_cutout_points` | Cutout Points/Sides | 12 | 3-24 |
 | `seam_offset_degrees` | Seam Offset | 0.0° | 0-360° |
+| `seam_channel` | Slicer seam channel (Expert Mode switch, wire name `seam_channel_enabled`) | `On` | `On` / `Off` |
+
+**Slicer seam channel** (both files, since 2026-09-21): a V groove **1.0 mm
+wide × 0.5 mm deep** the full height of the outer surface, in the seam gap
+beside the row markers, where a slicer's default *Aligned* seam mode hides each
+layer's seam instead of in a dot. On by default on every cylinder, both plates.
+The size is a constant, not a dial, in both implementations
+(`SEAM_CHANNEL_WIDTH_MM` 1.0, `DEPTH` 0.5, `MARGIN` 0.25, `OVERSHOOT` 1.0,
+`LIP` 0.5, `MIN_WALL` 1.2 — `tests/test_seam_channel_scad.py` diffs them
+against the web repo's `app/geometry_spec.py`). It is left out, with a console
+`NOTE:` and a red `SEAM CHANNEL LEFT OUT` badge on the model, when the free
+window is under 1.5 mm (15 columns in Tactile mode) or the wall under the groove
+would be under 1.2 mm. On the web the switch sends `seam_channel_enabled: 0`
+only when turned off; On adds nothing to the request. The groove's angle is the
+web spec's `theta` taken as a **physical** angle here — embossing plate
+`180 + s/R`, counter plate `180 − s/R` (181.67° / 178.33° at 15 visual columns
+on the 30.8 mm cylinder); see
+[`OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md` §3.6](OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md).
 
 ### Expert Mode - Braille Spacing
 | OpenSCAD Parameter | Web App Equivalent | Default | Range |
