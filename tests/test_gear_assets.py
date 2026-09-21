@@ -43,6 +43,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 ASSETS_DIR = PROJECT_ROOT / "assets"
 PROVENANCE_PATH = ASSETS_DIR / "GEARS_PROVENANCE.json"
 ASSET_NAMES = ("gears_a", "gears_b")
+# The Embosser Version 2 fixed-gear pair (OpenSCAD parity plan phase O4,
+# 2026-09-21), derived by the web repo's scripts/derive_gear_assets_v2.py from
+# Brennen's v8 Version 2 gears with every axis measured per gear. Same packed
+# format, same teeth and tip radius; a 54 mm barrel, so the frame shift and
+# the z bands differ - see V2_Z_SHIFT_MM and V2_EXPECTED_Z_BANDS below.
+V2_ASSET_NAMES = ("v2_gears_a", "v2_gears_b")
+ALL_ASSET_NAMES = ASSET_NAMES + V2_ASSET_NAMES
 
 # Where the derived binaries live. Only regenerate() needs this; the tests read
 # this repo's own STLs and its provenance file, so the suite passes on a machine
@@ -79,6 +86,46 @@ TOOTH_GAP_DEG = 2.0
 
 # In this frame: a 10 mm gear below the barrel and another above it.
 EXPECTED_Z_BANDS = ((-10.000, 0.000), (52.000, 62.000))
+
+# Version 2: the browser centres its 54 mm barrel on z 0 (-27..+27), so the
+# shift is +27.000 and the gear bodies sit at z -10..0 and 54..64. Unlike the
+# Version 1 set, each gear carries a 15 mm keyed peg that lies INSIDE the
+# barrel (z 0..15 and 39..54), never wider than 10.7 mm from the axis.
+V2_Z_SHIFT_MM = 27.000
+V2_EXPECTED_Z_BANDS = ((-10.000, 0.000), (54.000, 64.000))
+V2_PEG_LENGTH_MM = 15.0
+V2_PEG_MAX_RADIUS_MM = 10.7
+V2_BARREL_HEIGHT_MM = 54.0
+# The bottom gear of each set also carries a 3 mm anti-rotation PIN on its
+# barrel-facing face (A the triangle, B the square, both reaching 13.85 mm on
+# the 180 degree column - app/geometry/version2.py V2_GEAR_ANTIROT), which the
+# barrel's socket receives; it sits in the first 3 mm above the face.
+V2_PIN_HEIGHT_MM = 3.0
+V2_PIN_MAX_RADIUS_MM = 13.9
+
+# One row per asset set: which web assets, which frame shift, which bands.
+ASSET_SETS = (
+    {
+        "names": ASSET_NAMES,
+        "z_shift_mm": Z_SHIFT_MM,
+        "bands": EXPECTED_Z_BANDS,
+        "manifest": "gears_manifest.json",
+        "provenance_key": "source_samples",
+    },
+    {
+        "names": V2_ASSET_NAMES,
+        "z_shift_mm": V2_Z_SHIFT_MM,
+        "bands": V2_EXPECTED_Z_BANDS,
+        "manifest": "v2_gears_manifest.json",
+        "provenance_key": "v2_source_samples",
+    },
+)
+
+
+def _bands(asset_name):
+    return V2_EXPECTED_Z_BANDS if asset_name in V2_ASSET_NAMES else EXPECTED_Z_BANDS
+
+
 BOUNDS_TOL_MM = 0.001
 XY_LIMIT_MM = 16.110
 
@@ -108,8 +155,6 @@ def _read_packed(path):
 
 def regenerate():
     """Convert the web repo's .bin assets into this repo's frame as binary STLs."""
-    import trimesh
-
     ASSETS_DIR.mkdir(parents=True, exist_ok=True)
     provenance = {
         "note": (
@@ -126,50 +171,72 @@ def regenerate():
         ),
         "z_shift_mm": Z_SHIFT_MM,
         "source_repo": "braille-cylinder-stl-generator",
+        "v2": {
+            "note": (
+                "The Embosser Version 2 fixed-gear pair, derived the same way from the web "
+                "repo's static/assets/gears/v2_gears_{a,b}.bin (scripts/derive_gear_assets_v2.py, "
+                "Brennen's v8 Version 2 gears, every axis measured per gear)."
+            ),
+            "derived": "2026-09-21",
+            "frame": (
+                "This generator's frame for the 54 mm Version 2 barrel: axis at the origin, "
+                "barrel base at z=0 (barrel z 0..54), gear bodies at z -10..0 and 54..64, the "
+                "15 mm keyed pegs inside the barrel at z 0..15 and 39..54. That is the web "
+                "repo's browser frame translated +27.000 mm in z; rotations are identical."
+            ),
+            "z_shift_mm": V2_Z_SHIFT_MM,
+        },
         "assets": {},
     }
 
-    web_manifest = json.loads(
-        (WEB_ASSETS_DIR / "gears_manifest.json").read_text(encoding="utf-8")
-    )
-    provenance["source_samples"] = {
-        name: entry["sources"] for name, entry in web_manifest["assets"].items()
-    }
-
-    for asset_name in ASSET_NAMES:
-        source = WEB_ASSETS_DIR / f"{asset_name}.bin"
-        payload = source.read_bytes()
-        vertices, faces = _read_packed(source)
-        vertices[:, 2] += Z_SHIFT_MM
-
-        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
-        out_path = ASSETS_DIR / f"{asset_name}.stl"
-        out_path.write_bytes(mesh.export(file_type="stl"))
-
-        bodies = mesh.split(only_watertight=False)
-        provenance["assets"][f"{asset_name}.stl"] = {
-            "derived_from": f"static/assets/gears/{asset_name}.bin",
-            "source_sha256": hashlib.sha256(payload).hexdigest(),
-            "sha256": hashlib.sha256(out_path.read_bytes()).hexdigest(),
-            "byte_size": out_path.stat().st_size,
-            "vert_count": int(len(vertices)),
-            "tri_count": int(len(faces)),
-            "body_count": len(bodies),
-            "bounds_mm": {
-                "min": [round(float(v), 6) for v in mesh.bounds[0]],
-                "max": [round(float(v), 6) for v in mesh.bounds[1]],
-            },
-            "volume_mm3": round(float(mesh.volume), 6),
-        }
-        print(
-            f"{asset_name}.stl: {len(faces)} triangles, volume {mesh.volume:.3f} mm^3, "
-            f"z {mesh.bounds[0][2]:.3f}..{mesh.bounds[1][2]:.3f}"
+    for asset_set in ASSET_SETS:
+        web_manifest = json.loads(
+            (WEB_ASSETS_DIR / asset_set["manifest"]).read_text(encoding="utf-8")
         )
+        provenance[asset_set["provenance_key"]] = {
+            name: entry["sources"] for name, entry in web_manifest["assets"].items()
+        }
+        for asset_name in asset_set["names"]:
+            _derive_one(asset_name, asset_set["z_shift_mm"], provenance)
 
     PROVENANCE_PATH.write_text(
         json.dumps(provenance, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
     print(f"wrote {PROVENANCE_PATH}")
+
+
+def _derive_one(asset_name, z_shift_mm, provenance):
+    """Shift one packed web asset into this frame and record it in the provenance."""
+    import trimesh
+
+    source = WEB_ASSETS_DIR / f"{asset_name}.bin"
+    payload = source.read_bytes()
+    vertices, faces = _read_packed(source)
+    vertices[:, 2] += z_shift_mm
+
+    mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+    out_path = ASSETS_DIR / f"{asset_name}.stl"
+    out_path.write_bytes(mesh.export(file_type="stl"))
+
+    bodies = mesh.split(only_watertight=False)
+    provenance["assets"][f"{asset_name}.stl"] = {
+        "derived_from": f"static/assets/gears/{asset_name}.bin",
+        "source_sha256": hashlib.sha256(payload).hexdigest(),
+        "sha256": hashlib.sha256(out_path.read_bytes()).hexdigest(),
+        "byte_size": out_path.stat().st_size,
+        "vert_count": int(len(vertices)),
+        "tri_count": int(len(faces)),
+        "body_count": len(bodies),
+        "bounds_mm": {
+            "min": [round(float(v), 6) for v in mesh.bounds[0]],
+            "max": [round(float(v), 6) for v in mesh.bounds[1]],
+        },
+        "volume_mm3": round(float(mesh.volume), 6),
+    }
+    print(
+        f"{asset_name}.stl: {len(faces)} triangles, volume {mesh.volume:.3f} mm^3, "
+        f"z {mesh.bounds[0][2]:.3f}..{mesh.bounds[1][2]:.3f}"
+    )
 
 
 @pytest.fixture(scope="module")
@@ -223,7 +290,7 @@ def _tooth_clusters(vertices, z_low, z_high):
     return max(1, int((gaps > TOOTH_GAP_DEG).sum()))
 
 
-@pytest.mark.parametrize("asset_name", ASSET_NAMES)
+@pytest.mark.parametrize("asset_name", ALL_ASSET_NAMES)
 def test_asset_bytes_match_the_provenance(asset_name, provenance):
     """
     The assets are a 1:1 replication and only one route may rewrite them. Pinning
@@ -240,21 +307,22 @@ def test_asset_bytes_match_the_provenance(asset_name, provenance):
     assert len(payload) == 84 + 50 * recorded["tri_count"]
 
 
-@pytest.mark.parametrize("asset_name", ASSET_NAMES)
+@pytest.mark.parametrize("asset_name", ALL_ASSET_NAMES)
 def test_asset_sits_in_this_repo_frame(asset_name):
     """Barrel base at z=0 means gears at z -10..0 and 52..62, axis at the origin."""
     mesh = _load(asset_name)
     low, high = mesh.bounds
 
-    assert low[2] == pytest.approx(EXPECTED_Z_BANDS[0][0], abs=BOUNDS_TOL_MM)
-    assert high[2] == pytest.approx(EXPECTED_Z_BANDS[1][1], abs=BOUNDS_TOL_MM)
+    bands = _bands(asset_name)
+    assert low[2] == pytest.approx(bands[0][0], abs=BOUNDS_TOL_MM)
+    assert high[2] == pytest.approx(bands[1][1], abs=BOUNDS_TOL_MM)
 
     for axis in (0, 1):
         assert low[axis] >= -XY_LIMIT_MM
         assert high[axis] <= XY_LIMIT_MM
 
 
-@pytest.mark.parametrize("asset_name", ASSET_NAMES)
+@pytest.mark.parametrize("asset_name", ALL_ASSET_NAMES)
 def test_asset_is_two_watertight_gears(asset_name):
     """One gear for each end of the barrel, each a closed solid."""
     mesh = _load(asset_name)
@@ -269,12 +337,19 @@ def test_asset_is_two_watertight_gears(asset_name):
         (round(float(b.bounds[0][2]), 3), round(float(b.bounds[1][2]), 3))
         for b in bodies
     )
-    for got, want in zip(spans, EXPECTED_Z_BANDS):
-        assert got[0] == pytest.approx(want[0], abs=BOUNDS_TOL_MM)
-        assert got[1] == pytest.approx(want[1], abs=BOUNDS_TOL_MM)
+    # A Version 2 gear's peg reaches into the barrel, so only the gear's own
+    # band is checked; the peg is checked in test_version2_pegs_sit_inside_the_barrel.
+    for got, want in zip(spans, _bands(asset_name)):
+        if asset_name in V2_ASSET_NAMES:
+            assert (got[0] if want[0] < 0 else got[1]) == pytest.approx(
+                want[0] if want[0] < 0 else want[1], abs=BOUNDS_TOL_MM
+            )
+        else:
+            assert got[0] == pytest.approx(want[0], abs=BOUNDS_TOL_MM)
+            assert got[1] == pytest.approx(want[1], abs=BOUNDS_TOL_MM)
 
 
-@pytest.mark.parametrize("asset_name", ASSET_NAMES)
+@pytest.mark.parametrize("asset_name", ALL_ASSET_NAMES)
 def test_each_gear_has_24_teeth_at_the_reference_tip_radius(asset_name):
     """
     24 teeth on a 15.0000 degree pitch, tip radius 16.1093702290795 mm. A pair
@@ -283,7 +358,7 @@ def test_each_gear_has_24_teeth_at_the_reference_tip_radius(asset_name):
     """
     mesh = _load(asset_name)
 
-    for z_low, z_high in EXPECTED_Z_BANDS:
+    for z_low, z_high in _bands(asset_name):
         # Inset a millimetre at each end so the flat end faces do not join the
         # tip band.
         assert _tooth_clusters(mesh.vertices, z_low + 1.0, z_high - 1.0) == TOOTH_COUNT
@@ -292,7 +367,7 @@ def test_each_gear_has_24_teeth_at_the_reference_tip_radius(asset_name):
     assert float(radius.max()) == pytest.approx(TIP_RADIUS_MM, abs=TIP_RADIUS_TOL_MM)
 
 
-@pytest.mark.parametrize("asset_name", ASSET_NAMES)
+@pytest.mark.parametrize("asset_name", ALL_ASSET_NAMES)
 def test_the_two_gears_share_one_clocking(asset_name):
     """
     Both gears of a set are clocked identically about the axis, which is what
@@ -303,7 +378,7 @@ def test_the_two_gears_share_one_clocking(asset_name):
     pitch = 360.0 / TOOTH_COUNT
 
     phases = []
-    for z_low, z_high in EXPECTED_Z_BANDS:
+    for z_low, z_high in _bands(asset_name):
         in_band = mesh.vertices[
             (mesh.vertices[:, 2] > z_low + 1.0) & (mesh.vertices[:, 2] < z_high - 1.0)
         ]
@@ -328,10 +403,56 @@ def test_the_two_sets_are_different_gears():
     a = _load("gears_a")
     b = _load("gears_b")
     assert a.volume != pytest.approx(b.volume, abs=1.0)
-
     a_bore = np.hypot(a.vertices[:, 0], a.vertices[:, 1]).min()
     b_bore = np.hypot(b.vertices[:, 0], b.vertices[:, 1]).min()
     assert a_bore > b_bore
+
+
+def test_the_version2_sets_are_their_own_gears():
+    """Four distinct source files and four distinct outputs: nothing was copied twice."""
+    a = _load("v2_gears_a")
+    b = _load("v2_gears_b")
+    assert a.volume != pytest.approx(b.volume, abs=1.0)
+    for v2_name, v1_name in (("v2_gears_a", "gears_a"), ("v2_gears_b", "gears_b")):
+        assert _load(v2_name).volume != pytest.approx(_load(v1_name).volume, abs=1.0)
+
+
+def test_version2_provenance_records_four_distinct_sources(provenance):
+    """The v8 gears came as four files; a duplicated file was the mistake B1 guards against."""
+    samples = provenance["v2_source_samples"]
+    assert set(samples) == {"v2_gears_a.bin", "v2_gears_b.bin"}
+    hashes = [s["sha256"] for entry in samples.values() for s in entry]
+    assert len(hashes) == 4 and len(set(hashes)) == 4
+    assert provenance["v2"]["z_shift_mm"] == V2_Z_SHIFT_MM
+
+
+@pytest.mark.parametrize("asset_name", V2_ASSET_NAMES)
+def test_version2_pegs_sit_inside_the_barrel(asset_name):
+    """
+    Each Version 2 gear carries a keyed peg 15 mm long that lies inside the
+    barrel in this frame (z 0..15 from the bottom gear, 39..54 from the top),
+    never wider than the widest key. The Version 1 set has no such geometry.
+    """
+    mesh = _load(asset_name)
+    v = mesh.vertices
+    r = np.hypot(v[:, 0], v[:, 1])
+    # Above the pin band on the bottom gear; the top gear's peg hangs down from
+    # the barrel's top face and its notch is cut into the gear body above it.
+    lower = (v[:, 2] > V2_PIN_HEIGHT_MM + 0.5) & (v[:, 2] < V2_PEG_LENGTH_MM - 0.5)
+    upper = (v[:, 2] > V2_BARREL_HEIGHT_MM - V2_PEG_LENGTH_MM + 0.5) & (
+        v[:, 2] < V2_BARREL_HEIGHT_MM - 0.5
+    )
+    for inside in (lower, upper):
+        assert inside.any(), "a peg is missing from the barrel"
+        assert float(r[inside].max()) <= V2_PEG_MAX_RADIUS_MM
+    pin = (v[:, 2] > 0.5) & (v[:, 2] < V2_PIN_HEIGHT_MM - 0.5)
+    assert pin.any(), "the anti-rotation pin is missing"
+    assert float(r[pin].max()) <= V2_PIN_MAX_RADIUS_MM
+    assert float(v[lower | upper][:, 2].max()) <= V2_BARREL_HEIGHT_MM
+    assert not (
+        (_load("gears_a").vertices[:, 2] > 0.5)
+        & (_load("gears_a").vertices[:, 2] < 51.5)
+    ).any()
 
 
 if __name__ == "__main__":
