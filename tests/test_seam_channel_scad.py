@@ -27,6 +27,8 @@ License: PolyForm Noncommercial 1.0.0
 
 import hashlib
 import json
+import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -165,3 +167,208 @@ def test_seam_channel_off_reproduces_the_pre_channel_bytes(
     assert got == want, (
         f"{name}: the Off render drifted from the baseline geometry:\n{got}\n{want}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase O1: the channel in the Version 1 file
+# ---------------------------------------------------------------------------
+
+V1_FILE = PROJECT_ROOT / "Braille_Cylinder_STL_Generator.scad"
+# The web generator's copy of the constants and the two sentences. Absent on
+# CI, so the cross-check skips LOUDLY rather than failing for a reason
+# unrelated to this repo.
+WEB_GEOMETRY_SPEC = (
+    Path(
+        os.environ.get(
+            "BRAILLE_WEB_REPO",
+            str(PROJECT_ROOT.parent / "braille-cylinder-stl-generator"),
+        )
+    )
+    / "app"
+    / "geometry_spec.py"
+)
+SEAM_CONSTANTS = {
+    "SEAM_CHANNEL_WIDTH_MM": 1.0,
+    "SEAM_CHANNEL_DEPTH_MM": 0.5,
+    "SEAM_CHANNEL_MARGIN_MM": 0.25,
+    "SEAM_CHANNEL_OVERSHOOT_MM": 1.0,
+    "SEAM_CHANNEL_LIP_MM": 0.5,
+    "SEAM_CHANNEL_MIN_WALL_MM": 1.2,
+}
+# S-C2 and S-C3, the web generator's own words (signed off by Brennen
+# 2026-09-21), quoted here so the two generators can never drift apart.
+S_C2 = "The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter."
+S_C3 = "The seam channel was left out: the cylinder wall would be thinner than 1.2 mm under it."
+S_C3_HEAD = "The seam channel was left out: the cylinder wall would be thinner than "
+# Worked numbers from the web spec (SURFACE_DIMENSIONS_SPECIFICATIONS.md 2.6),
+# 30.8 mm, 0.4 preset: the PHYSICAL groove angles in the exported STL, as
+# (embossing, counter). 15 visual columns = 13 text cells + 2 marker columns.
+GROOVE_DEG = {("visual", 15): (181.67, 178.33), ("tactile", 14): (191.50, 168.50)}
+RADIUS = 15.4
+HEIGHT = 52.0
+FLOOR_R = RADIUS - 0.5
+
+
+def _scad_constant(text, name):
+    found = re.search(
+        rf"^\s*{re.escape(name)}\s*=\s*([0-9.+\-]+)\s*;", text, re.MULTILINE
+    )
+    assert found, f"{name} not found"
+    return float(found.group(1))
+
+
+def test_v1_declares_the_switch_on_by_default():
+    text = V1_FILE.read_text(encoding="utf-8")
+    assert re.search(r'^seam_channel = "On"; // \[On, Off\]$', text, re.MULTILINE)
+    assert 'seam_channel_on = (seam_channel == "On") || (seam_channel == "on");' in text
+    # The comment directly above the parameter is what the Customizer shows as
+    # its description: it carries the sentence and no development tag.
+    description = text.split('seam_channel = "On";')[0].splitlines()[-1]
+    assert description.startswith("// A shallow groove"), description
+    assert "DRAFT" not in description and "Brennen" not in description
+
+
+def test_v1_constants_and_sentences_mirror_the_web_generator():
+    text = V1_FILE.read_text(encoding="utf-8")
+    here = {name: _scad_constant(text, name) for name in SEAM_CONSTANTS}
+    assert here == SEAM_CONSTANTS
+    assert f'echo("NOTE: {S_C2}");' in text
+    assert f'"NOTE: {S_C3_HEAD}"' in text
+    if not WEB_GEOMETRY_SPEC.exists():
+        pytest.skip(
+            f"web repository not found at {WEB_GEOMETRY_SPEC.parents[1]} (set BRAILLE_WEB_REPO)"
+        )
+    web = WEB_GEOMETRY_SPEC.read_text(encoding="utf-8")
+    for name, value in here.items():
+        there = re.search(rf"^{name} = ([0-9.]+)", web, re.MULTILINE)
+        assert there, f"the web generator no longer declares {name}"
+        assert float(there.group(1)) == value, f"{name} drifted between the generators"
+    assert S_C2 in web
+    assert S_C3_HEAD in web
+
+
+def _groove_cap_angles(trimesh_module, stl_path):
+    """Angles (deg, 0..360) of the end-cap vertices on the groove floor radius."""
+    import numpy as np
+
+    v = trimesh_module.load(str(stl_path), force="mesh").vertices
+    r = np.hypot(v[:, 0], v[:, 1])
+    caps = (np.abs(v[:, 2]) < 0.01) | (np.abs(v[:, 2] - HEIGHT) < 0.01)
+    floor = caps & (r > FLOOR_R - 0.03) & (r < FLOOR_R + 0.03)
+    return sorted(
+        set(np.round(np.degrees(np.arctan2(v[floor, 1], v[floor, 0])) % 360.0, 2))
+    )
+
+
+@pytest.fixture(scope="module")
+def trimesh_module():
+    return pytest.importorskip("trimesh")
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    ("mode", "columns", "plate", "which"),
+    [
+        ("visual", 15, "Embossing Plate", 0),
+        ("visual", 15, "Counter Plate", 1),
+        ("tactile", 14, "Embossing Plate", 0),
+        ("tactile", 14, "Counter Plate", 1),
+    ],
+)
+def test_v1_groove_sits_at_the_web_angle(
+    openscad_binary, trimesh_module, tmp_path, mode, columns, plate, which
+):
+    """One groove per plate, at the physical angle the web STL carries, mirrored between the plates."""
+    defines = {
+        "plate_type": plate,
+        "indicator_mode": "Tactile" if mode == "tactile" else "Visual",
+    }
+    if mode == "tactile":
+        defines["grid_columns"] = 14
+    stl_path = tmp_path / "plate.stl"
+    output = _render(openscad_binary, V1_FILE, stl_path, defines)
+    assert "ERROR:" not in output and "WARNING:" not in output, output[:800]
+    assert "NOTE: The seam channel" not in output
+    angles = _groove_cap_angles(trimesh_module, stl_path)
+    expected = GROOVE_DEG[(mode, columns)][which]
+    assert angles, "no groove floor on the end caps"
+    assert all(abs(a - expected) < 0.05 for a in angles), (
+        f"groove at {angles}, expected {expected}"
+    )
+    mesh = trimesh_module.load(str(stl_path), force="mesh")
+    assert len(mesh.split(only_watertight=False)) == 1
+
+
+@pytest.mark.slow
+def test_v1_groove_is_left_out_when_the_tactile_gap_is_too_narrow(
+    openscad_binary, trimesh_module, tmp_path
+):
+    """15 columns in tactile mode: no room (the web omits it too) - NOTE, badge, no floor."""
+    stl_path = tmp_path / "plate.stl"
+    output = _render(
+        openscad_binary,
+        V1_FILE,
+        stl_path,
+        {
+            "plate_type": "Embossing Plate",
+            "indicator_mode": "Tactile",
+            "grid_columns": 15,
+        },
+    )
+    assert f"NOTE: {S_C2}" in output
+    assert _groove_cap_angles(trimesh_module, stl_path) == []
+    # The badge renders as text bodies beside the plate, so the body count grows.
+    assert (
+        len(
+            trimesh_module.load(str(stl_path), force="mesh").split(
+                only_watertight=False
+            )
+        )
+        > 1
+    )
+
+
+@pytest.mark.slow
+def test_v1_groove_is_left_out_when_the_wall_would_be_too_thin(
+    openscad_binary, trimesh_module, tmp_path
+):
+    """A 13.5 mm cutout (circumradius 13.977) leaves 0.923 mm under the apex: omitted with S-C3.
+
+    The cutout radius is preset-owned, so the preset is set to Custom first; a
+    -D on the radius alone is silently ignored (research memory, 2026-08).
+    """
+    stl_path = tmp_path / "plate.stl"
+    output = _render(
+        openscad_binary,
+        V1_FILE,
+        stl_path,
+        {
+            "plate_type": "Embossing Plate",
+            "paper_thickness_preset": "Custom",
+            "polygon_cutout_radius_mm": 13.5,
+        },
+    )
+    assert "ERROR:" not in output and "WARNING:" not in output, output[:800]
+    assert f"NOTE: {S_C3}" in output
+    assert _groove_cap_angles(trimesh_module, stl_path) == []
+
+
+@pytest.mark.slow
+def test_v1_groove_survives_gear_mode(openscad_binary, trimesh_module, tmp_path):
+    """Gears on: the groove is cut before the gears join, and the roller is still one body."""
+    stl_path = tmp_path / "plate.stl"
+    output = _render(
+        openscad_binary,
+        V1_FILE,
+        stl_path,
+        {"plate_type": "Embossing Plate", "integrated_gears": "On"},
+    )
+    assert "ERROR:" not in output and "WARNING:" not in output, output[:800]
+    assert "NOTE: The seam channel" not in output
+    mesh = trimesh_module.load(str(stl_path), force="mesh")
+    assert len(mesh.split(only_watertight=False)) == 1
+    v = mesh.vertices
+    assert abs(v[:, 2].min() + 10.0) < 0.01 and abs(v[:, 2].max() - 62.0) < 0.01
+    # The gear faces meet the groove at the barrel ends: floor vertices at z 0 and 52.
+    angles = _groove_cap_angles(trimesh_module, stl_path)
+    assert angles and all(abs(a - 181.67) < 0.05 for a in angles), angles

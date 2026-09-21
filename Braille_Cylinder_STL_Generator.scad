@@ -252,6 +252,15 @@ polygon_cutout_radius_mm = 13.0; // [0:0.1:50] Polygonal cutout circumscribed ra
 polygon_cutout_points = 12; // [3:1:24] Number of sides/points for polygonal cutout
 seam_offset_degrees = 0.0; // [0:1:360] Seam offset (degrees) — Rotates starting position around cylinder
 
+// Slicer seam channel (OpenSCAD parity plan phase O1, 2026-09-21; web decisions
+// D-1, D-2, D-13..D-15). Size is not a dial: the six SEAM_CHANNEL_* constants
+// below the sync marker mirror the web generator's app/geometry_spec.py and
+// tests/test_seam_channel_scad.py diffs them. Description wording S-O2 (DRAFT,
+// awaiting Brennen's sign-off).
+
+// A shallow groove beside the row markers where the slicer hides its layer seam, keeping it off the dots. Turn Off for a plain surface.
+seam_channel = "On"; // [On, Off]
+
 /* [Expert Mode - Braille Spacing] */
 // --- Braille Dimensions ---
 grid_columns = 13; // [1:1:20] Text capacity in braille cells per row (matches the web app default of 13 text cells; in Visual indicator mode, 2 extra marker cells are added when Indicator Letters are On, or 1 extra cell for the always-present alignment triangle when Off — up to 14 text cells fit the default cylinder with Indicator Letters Off. Tactile indicator mode adds no marker cells, so up to 14 text cells fit the default cylinder; 15 leaves too little seam gap for the indicator)
@@ -893,6 +902,23 @@ pair_center_offset_mm = active_cylinder_diameter_mm + pair_spacing_mm;
 // cell plus 1 mm of margin).
 TACTILE_MIN_GAP_MARGIN = 5.0;
 
+// Slicer seam channel: a V groove the full height of the outer surface, in the
+// seam gap beside the row-indicator column, so a slicer's default "aligned"
+// seam mode hides each layer's seam in it instead of in a braille dot. Mirrors
+// the web generator's app/geometry_spec.py SEAM_CHANNEL_* one for one
+// (tests/test_seam_channel_scad.py diffs them); changing the groove needs
+// Brennen's decision AND a new slicing spike (web decisions D-13..D-15).
+SEAM_CHANNEL_WIDTH_MM     = 1.0;   // mouth width at the surface, mm
+SEAM_CHANNEL_DEPTH_MM     = 0.5;   // apex depth below the surface, mm (90 degree V)
+SEAM_CHANNEL_MARGIN_MM    = 0.25;  // clear surface kept on each side, mm
+SEAM_CHANNEL_OVERSHOOT_MM = 1.0;   // cutter length past each end face, mm
+SEAM_CHANNEL_LIP_MM       = 0.5;   // cutter sides carried past the surface, mm
+SEAM_CHANNEL_MIN_WALL_MM  = 1.2;   // FDM minimum wall under the apex, mm
+
+// Normalised gate for the `seam_channel` dropdown, read the way gears_on reads
+// its own: "On"/"Off" from the Customizer, "on"/"off" from -D.
+seam_channel_on = (seam_channel == "On") || (seam_channel == "on");
+
 // Radial thickness of the working prism the arrow is extruded into. Must exceed
 // raise + recess depth + base embed so the prism always straddles the shell
 // surface; the shell band intersection is what sets the actual raise/depth.
@@ -1037,6 +1063,58 @@ dot_spacing_angle     = active_dot_spacing / radius;
 dot_col_angle_offsets = [-dot_spacing_angle / 2, dot_spacing_angle / 2];
 dot_row_offsets       = [active_dot_spacing, 0, -active_dot_spacing];
 dot_positions         = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]];
+
+// Slicer seam channel placement - the web generator's _seam_channel_block(),
+// ported verbatim. Positions are signed arcs `s` along the surface from the
+// seam centre (180 degrees), positive TOWARD column 0; the free window
+// [lo, hi] is what the features either side leave of the seam gap and the
+// groove sits at its middle so both margins are equal. The footprint is the
+// SAME number on both plates, so the two grooves mirror exactly.
+//
+// ANGLE CONVENTION. This file places dots at their physical angle
+// (start_angle = -grid_angle / 2, so column 0 sits on the NEGATIVE side of
+// the seam centre) and the counter plate negates angles. Toward column 0 from
+// 180 is therefore INCREASING angle on the emboss plate and decreasing on the
+// counter plate: 181.67 / 178.33 degrees for the default 15-column visual
+// layout at 30.8 mm - the same physical angles the web generator's STL
+// carries (its spec theta is in the dot convention that its worker negates).
+// Never treat this angle differently from a dot's.
+seam_channel_footprint_mm = active_dot_spacing / 2
+    + (ds_on
+        ? max(DS_DOT_BASE_DIA / 2, DS_BOWL_DIA / 2)
+        : max(use_rounded_dots ? _preset_rounded_dot_base_diameter / 2 : _preset_emboss_dot_base_diameter / 2,
+              use_rounded_dots ? _preset_bowl_counter_dot_base_diameter / 2 : _preset_cone_counter_dot_base_diameter / 2));
+seam_channel_lo_mm = tactile_on
+    ? (tactile_indicator_width / 2 + tactile_recess_clearance)        // past the (clearance-grown) arrow recess
+    : -(seam_gap_mm / 2 - seam_channel_footprint_mm);                  // past the last cell's dots
+seam_channel_hi_mm = tactile_on
+    ? (seam_gap_mm / 2 - seam_channel_footprint_mm)                    // before the first cell's dots
+    : (seam_gap_mm / 2 - active_dot_spacing / 2);                      // before column 0's triangle
+seam_channel_free_mm = seam_channel_hi_mm - seam_channel_lo_mm;
+seam_channel_need_mm = SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
+seam_channel_fits = seam_channel_free_mm >= seam_channel_need_mm;
+// The wall under the apex: only a polygonal cutout can thin it - this shell
+// has no wall-thickness hollowing (a barrel with no cutout is solid) and gear
+// mode forces the barrel solid. The cutout's vertices reach the circumradius.
+seam_channel_bore_mm = (gears_on || active_polygon_cutout_radius_mm <= 0)
+    ? 0
+    : active_polygon_cutout_radius_mm / cos(180 / active_polygon_cutout_points);
+seam_channel_wall_mm = radius - SEAM_CHANNEL_DEPTH_MM - seam_channel_bore_mm;
+seam_channel_wall_ok = (seam_channel_bore_mm <= 0) || (seam_channel_wall_mm >= SEAM_CHANNEL_MIN_WALL_MM);
+seam_channel_present = seam_channel_on && seam_channel_fits && seam_channel_wall_ok;
+seam_channel_s_mm = (seam_channel_lo_mm + seam_channel_hi_mm) / 2;
+seam_channel_theta_emboss_deg  = 180 + (seam_channel_s_mm / radius) * 180 / PI;
+seam_channel_theta_counter_deg = 180 - (seam_channel_s_mm / radius) * 180 / PI;
+
+// The console copies of the two omission sentences, S-C2 and S-C3 - the web
+// generator's own words, signed off by Brennen 2026-09-21; reword only with
+// his sign-off. "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on
+// that token.
+if (seam_channel_on && !seam_channel_fits)
+    echo("NOTE: The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.");
+if (seam_channel_on && seam_channel_fits && !seam_channel_wall_ok)
+    echo(str("NOTE: The seam channel was left out: the cylinder wall would be thinner than ",
+             SEAM_CHANNEL_MIN_WALL_MM, " mm under it."));
 
 // Counter plate recess radii (spherical cap formula to match web generator)
 // For a bowl recess: R = (a² + h²) / (2h) where a = opening radius, h = depth
@@ -1453,6 +1531,21 @@ module ds_mode_warnings() {
     }
 }
 
+// The seam channel was left out: warn in 3D, same reasons and same pattern as
+// tactile_gap_warning above, on both plates (one set of settings serves the
+// pair). Wording S-O1 (DRAFT, awaiting Brennen's sign-off).
+module seam_channel_warning() {
+    if (seam_channel_on && !seam_channel_present) {
+        translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + 7 * INVALID_TEXT_STACK_GAP])
+        color("red")
+        linear_extrude(height = INVALID_TEXT_DEPTH)
+        text(seam_channel_fits
+                 ? str("SEAM CHANNEL LEFT OUT: wall ", round(seam_channel_wall_mm * 100) / 100, "mm")
+                 : str("SEAM CHANNEL LEFT OUT: gap ", round(seam_channel_free_mm * 10) / 10, "mm"),
+             size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
+    }
+}
+
 // Tactile indicator heights along the axis, top first: one per braille row at
 // the same row pitch the Visual marker columns use, or - on the "0.3mm"
 // preset - three fixed ones about mid-height that follow neither the row
@@ -1713,10 +1806,33 @@ module gear_set(emboss = is_emboss_plate) {
     }
 }
 
-module cylinder_shell(cutout_rotate_deg = 0, force_solid = false) {
+// The seam channel cutter, the web worker's createSeamChannelManifold: a V
+// section in the radial plane (X radial, Y tangential) - apex SEAM_CHANNEL_DEPTH_MM
+// below the surface, sides through the surface at SEAM_CHANNEL_WIDTH_MM and on
+// out to a lip beyond it so the mouth is cut rather than touched - extruded
+// the full height plus an overshoot past each end face, then turned to the
+// groove's physical angle. It is subtracted from the BARE outer cylinder,
+// before the cutout and before anything is unioned on, so a raised arrow can
+// never be undercut and the gears fill their share back in.
+module seam_channel_cut(theta_deg) {
+    half_mouth = (SEAM_CHANNEL_WIDTH_MM / 2)
+                 * (SEAM_CHANNEL_DEPTH_MM + SEAM_CHANNEL_LIP_MM) / SEAM_CHANNEL_DEPTH_MM;
+    r_apex = radius - SEAM_CHANNEL_DEPTH_MM;
+    r_lip  = radius + SEAM_CHANNEL_LIP_MM;
+    rotate([0, 0, theta_deg])
+        linear_extrude(height = active_cylinder_height_mm + 2 * SEAM_CHANNEL_OVERSHOOT_MM, center = true)
+            polygon(points = [[r_apex, 0], [r_lip, -half_mouth], [r_lip, half_mouth]]);
+}
+
+module cylinder_shell(cutout_rotate_deg = 0, force_solid = false, channel_theta_deg = undef) {
     difference() {
         // Outer cylinder (see $fn TESSELLATION POLICY: case 1)
         cylinder(h = active_cylinder_height_mm, r = active_cylinder_diameter_mm / 2, center = true, $fn = CYLINDER_SHELL_FN);
+
+        // Slicer seam channel, cut first while the barrel is still bare.
+        if (seam_channel_present && !is_undef(channel_theta_deg)) {
+            seam_channel_cut(channel_theta_deg);
+        }
         
         // Polygonal cutout if specified
         // force_solid drops the cutout for gear mode (decision D-2): a
@@ -1892,7 +2008,8 @@ module cylinder_emboss_plate() {
         difference() {
             union() {
                 // Base cylinder
-                cylinder_shell(cutout_rotate_deg = -active_seam_offset_degrees, force_solid = gears_on);
+                cylinder_shell(cutout_rotate_deg = -active_seam_offset_degrees, force_solid = gears_on,
+                               channel_theta_deg = seam_channel_theta_emboss_deg);
 
                 // Integrated gears (BETA): the top and bottom drive gears, so
                 // this plate exports as one solid roller.
@@ -1925,6 +2042,10 @@ module cylinder_emboss_plate() {
                 // TACTILE WALL TOO THIN warning (tactile mode with a polygonal
                 // cutout only; no-op otherwise).
                 tactile_seam_wall_warning();
+
+                // SEAM CHANNEL LEFT OUT warning (switch On but no room or no
+                // wall for the groove; no-op otherwise).
+                seam_channel_warning();
 
                 // TOO MANY LINES warning (see top-level rows_used /
                 // too_many_rows). The dot loop below stops at active_grid_rows,
@@ -2023,7 +2144,8 @@ module cylinder_counter_plate() {
         difference() {
             union() {
                 // Base cylinder
-                cylinder_shell(cutout_rotate_deg = active_seam_offset_degrees, force_solid = gears_on);
+                cylinder_shell(cutout_rotate_deg = active_seam_offset_degrees, force_solid = gears_on,
+                               channel_theta_deg = seam_channel_theta_counter_deg);
 
                 // Integrated gears (BETA): the top and bottom drive gears, so
                 // this plate exports as one solid roller.
@@ -2132,6 +2254,7 @@ module cylinder_counter_plate() {
         // above. All no-ops unless their condition holds.
         ds_mode_warnings();
         tactile_seam_wall_warning();
+        seam_channel_warning();
     }
 }
 
