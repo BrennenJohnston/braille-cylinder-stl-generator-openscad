@@ -7,15 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-09-21
+
+Everything since 2.7.0, tagged on Brennen's go-ahead after his print tests
+passed (2026-09-21): the slicer seam channel in both files, fixed gears for the
+Embosser Version 2 file, the MakerWorld Version 2 upload under the three-layer
+sync model, the tactile arrow layouts, the Version 2 54 mm barrel, and the
+integrated-gears beta and both-plates work that had been waiting for this tag.
+**Renders at the shipped defaults change in this release:** every cylinder now
+carries the seam channel (`seam_channel = "Off"` gives the 2.7.0 geometry back
+byte for byte), and the Version 2 file's preset barrel is 30.8 × 54 mm with
+four text rows per face.
+
 Entry wording signed off by Brennen 2026-08-25 — including the both-plates
-preview entry, whose CLI/GUI cap correction he approved the same day; whether
-these fold into 2.8.0 before it tags is still his call.
+preview entry, whose CLI/GUI cap correction he approved the same day; they
+fold into 2.8.0 on his go-ahead of 2026-09-21.
 
 The `hemisphere_quality`, rounded-dome-weld and MakerWorld-gears entries were
 signed off the same day, at the end of the session that added them.
 
 The three 2026-09-21 entries (the slicer seam channel, Version 2 fixed gears,
-the MakerWorld Version 2 sync model) are drafted and await Brennen's sign-off.
+the MakerWorld Version 2 sync model) were signed off by Brennen on 2026-09-21
+with the OpenSCAD parity plan.
 
 ### Added
 
@@ -190,7 +203,8 @@ the MakerWorld Version 2 sync model) are drafted and await Brennen's sign-off.
   `render_both_plates` is On — one render, one suggested filename (the pair
   hint). Condition change only; the signed wording is untouched.
 
-## [2.8.0] - UNRELEASED (version bump, tag and release are Brennen's call)
+**The integrated-gears beta and the both-plates render**, written up for this
+release on 2026-08-24/25 and shipped in it:
 
 Integrated gears, in beta: a cylinder can now be generated as ONE solid part with
 its top and bottom drive gears already attached, instead of a bare barrel that
