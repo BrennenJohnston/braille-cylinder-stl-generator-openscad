@@ -9,7 +9,7 @@ STL Generator for uploading to
 | [`Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`](Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad) | The single `.scad` file to upload to the **Version 1** MakerWorld listing. |
 | [`Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`](Braille_Cylinder_STL_Generator_MakerWorld_v2.scad) | The single `.scad` file to upload to the **Embosser Version 2** MakerWorld listing. |
 
-## Embosser Version 2 (prototype)
+## Embosser Version 2
 
 `Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` is the upload for the
 Version 2 listing. It needs **no flattening**: the canonical
@@ -41,7 +41,7 @@ makerworld\Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`).
 **Listing label (S-V12) — signed off by Brennen 2026-08-28; reword only with
 his sign-off:**
 
-> Braille Cylinder STL Generator — Embosser Version 2 (keyed gear pegs, prototype)
+> Braille Cylinder STL Generator — Embosser Version 2 (keyed gear pegs)
 
 A note on the version number: this is the **Version 1 model's** MakerWorld
 build, labeled **v1.5**. Until 2026-09-01 the file was named `_v2`, where the

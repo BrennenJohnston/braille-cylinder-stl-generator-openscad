@@ -14,9 +14,9 @@ MakerWorld cannot carry the gear assets; see `makerworld/README.md`).
 
 ---
 
-## Listing title — SIGNED (S-V12, 2026-08-28)
+## Listing title — SIGNED (S-V12, 2026-08-28); "prototype" dropped on Brennen's instruction 2026-09-21
 
-> Braille Cylinder STL Generator — Embosser Version 2 (keyed gear pegs, prototype)
+> Braille Cylinder STL Generator — Embosser Version 2 (keyed gear pegs)
 
 ---
 
@@ -26,7 +26,7 @@ Parametric braille embossing cylinders for the Embosser Version 2 machine.
 Type nothing here that isn't braille: paste pre-translated Unicode braille,
 pick your card stock, and render both cylinders of a matched pair. Keyed
 holes at both ends mean the drive gears cannot be seated in the wrong place.
-Double-sided (interpoint) embossing included. Work-in-progress prototype.
+Double-sided (interpoint) embossing included.
 
 ---
 
@@ -43,9 +43,9 @@ Embosser Version 2 machine.
 > cylinder gets a matching keyed hole — so a gear cannot be seated in the
 > wrong place.
 >
-> **It is a work-in-progress prototype.** The cylinder size, the cutout
-> shapes and the fit may all change as testing continues. Nothing about it
-> is final.
+> The 30.8 × 54 mm cylinder and its keyed cutouts are print-tested
+> (2026-09-01). *(The signed 2026-08-28 "work-in-progress prototype" sentence
+> was dropped on Brennen's instruction, 2026-09-21.)*
 
 **What each cylinder has** — DRAFT:
 

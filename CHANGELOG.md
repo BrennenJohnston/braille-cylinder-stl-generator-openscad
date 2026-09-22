@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   compatibility fact stays in the README and the file's comments; the MakerWorld copy follows.
   `tests/test_tactile_lead_in_scad.py` is renamed `test_tactile_seam_column_scad.py` - it pins
   the D-T7 groove, not the reverted lead-in.
+- **The word "prototype" is gone from the Version 2 file's header, both READMEs and the MakerWorld
+  listing draft** (Brennen's instruction, 2026-09-21): the 30.8 x 54 mm barrel and R14 cutouts were
+  print-tested on 2026-09-01, the tactile seam channel on 2026-09-21.
 
 ## [2.8.1] - 2026-09-21
 

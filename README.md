@@ -461,7 +461,7 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
 
 ## 🐛 Troubleshooting
 
-### Embosser Version 2 (prototype)
+### Embosser Version 2
 
 `Braille_Cylinder_STL_Generator_EmbosserV2.scad` at the repository root
 generates cylinders for **Embosser Version 2**, a new hardware design whose four
@@ -469,8 +469,8 @@ drive gears each carry a differently shaped peg. The file cuts a matching keyed
 through-hole at each end of the cylinder, so a gear cannot be seated in the
 wrong place, plus a key nub on the Embossing Plate's top face.
 
-It is a **work-in-progress prototype**: the cylinder size, the cutout shapes and
-the fit may change as testing continues.
+Its 30.8 × 54 mm barrel and R14 keyed cutouts were print-tested on 2026-09-01, and
+the tactile seam channel on 2026-09-21.
 
 **The gears must be re-cut to match.** The holes are family R14 — rounded
 rectangles of 14 x 14 mm (Cylinder A's top, the nub end), 18 x 10 (A's bottom),

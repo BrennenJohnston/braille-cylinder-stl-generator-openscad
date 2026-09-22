@@ -2,10 +2,10 @@
 // Generates embossing plates and counter plates for cylindrical objects
 //
 // =============================================================================
-// EMBOSSER VERSION 2 — KEYED GEAR-PEG CUTOUTS (PROTOTYPE)
+// EMBOSSER VERSION 2 — KEYED GEAR-PEG CUTOUTS
 // =============================================================================
-//  This is the Version 2 file. It is a WORK-IN-PROGRESS PROTOTYPE: the cylinder
-//  size, the cutout shapes and the fit may change as testing continues.
+//  This is the Version 2 file. Its 30.8 x 54 mm barrel and R14 keyed cutouts
+//  were print-tested on 2026-09-01, the tactile seam channel on 2026-09-21.
 //
 //  Version 2 is a new embosser design. Its drive gears are separate prints, but
 //  each of the four gears carries a differently shaped peg, and each end of each
