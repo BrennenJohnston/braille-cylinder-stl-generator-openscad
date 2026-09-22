@@ -139,7 +139,9 @@ surface features change.
 - **The arrow sits at the middle of the seam gap** on both plates, with equal
   space before the first cell and after the last, and the counter plate's
   recess meets it at the nip. Since 2.8.1 the slicer seam channel runs down
-  the arrow column in two stretches that stop 0.3 mm short of the arrows
+  the arrow column the full height and is cut through the raised arrows, so
+  the slicer has a corner at every layer: each arrow keeps its base half as
+  two ridges and loses its point
 - Five sliders tune it: `tactile_indicator_width` / `_length` / `_raise`, plus
   `tactile_recess_clearance` and `tactile_recess_extra_depth` for the counter
   plate's fit

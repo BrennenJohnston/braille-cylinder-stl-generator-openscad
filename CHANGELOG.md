@@ -11,24 +11,28 @@ Entries drafted 2026-09-21; wording awaits Brennen's sign-off.
 
 ### Changed
 
-- **In Tactile mode the slicer seam channel runs down the arrow column
-  itself, and the alignment arrow sits at the seam-gap centre** (both files,
-  the MakerWorld copies with them; web decision D-T6, 2026-09-21, after
-  Brennen's test of the one-day lead-in build). A fixed lead-in before the
-  first cell with the groove behind the arrow was built and reverted the same
-  day: the groove sat beside the arrows and a large trailing space followed
-  the last cell. The arrow is back at 180° on both plates — equal space either
-  side of it — and the tactile groove is cut at 180° in two stretches that
-  stop `SEAM_CHANNEL_ARROW_MARGIN_MM` (0.3 mm) short of the arrow chain: from
-  each end face to ±20.3 mm about mid-height on the emboss plate at the
-  defaults, −20.5 / +21.32 on the counter plate (its mitred recess apex
-  reaches 1.02 mm further). A stretch under `SEAM_CHANNEL_MIN_SEGMENT_MM`
-  (1.0 mm) is dropped, and a plate with none leaves the groove out with the
-  web generator's NOTE and a `SEAM CHANNEL LEFT OUT: arrows` badge (wording
-  awaits sign-off). Visual renders are unchanged. The render prints a `NOTE:`
-  with both plates' stretches. In the Version 1 file `GEAR_ARROW_WELD_MM`
-  moved up beside `gears_on` (the stretches read it at top level), as the
-  Version 2 file already had it.
+- **In Tactile mode the slicer seam channel runs down the arrow column the
+  full height and is cut through the raised arrows, and the alignment arrow
+  sits at the seam-gap centre** (both files, the MakerWorld copies with them;
+  web decisions D-T6 and D-T7, 2026-09-21, after Brennen's prints). A fixed
+  lead-in before the first cell with the groove behind the arrow was built and
+  reverted the same day (the groove sat beside the arrows and a large trailing
+  space followed the last cell); a groove in two stretches that stopped short
+  of the arrow chain was built and reverted the same day too (wherever it
+  stopped, the slicer chose a braille dot or bowl for its seam). The arrow is
+  back at 180° on both plates — equal space either side of it — and the
+  tactile groove is cut at 180° the full height on both plates; on the emboss
+  plate it is cut a second time after the raised arrows are on, over the arrow
+  chain plus `SEAM_CHANNEL_ARROW_MARGIN_MM` (0.3 mm) at each end, held
+  `SEAM_CHANNEL_RECUT_INSET_MM` (0.05 mm) inside the end faces, with the V's
+  sides carried `tactile_indicator_raise + SEAM_CHANNEL_LIP_MM` past the
+  surface. The V is 2 mm wide at an arrow's top face, so each arrow keeps its
+  base half as two ridges and loses its point (Brennen's choice: the tested V
+  at every layer). The counter plate's recesses are deeper than the groove,
+  so its single cut already runs through them. Visual renders are unchanged.
+  The render prints a `NOTE:` with the recut span. In the Version 1 file
+  `GEAR_ARROW_WELD_MM` moved up beside `gears_on` (the span reads it at top
+  level), as the Version 2 file already had it.
 
 ### Added
 

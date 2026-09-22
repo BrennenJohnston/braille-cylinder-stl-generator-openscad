@@ -359,13 +359,15 @@ and the polygonal cutout are unchanged — only surface features differ.
   `place_cylinder_marker(180, …)`; a fixed lead-in before the first cell was
   tried and reverted the same day). The card need is measured from there:
   `seam_gap/2 + grid + the cell's dot footprint`. In Tactile mode the slicer
-  seam channel runs down the arrow column at 180° in two stretches
-  (`seam_channel_stretches_emboss` / `_counter`, `[z_from, z_to]` about
-  mid-height) that stop `SEAM_CHANNEL_ARROW_MARGIN_MM` (0.3) short of the
-  arrow chain — the counter plate's mitred recess apex reaches
-  `clearance / sin(half the apex angle)` = 1.02 mm further than the raised
-  arrow — and a stretch under `SEAM_CHANNEL_MIN_SEGMENT_MM` (1.0) is dropped;
-  the render's `NOTE:` states both plates' stretches.
+  seam channel runs down the arrow column at 180° the full height on both
+  plates, and the emboss plate cuts it a second time after the raised arrows
+  are on (`seam_channel_arrow_recut`, over `seam_channel_recut_span` =
+  the arrow chain plus `SEAM_CHANNEL_ARROW_MARGIN_MM` (0.3) at each end, held
+  `SEAM_CHANNEL_RECUT_INSET_MM` (0.05) inside the end faces, with the V's
+  sides carried `tactile_indicator_raise + SEAM_CHANNEL_LIP_MM` past the
+  surface), so each arrow keeps its base half as two ridges and loses its
+  point (web decision D-T7); the counter plate's recesses are deeper than
+  the groove and get no recut. The render's `NOTE:` states the recut span.
 - **Seam-gap guard.** When the gap drops below
   `tactile_indicator_width + 5 mm`, both plates render a red
   `TACTILE GAP TOO SMALL: <gap>mm` extrusion above the cylinder and the desktop

@@ -1,23 +1,27 @@
 """
-The tactile arrow at the seam-gap centre and the seam channel down its column
-(2026-09-21, web decision D-T6 after Brennen's test of the one-day lead-in) -
-renders of both files. The file keeps its 2026-09-21 name: the lead-in it was
-written for was reverted the same day, and the renders it makes are the same.
+The tactile arrow at the seam-gap centre and the seam channel down its column,
+the full height and through the raised arrows (2026-09-21, web decisions D-T6
+and D-T7 after Brennen's prints) - renders of both files. The file keeps its
+2026-09-21 name: the lead-in it was written for was reverted the same day,
+and the renders it makes are the same.
 
 What this proves about the files the user actually renders:
 
   * the emboss plate's raised arrow and the counter plate's recess sit at
     180 degrees on both plates - the seam-gap centre, equal space either side
     of the arrow - and the render's NOTE says so;
-  * the seam channel runs down the arrow column at 180, in two stretches that
-    stop 0.3 mm short of the arrow chain: groove floor on both end caps and in
-    the stretches, none across the chain, the stretch ends where the NOTE says
-    (+/-20.3 mm about mid-height on the emboss plate at 13 cells; the counter
-    plate's mitred recess apex reaches 1.02 mm further, so 21.32);
+  * the seam channel runs down the arrow column at 180 the full height, on
+    both plates: groove floor on both end caps and out to them;
+  * on the emboss plate it is recut through the raised arrows over the span
+    the NOTE states (the chain plus 0.3 mm at each end: +/-20.3 mm about
+    mid-height at 13 cells on the default rows), so nothing stands proud of
+    the surface on the centre line inside the chain - each arrow's point is
+    gone - while the arrows' base corners, 7.4 degrees out, still do;
   * 14 cells render, with the card-fit NOTE and the red badge above the
     cylinder; 13 cells render with neither;
   * 15 cells keep the groove on the arrow column and trip the seam-gap
     warning, not the channel's;
+  * a barrel no taller than the chain clamps the recut inside its end faces;
   * the Version 2 file (54 mm barrel) places everything identically.
 
 Judged by OUTPUT TEXT and FILE EXISTENCE, never by an exit code (the rule the
@@ -47,25 +51,12 @@ HEIGHT = {V1_FILE: 52.0, V2_FILE: 54.0}
 ARROW_DEG = 180.0
 FLOOR_R = RADIUS - 0.5
 # The arrow chain at the defaults (four 10 mm arrows on 10 mm rows: -20..+20
-# about mid-height) plus the 0.3 mm margin; the counter plate's recess base
-# reaches the 0.2 mm clearance further and its mitred apex 0.2 / sin(11.31 deg).
-EMBOSS_SPAN = (-20.3, 20.3)
-COUNTER_SPAN = (-20.5, 21.3198)
+# about mid-height) plus the 0.3 mm margin at each end.
+RECUT_SPAN = (-20.3, 20.3)
 CARD_NOTE = (
     "NOTE: this row needs 92.8 mm of card from the alignment arrow; the card is "
     "90 mm. Lower grid_columns to 13 or fewer."
 )
-S_C4 = "The seam channel was left out: the tactile arrows leave no room for it along the cylinder."
-
-
-def _expected_stretches(height, span):
-    end = height / 2.0 + 1.0  # the end face plus SEAM_CHANNEL_OVERSHOOT_MM
-    return [[-end, span[0]], [span[1], end]]
-
-
-def _flat(stretches):
-    """pytest.approx takes no nested lists: [[a, b], [c, d]] -> [a, b, c, d]."""
-    return [value for pair in stretches for value in pair]
 
 
 @pytest.fixture(scope="module")
@@ -108,92 +99,98 @@ def _render(binary, tmp_path, scad_file, name, defines, hardwarnings=True):
     return stl_path, output
 
 
-def _noted_stretches(output):
-    """(emboss, counter) stretches from the render's NOTE, as [[z_from, z_to], ...]."""
+def _noted_recut(output):
+    """The emboss plate's recut span from the render's NOTE, as [z_from, z_to]."""
     match = re.search(
-        r"NOTE: tactile arrow at 180 deg on both plates; seam channel stretches "
-        r"(\[.*?\]) mm \(emboss\) / (\[.*?\]) mm \(counter\) about mid-height\.",
+        r"NOTE: tactile arrow at 180 deg on both plates; seam channel the full height, "
+        r"recut through the raised arrows over z (\[.*?\]) mm about mid-height on the emboss plate\.",
         output,
     )
     assert match, f"no tactile arrow NOTE:\n{output[:800]}"
-    return json.loads(match.group(1)), json.loads(match.group(2))
+    return json.loads(match.group(1))
 
 
-def _feature_angles(trimesh_module, stl_path, height, raised, half_window_deg):
-    """Angles of the arrow's own vertices: proud of the shell (raised) or below it (recess)."""
+def _load(trimesh_module, stl_path):
     import numpy as np
 
     v = trimesh_module.load(str(stl_path), force="mesh").vertices
     r = np.hypot(v[:, 0], v[:, 1])
     a = np.degrees(np.arctan2(v[:, 1], v[:, 0])) % 360.0
+    return v, r, a
+
+
+def _recess_angles(trimesh_module, stl_path, height, half_window_deg):
+    """Angles of the recess's own vertices: below the surface, off the groove floor band."""
+    import numpy as np
+
+    v, r, a = _load(trimesh_module, stl_path)
     near = np.abs(((a - ARROW_DEG + 180.0) % 360.0) - 180.0) < half_window_deg
     inside = (v[:, 2] > 1.0) & (v[:, 2] < height - 1.0)
-    if raised:
-        radial = r > RADIUS + 0.05
-    else:
-        # The groove floor shares the column (0.5 mm down); the recess floor
-        # is 0.7 mm down, so a thin band separates the two.
-        radial = (r < RADIUS - 0.05) & (r > RADIUS - 1.0) & (np.abs(r - FLOOR_R) > 0.03)
+    radial = (r < RADIUS - 0.05) & (r > RADIUS - 1.0) & (np.abs(r - FLOOR_R) > 0.03)
     return a[near & inside & radial]
 
 
 def _groove_cap_angles(trimesh_module, stl_path, height):
     import numpy as np
 
-    v = trimesh_module.load(str(stl_path), force="mesh").vertices
-    r = np.hypot(v[:, 0], v[:, 1])
+    v, r, a = _load(trimesh_module, stl_path)
     caps = (np.abs(v[:, 2]) < 0.01) | (np.abs(v[:, 2] - height) < 0.01)
     floor = caps & (r > FLOOR_R - 0.03) & (r < FLOOR_R + 0.03)
-    return sorted(
-        set(np.round(np.degrees(np.arctan2(v[floor, 1], v[floor, 0])) % 360.0, 2))
-    )
-
-
-def _groove_floor_z(trimesh_module, stl_path, height):
-    """z (about mid-height) of every groove-floor vertex on the 180 deg column."""
-    import numpy as np
-
-    v = trimesh_module.load(str(stl_path), force="mesh").vertices
-    r = np.hypot(v[:, 0], v[:, 1])
-    a = np.degrees(np.arctan2(v[:, 1], v[:, 0])) % 360.0
-    floor = (r > FLOOR_R - 0.03) & (r < FLOOR_R + 0.03) & (np.abs(a - ARROW_DEG) < 0.5)
-    return np.sort(v[floor, 2] - height / 2.0)
+    return sorted(set(np.round(a[floor], 2)))
 
 
 def _badge_vertices(trimesh_module, stl_path, height):
     """Vertices well above the top face: the red badge text (the Version 2 nub stops at +3 mm)."""
-    v = trimesh_module.load(str(stl_path), force="mesh").vertices
+    v, _, _ = _load(trimesh_module, stl_path)
     return int((v[:, 2] > height + 4.0).sum())
 
 
-def _assert_groove_in_the_stretches(trimesh_module, stl_path, height, span):
-    """Floor on the caps and out to the stretch ends, nothing across the arrow chain."""
+def _assert_full_height_groove(trimesh_module, stl_path, height):
+    """Floor on both caps at 180, and nowhere else."""
+    import numpy as np
+
     assert _groove_cap_angles(trimesh_module, stl_path, height) == pytest.approx(
         [ARROW_DEG], abs=0.05
     )
-    z = _groove_floor_z(trimesh_module, stl_path, height)
-    assert len(z) > 0, "no groove floor on the arrow column"
-    below, above = z[z < 0.0], z[z > 0.0]
-    assert len(below) > 0 and len(above) > 0
-    assert float(below.min()) == pytest.approx(-height / 2.0, abs=0.01)
-    assert float(above.max()) == pytest.approx(height / 2.0, abs=0.01)
-    # The stretches end exactly at the margin, and the chain between is bare.
-    assert float(below.max()) == pytest.approx(span[0], abs=0.01)
-    assert float(above.min()) == pytest.approx(span[1], abs=0.01)
-    assert not ((z > span[0] + 0.02) & (z < span[1] - 0.02)).any(), (
-        "groove floor under the arrow chain"
+    v, r, a = _load(trimesh_module, stl_path)
+    # Within the barrel only: a red badge above the top face has vertices at
+    # every radius.
+    within = (v[:, 2] > -0.01) & (v[:, 2] < height + 0.01)
+    floor = within & (r > FLOOR_R - 0.03) & (r < FLOOR_R + 0.03)
+    assert np.abs(a[floor] - ARROW_DEG).max() < 0.5, "groove floor off the arrow column"
+    z = v[floor, 2]
+    assert float(z.min()) == pytest.approx(0.0, abs=0.01)
+    assert float(z.max()) == pytest.approx(height, abs=0.01)
+
+
+def _assert_arrows_notched(trimesh_module, stl_path, height, span):
+    """
+    Nothing stands proud of the surface on the centre line inside the recut
+    span (the points are gone); the arrows' base corners, 7.4 degrees out,
+    still do.
+    """
+    import numpy as np
+
+    v, r, a = _load(trimesh_module, stl_path)
+    proud = r > RADIUS + 0.05
+    off = np.abs(((a - ARROW_DEG + 180.0) % 360.0) - 180.0)
+    z = v[:, 2] - height / 2.0
+    inside = (z > span[0]) & (z < span[1])
+    assert not (proud & inside & (off < 1.0)).any(), (
+        "an arrow still stands on the centre line"
+    )
+    assert (proud & inside & (off > 6.0) & (off < 9.0)).any(), (
+        "the arrows' base corners are gone"
     )
 
 
 @pytest.mark.requires_openscad
 @pytest.mark.slow
 @pytest.mark.parametrize("scad_file", [V1_FILE, V2_FILE], ids=["v1", "v2"])
-def test_thirteen_cells_put_the_arrow_at_the_seam_centre_and_the_groove_down_its_column(
+def test_thirteen_cells_put_the_arrow_at_the_seam_centre_and_the_groove_through_it(
     openscad_binary, trimesh_module, tmp_path, scad_file
 ):
-    """Arrow and recess at 180, groove at 180 in two stretches outside the chain, no card note."""
-    import numpy as np
-
+    """Arrow and recess at 180, groove at 180 the full height, arrows notched, no card note."""
     height = HEIGHT[scad_file]
     emboss, out_e = _render(
         openscad_binary,
@@ -214,29 +211,22 @@ def test_thirteen_cells_put_the_arrow_at_the_seam_centre_and_the_groove_down_its
         },
     )
     for output in (out_e, out_c):
-        stretches_e, stretches_c = _noted_stretches(output)
-        assert _flat(stretches_e) == pytest.approx(
-            _flat(_expected_stretches(height, EMBOSS_SPAN)), abs=1e-4
-        )
-        assert _flat(stretches_c) == pytest.approx(
-            _flat(_expected_stretches(height, COUNTER_SPAN)), abs=1e-4
-        )
+        assert _noted_recut(output) == pytest.approx(list(RECUT_SPAN), abs=1e-4)
         assert "NOTE: this row needs" not in output
         assert "NOTE: The seam channel" not in output
 
-    raised = _feature_angles(trimesh_module, emboss, height, True, 12.0)
-    assert len(raised) > 0
-    assert float(np.median(raised)) == pytest.approx(ARROW_DEG, abs=0.3)
-    # The 4 mm arrow spans +/- 7.44 deg at this radius.
-    assert raised.min() == pytest.approx(ARROW_DEG - 7.44, abs=0.3)
-    assert raised.max() == pytest.approx(ARROW_DEG + 7.44, abs=0.3)
+    _assert_full_height_groove(trimesh_module, emboss, height)
+    _assert_full_height_groove(trimesh_module, counter, height)
+    _assert_arrows_notched(trimesh_module, emboss, height, RECUT_SPAN)
 
-    recess = _feature_angles(trimesh_module, counter, height, False, 9.0)
+    recess = _recess_angles(trimesh_module, counter, height, 9.0)
     assert len(recess) > 0
     assert (recess.min() + recess.max()) / 2.0 == pytest.approx(ARROW_DEG, abs=0.3)
+    # The counter plate is untouched by the recut: its recess still spans its
+    # full mitred width (4.4 mm at the surface, 4.5 at its floor - about 17.5
+    # degrees measured on the floor vertices).
+    assert 16.0 < recess.max() - recess.min() < 18.5
 
-    _assert_groove_in_the_stretches(trimesh_module, emboss, height, EMBOSS_SPAN)
-    _assert_groove_in_the_stretches(trimesh_module, counter, height, COUNTER_SPAN)
     assert _badge_vertices(trimesh_module, emboss, height) == 0
     assert _badge_vertices(trimesh_module, counter, height) == 0
 
@@ -256,14 +246,10 @@ def test_fourteen_cells_render_with_the_card_note_and_badge(
     )
     assert CARD_NOTE in output
     assert _badge_vertices(trimesh_module, stl_path, HEIGHT[V1_FILE]) > 0
-    # The arrow column does not move with the cell count: the same stretches as at 13.
-    stretches_e, _ = _noted_stretches(output)
-    assert _flat(stretches_e) == pytest.approx(
-        _flat(_expected_stretches(HEIGHT[V1_FILE], EMBOSS_SPAN)), abs=1e-4
-    )
-    _assert_groove_in_the_stretches(
-        trimesh_module, stl_path, HEIGHT[V1_FILE], EMBOSS_SPAN
-    )
+    # The arrow column does not move with the cell count: the same recut as at 13.
+    assert _noted_recut(output) == pytest.approx(list(RECUT_SPAN), abs=1e-4)
+    _assert_full_height_groove(trimesh_module, stl_path, HEIGHT[V1_FILE])
+    _assert_arrows_notched(trimesh_module, stl_path, HEIGHT[V1_FILE], RECUT_SPAN)
 
 
 @pytest.mark.requires_openscad
@@ -282,22 +268,21 @@ def test_fifteen_cells_keep_the_groove_and_trip_the_gap_warning(
     )
     assert "Tactile indicator needs a seam gap of at least" in output
     assert "NOTE: The seam channel" not in output
-    assert "NOTE: tactile arrow at 180 deg on both plates" in output
-    _assert_groove_in_the_stretches(
-        trimesh_module, stl_path, HEIGHT[V1_FILE], EMBOSS_SPAN
-    )
+    assert _noted_recut(output) == pytest.approx(list(RECUT_SPAN), abs=1e-4)
+    _assert_full_height_groove(trimesh_module, stl_path, HEIGHT[V1_FILE])
 
 
 @pytest.mark.requires_openscad
 @pytest.mark.slow
-def test_arrows_reaching_both_end_faces_leave_the_groove_out(
+def test_a_barrel_no_taller_than_the_chain_clamps_the_recut_inside_its_faces(
     openscad_binary, trimesh_module, tmp_path
 ):
     """
-    A barrel only as tall as the chain plus the margins has no stretch of
-    1 mm to spare: S-C4 in the console, the badge above the plate, no floor.
-    The presets own the height, so the preset is Custom (its dot sizes differ,
-    which is why only the omission is asserted here).
+    A 40 mm barrel: the chain plus its margins would reach past the end faces,
+    so the recut stops 0.05 mm inside them (the first cut has the groove there
+    already, and a gear face must never be nicked). The presets own the
+    height, so the preset is Custom (its dot sizes differ, which is why only
+    the span and the groove are asserted here).
     """
     stl_path, output = _render(
         openscad_binary,
@@ -308,9 +293,8 @@ def test_arrows_reaching_both_end_faces_leave_the_groove_out(
             "indicator_mode": "Tactile",
             "grid_columns": 13,
             "paper_thickness_preset": "Custom",
-            "cylinder_height_mm": 42,
+            "cylinder_height_mm": 40,
         },
     )
-    assert f"NOTE: {S_C4}" in output
-    assert _groove_cap_angles(trimesh_module, stl_path, 42.0) == []
-    assert _badge_vertices(trimesh_module, stl_path, 42.0) > 0
+    assert _noted_recut(output) == pytest.approx([-19.95, 19.95], abs=1e-4)
+    _assert_full_height_groove(trimesh_module, stl_path, 40.0)

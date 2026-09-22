@@ -204,10 +204,9 @@ S_C3_HEAD = "The seam channel was left out: the cylinder wall would be thinner t
 # 30.8 mm, 0.4 preset: the PHYSICAL groove angles in the exported STL, as
 # (embossing, counter). 15 visual columns = 13 text cells + 2 marker columns.
 # Physical angles (emboss, counter). Tactile: down the arrow column itself at
-# 180 on both plates since 2026-09-21 (web decision D-T6), in two stretches
-# that stop 0.3 mm short of the arrow chain - they reach both end caps, which
-# is where this file measures; tests/test_tactile_lead_in_scad.py measures
-# the stretches themselves.
+# 180 on both plates since 2026-09-21 (web decisions D-T6 / D-T7), the full
+# height and recut through the raised arrows; this file measures the end
+# caps, tests/test_tactile_lead_in_scad.py the groove and the notches.
 GROOVE_DEG = {
     ("visual", 15): (181.67, 178.33),
     ("tactile", 14): (180.0, 180.0),
@@ -434,7 +433,7 @@ def test_v2_declares_the_same_switch_constants_and_sentences():
     assert "DRAFT" not in description and "Brennen" not in description
     # Cut first in the Version 2 shell, before the keyed halves.
     shell = text.split("module cylinder_shell_v2(")[1].split("keyed_half_cutout(")[0]
-    assert "seam_channel_cuts(channel_theta_deg, channel_stretches)" in shell
+    assert "seam_channel_cut(channel_theta_deg)" in shell
 
 
 def _groove_cap_angles_at(trimesh_module, stl_path, height):

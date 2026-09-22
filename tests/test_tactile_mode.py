@@ -13,7 +13,7 @@ They cover the three things most likely to silently break the feature:
    canonical desktop build and the MakerWorld single-file build).
 2. The geometry invariants the nesting fit depends on — the seam-centre
    placement, the curvature-conforming shell band, and the recess clearance
-   offset — and the tactile seam channel's stretches down the arrow column.
+   offset — and the tactile seam channel recut through the raised arrows.
 3. The Visual code path staying gated behind ``!tactile_on`` so the default
    mode is untouched.
 
@@ -245,16 +245,17 @@ def test_indicator_sits_at_the_seam_gap_centre(scad_path):
 
 
 @BOTH_BUILDS
-def test_tactile_seam_channel_runs_down_the_arrow_column_in_stretches(scad_path):
+def test_tactile_seam_channel_runs_through_the_raised_arrows(scad_path):
     """
-    D-T6: in tactile mode the groove is at 180 on both plates, as stretches
-    that stop SEAM_CHANNEL_ARROW_MARGIN_MM short of the arrow chain - one set
-    per plate, because the counter plate's mitred recess reaches further -
-    and a plate with no stretch leaves it out with the web generator's S-C4.
+    D-T6 / D-T7: in tactile mode the groove is at 180 on both plates, the
+    full height, and the emboss plate cuts it a second time over the arrow
+    chain after the raised arrows are on - the V's sides carried past their
+    top faces - so the slicer has a corner at every layer. The counter plate's
+    recesses are deeper than the groove and get no recut.
     """
     scad = _read(scad_path)
     assert "SEAM_CHANNEL_ARROW_MARGIN_MM = 0.3;" in scad
-    assert "SEAM_CHANNEL_MIN_SEGMENT_MM  = 1.0;" in scad
+    assert "SEAM_CHANNEL_RECUT_INSET_MM  = 0.05;" in scad
     assert (
         "seam_channel_fits = tactile_on || (seam_channel_free_mm >= seam_channel_need_mm);"
         in scad
@@ -263,27 +264,34 @@ def test_tactile_seam_channel_runs_down_the_arrow_column_in_stretches(scad_path)
         "seam_channel_s_mm = tactile_on ? 0 : (seam_channel_lo_mm + seam_channel_hi_mm) / 2;"
         in scad
     )
-    assert "function tactile_channel_stretches(delta) =" in scad
+    assert "function tactile_recut_span(delta) =" in scad
     assert (
-        "seam_channel_stretches_emboss  = tactile_on ? "
-        "tactile_channel_stretches(gears_on ? GEAR_ARROW_WELD_MM : 0) : undef;"
+        "seam_channel_recut_span = tactile_on ? "
+        "tactile_recut_span(gears_on ? GEAR_ARROW_WELD_MM : 0) : undef;"
     ) in scad
     assert (
-        "seam_channel_stretches_counter = tactile_on ? "
-        "tactile_channel_stretches(tactile_recess_clearance) : undef;"
-    ) in scad
-    assert "module seam_channel_cuts(theta_deg, stretches) {" in scad
-    assert "channel_stretches = seam_channel_stretches_emboss" in scad
-    assert "channel_stretches = seam_channel_stretches_counter" in scad
-    assert (
-        'echo("NOTE: The seam channel was left out: the tactile arrows leave no '
-        'room for it along the cylinder.");'
-    ) in scad
-    # GEAR_ARROW_WELD_MM is read by the stretches at top level, so it is
-    # declared beside gears_on, ahead of them (OpenSCAD evaluates top-level
+        "seam_channel_recut_lip_mm = tactile_indicator_raise + SEAM_CHANNEL_LIP_MM;"
+        in scad
+    )
+    assert "module seam_channel_arrow_recut() {" in scad
+    # The first cut, full height, in the shell; the recut in the emboss
+    # plate's difference() only, after its union.
+    assert "seam_channel_cut(channel_theta_deg);" in scad
+    emboss = scad.split("module cylinder_emboss_plate()")[1].split(
+        "module cylinder_counter_plate()"
+    )[0]
+    counter = scad.split("module cylinder_counter_plate()")[1]
+    assert emboss.count("seam_channel_arrow_recut();") == 1
+    assert "seam_channel_arrow_recut();" not in counter
+    assert emboss.index("tactile_rows_raised();") < emboss.index(
+        "seam_channel_arrow_recut();"
+    )
+    assert "stretches" not in scad and "leave no room" not in scad
+    # GEAR_ARROW_WELD_MM is read by the recut span at top level, so it is
+    # declared beside gears_on, ahead of it (OpenSCAD evaluates top-level
     # assignments in source order).
     assert scad.index("GEAR_ARROW_WELD_MM = 0.005;") < scad.index(
-        "seam_channel_stretches_emboss  = "
+        "seam_channel_recut_span = "
     )
 
 
@@ -291,7 +299,7 @@ def test_tactile_seam_channel_runs_down_the_arrow_column_in_stretches(scad_path)
 def test_seam_channel_arrow_constants_mirror_the_web_generator(scad_path):
     """
     app/geometry_spec.py owns SEAM_CHANNEL_ARROW_MARGIN_MM and
-    SEAM_CHANNEL_MIN_SEGMENT_MM; this file mirrors them. Skipped when the web
+    SEAM_CHANNEL_RECUT_INSET_MM; this file mirrors them. Skipped when the web
     repository is not checked out beside this one.
     """
     web = (
@@ -304,7 +312,7 @@ def test_seam_channel_arrow_constants_mirror_the_web_generator(scad_path):
         pytest.skip(f"the web generator is not checked out at {web}")
     web_text = web.read_text(encoding="utf-8")
     scad = _read(scad_path)
-    for name in ("SEAM_CHANNEL_ARROW_MARGIN_MM", "SEAM_CHANNEL_MIN_SEGMENT_MM"):
+    for name in ("SEAM_CHANNEL_ARROW_MARGIN_MM", "SEAM_CHANNEL_RECUT_INSET_MM"):
         web_match = re.search(rf"^{name} = ([0-9.]+)", web_text, re.MULTILINE)
         assert web_match, f"{name} not found in the web generator"
         scad_match = re.search(rf"^{name}\s*= ([0-9.]+);", scad, re.MULTILINE)

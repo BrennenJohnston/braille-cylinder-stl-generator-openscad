@@ -7,6 +7,7 @@
 | 2026-09-21 | 1.1 | Section 3.6: the slicer seam channel's angle, and why the web spec's `theta` is negated on the way to the STL |
 | 2026-09-21 | 1.2 | Section 3.6: the tactile arrow's lead-in (195.0° / 165.0° at 13 cells) and the groove behind it (169.95° / 190.05°) |
 | 2026-09-21 | 1.3 | Section 3.6: the lead-in reverted (web decision D-T6) — the arrow at 180° on both plates, the tactile groove down the arrow column at 180° in two stretches |
+| 2026-09-21 | 1.4 | Section 3.6: the tactile groove the full height, recut through the raised arrows on the emboss plate (web decision D-T7) |
 
 ---
 
@@ -188,8 +189,11 @@ rotate([0, 0, theta_deg])
             polygon(points = [[r_apex, 0], [r_lip, -half_mouth], [r_lip, half_mouth]]);
 ```
 
-`z_from` / `z_to` default to the full height plus the overshoot (Visual mode);
-in Tactile mode `seam_channel_cuts()` calls this once per stretch.
+`z_from` / `z_to` default to the full height plus the overshoot and `lip` to
+`SEAM_CHANNEL_LIP_MM` — the first cut, in the shell, both modes. In Tactile mode
+`seam_channel_arrow_recut()` calls it again from the emboss plate's
+`difference()`, after the raised arrows are unioned, over the arrow chain with
+`lip = tactile_indicator_raise + SEAM_CHANNEL_LIP_MM`.
 
 `theta_deg` is a **physical** angle in this file's frame — the `atan2(y, x)` of
 the groove floor in the exported STL:
@@ -201,15 +205,17 @@ the groove floor in the exported STL:
 
 where `s` is the signed arc (mm) from the seam centre toward column 0, at the
 middle of the free window between the last cell's dots and column 0's marker
-(Visual), or 0 in Tactile mode: since 2026-09-21 (web decision D-T6, after a
-one-day lead-in placement was tried and reverted) the groove runs down the
-arrow column itself — the arrow sits at 180° on both plates — in two
-stretches `[z_from, z_to]` about mid-height that stop
-`SEAM_CHANNEL_ARROW_MARGIN_MM` (0.3 mm) short of the arrow chain: at the
-defaults `[-27, -20.3]` and `[20.3, 27]` on the 52 mm emboss plate, and
-`[-27, -20.5]` / `[21.32, 27]` on the counter plate, whose mitred recess apex
-reaches `clearance / sin(half the apex angle)` = 1.02 mm further. The render's
-`NOTE:` states both. The two plates mirror: their angles sum to 360°.
+(Visual), or 0 in Tactile mode: since 2026-09-21 (web decisions D-T6 and
+D-T7, after a lead-in placement and then a groove in two stretches were each
+tried and reverted the same day) the groove runs down the arrow column itself
+— the arrow sits at 180° on both plates — the full height, and on the emboss
+plate it is cut a second time through the raised arrows over
+`seam_channel_recut_span` = the arrow chain plus 0.3 mm at each end
+(`[-20.3, 20.3]` about mid-height at the defaults), held 0.05 mm inside the
+end faces, with the V's sides carried past the arrows' top faces. The
+counter plate's recesses are deeper than the groove, so its single cut
+already runs through them. The render's `NOTE:` states the span. The two
+plates mirror: their angles sum to 360°.
 
 **Why the web spec's number is not the same number.** The web generator's
 `app/geometry_spec.py` emits `seam_channel.theta` in its *dot convention* —

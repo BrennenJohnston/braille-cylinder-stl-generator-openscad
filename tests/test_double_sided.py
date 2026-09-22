@@ -341,12 +341,16 @@ class _Features:
         # end faces, and the warning text that floats above the top.
         inside = np.abs(self.z) < layout["height"] / 2.0
         band = (self.r > self.radius - 1.0) & (self.r < self.radius + 2.0) & inside
-        # The seam channel shares the arrow column since D-T6: its floor is
-        # 0.5 mm down at exactly the arrow angle, and its two tactile stretches
-        # end INSIDE the barrel (0.3 mm short of the arrow chain), so their end
-        # vertices would otherwise cluster as recesses at 180.
-        groove_floor = (np.abs(self.r - (self.radius - 0.5)) < 0.03) & self.near_arrow(
-            0.5
+        # The seam channel shares the arrow column since D-T6, and since D-T7
+        # its V is recut through the raised arrows: its own vertices sit on
+        # the groove floor (0.5 mm down) and where its walls meet the arrows'
+        # embedded base (0.2 mm down), all within 2 deg of the arrow angle,
+        # and would otherwise cluster as recesses at 180. A recess arrow's own
+        # vertices are 0.7 mm down or on the surface, so this drops none.
+        column = self.near_arrow(2.0)
+        groove_floor = column & (
+            (np.abs(self.r - (self.radius - 0.5)) < 0.03)
+            | (np.abs(self.r - (self.radius - 0.2)) < 0.03)
         )
         self.raised = band & (self.r > self.radius + 0.05)
         self.recessed = band & (self.r < self.radius - 0.05) & ~groove_floor
@@ -548,11 +552,16 @@ class TestCylinderAGeometry:
                 <= 0.01
             ), f"Row {row}'s arrow does not stand {layout['arrow_raise']} mm proud."
 
-        top = _row_y(layout, 0) + half
+        # Above the surface each arrow ends at its own centre line since the
+        # seam channel's recut (D-T7): the V is 2 mm wide at the top face,
+        # the arrow's own width there, so the topmost proud vertex sits a
+        # hair above the top row's centre (where the V wall, the arrow side
+        # and the top facet meet).
+        top = _row_y(layout, 0)
         bottom = _row_y(layout, layout["rows"] - 1) - half
         z_seam = ds_features.z[seam]
         assert (
-            abs(z_seam.max() - top) <= Z_TOL_MM
+            -Z_TOL_MM <= z_seam.max() - top <= 0.5
             and abs(z_seam.min() - bottom) <= Z_TOL_MM
         ), (
             f"The seam band spans z {z_seam.min():.3f}..{z_seam.max():.3f} mm; "
@@ -888,7 +897,9 @@ class TestForcedTactile:
 
     def test_arrows_are_rendered_anyway(self, forced, layout):
         features, _ = forced
-        seam = features.raised & features.near_arrow(0.5)
+        # The recut (D-T7) leaves nothing proud on the centre line; the arrows'
+        # ridges stand 3.6 to 7.4 deg out.
+        seam = features.raised & features.near_arrow(5.0)
         assert seam.any(), "Forced tactile did not render the seam arrows."
 
     def test_marker_columns_are_still_dropped(self, forced, layout):
@@ -2241,14 +2252,27 @@ class TestGoldenContainmentProbes:
         # The goldens are the 0.3 mm package, so since 2026-09-20 they carry
         # the three fixed arrows, not one per row.
         for z in _arrow_zs(layout, GOLDEN_PACKAGE):
+            # The seam channel is recut through the raised arrow (D-T7), so its
+            # centre line is air: probe 1.2 mm beside it, 3 mm below the
+            # arrow's centre, where the arrow is 1.6 mm wide either side and
+            # the V only 0.75 mm at half the raise.
             assert self._solid_at(
+                bodies[(source, "positive")],
+                layout,
+                arc_a + 1.2,
+                z - 3.0,
+                layout["radius"] + 0.5 * raise_mm,
+            ), (
+                f"{source} Cylinder A: the raised arrow at z {z} is hollow beside the recut."
+            )
+            assert not self._solid_at(
                 bodies[(source, "positive")],
                 layout,
                 arc_a,
                 z,
                 layout["radius"] + 0.5 * raise_mm,
             ), (
-                f"{source} Cylinder A: the raised arrow at z {z} is hollow at half its raise."
+                f"{source} Cylinder A: the arrow at z {z} is not recut on its centre line."
             )
             assert not self._solid_at(
                 bodies[(source, "positive")],
