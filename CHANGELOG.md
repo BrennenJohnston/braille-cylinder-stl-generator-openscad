@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **The Embosser Version 2 file no longer prints its "work-in-progress prototype" note** on every
+  render (Brennen, 2026-09-21; the web app dropped the prototype label on 2026-09-20). The R14-peg
+  compatibility fact stays in the README and the file's comments; the MakerWorld copy follows.
+  `tests/test_tactile_lead_in_scad.py` is renamed `test_tactile_seam_column_scad.py` - it pins
+  the D-T7 groove, not the reverted lead-in.
+
 ## [2.8.1] - 2026-09-21
 
 The tactile seam-channel fix, tagged on Brennen's go-ahead after his print
@@ -59,7 +67,7 @@ Visual renders are unchanged.
   needs 92.8 mm of card from the alignment arrow; the card is 90 mm. Lower
   grid_columns to 13 or fewer.` Never a stop. The `grid_columns` description
   says 13 is what a 90 mm card holds in Tactile mode. Renders pinned by
-  `tests/test_tactile_lead_in_scad.py` (named for the reverted lead-in it was
+  `tests/test_tactile_seam_column_scad.py` (named for the reverted lead-in it was
   written for).
 
 ## [2.8.0] - 2026-09-21

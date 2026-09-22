@@ -82,7 +82,6 @@ BOTTOM_PROBE_Z = 8.0
 TOP_PROBE_Z = 45.0
 
 SIZE_NOTE_START = "NOTE: The Version 2 embosser expects a 30.8 mm x 54 mm cylinder."
-PROTOTYPE_NOTE_START = "NOTE: Embosser Version 2 is a work-in-progress prototype."
 
 # The web generator's copy of the same numbers. Absent on CI, so the
 # cross-check skips rather than failing for a reason unrelated to this repo.
@@ -519,7 +518,6 @@ def test_the_size_note_speaks_only_off_size_and_never_as_a_warning(
         openscad_binary, tmp_path, "v2_size_ok", {"plate_type": "Embossing Plate"}
     )
     assert SIZE_NOTE_START not in at_preset, "the size note fired at the preset size"
-    assert PROTOTYPE_NOTE_START in at_preset, "the prototype note must always speak"
 
     stl_path, off_size, _ = _render(
         openscad_binary,

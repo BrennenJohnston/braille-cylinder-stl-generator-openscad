@@ -206,7 +206,7 @@ S_C3_HEAD = "The seam channel was left out: the cylinder wall would be thinner t
 # Physical angles (emboss, counter). Tactile: down the arrow column itself at
 # 180 on both plates since 2026-09-21 (web decisions D-T6 / D-T7), the full
 # height and recut through the raised arrows; this file measures the end
-# caps, tests/test_tactile_lead_in_scad.py the groove and the notches.
+# caps, tests/test_tactile_seam_column_scad.py the groove and the notches.
 GROOVE_DEG = {
     ("visual", 15): (181.67, 178.33),
     ("tactile", 14): (180.0, 180.0),

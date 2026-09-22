@@ -1971,9 +1971,6 @@ function v2_widest_key_radius(clearance) =
     max(v2_key_max_radius(V2_KEY_A1, clearance), v2_key_max_radius(V2_KEY_A2, clearance),
         v2_key_max_radius(V2_KEY_B1, clearance), v2_key_max_radius(V2_KEY_B2, clearance));
 
-// "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on that token.
-echo("NOTE: Embosser Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.");
-
 if (active_cylinder_diameter_mm != 30.8 || active_cylinder_height_mm != 54) {
     echo(str("NOTE: The Version 2 embosser expects a 30.8 mm x 54 mm cylinder. Received ",
              active_cylinder_diameter_mm, " mm x ", active_cylinder_height_mm, " mm."));
