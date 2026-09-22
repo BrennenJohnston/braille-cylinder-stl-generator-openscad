@@ -7,7 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Entries drafted 2026-09-21; wording awaits Brennen's sign-off.
+## [2.8.1] - 2026-09-21
+
+The tactile seam-channel fix, tagged on Brennen's go-ahead after his print
+test of a 13-cell tactile pair passed (2026-09-21): in Tactile mode the slicer
+seam channel runs down the alignment-arrow column the full height and is cut
+through the raised arrows, the arrow stays at the seam-gap centre, and a
+card-fit check warns when a row would run off the 90 mm card. The wording
+of the card-fit note, badge and `grid_columns` description is signed.
+**Tactile renders at the shipped defaults change in this release** (the
+groove moves onto the arrow column and each raised arrow loses its point);
+Visual renders are unchanged.
+
+### Fixed
+
+- **`pair_spacing_mm` is declared as an integer dial in `tests/parameter_mapping.json`**, so
+  the schema validator (the PR check) passes again; it had been red since 2026-08-25.
 
 ### Changed
 
