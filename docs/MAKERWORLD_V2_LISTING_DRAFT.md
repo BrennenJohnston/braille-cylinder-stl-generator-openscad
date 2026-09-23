@@ -73,8 +73,9 @@ squares — will enter an R14 hole.
 2. Paste the braille into `Line_1`–`Line_4`.
 3. Pick `paper_thickness_preset` for your card stock: `0.4mm` (default) or
    `0.3mm`.
-4. Render the **Embossing Plate**, then the **Counter Plate** — or set
-   `render_both_plates` to `On` and get the pair in one render.
+4. Render: one render gives the pair, the **Embossing Plate** and the
+   **Counter Plate** side by side. For one plate at a time, set
+   `render_both_plates` to `Off` and choose `plate_type`.
 5. For double-sided cards, set `double_sided` to `On` and fill
    `Back_Line_1`–`Back_Line_4`. Each cylinder then carries its own face's
    raised dots plus one recessed seat for every dot the other cylinder

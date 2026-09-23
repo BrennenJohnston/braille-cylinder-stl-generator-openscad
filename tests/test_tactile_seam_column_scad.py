@@ -104,6 +104,8 @@ def _render(binary, tmp_path, scad_file, name, defines, hardwarnings=True):
     command = [str(binary), "--check-parameter-ranges=true"]
     if hardwarnings:
         command.insert(1, "--hardwarnings")
+    # One plate unless a test asks for the pair: the file's default renders both.
+    defines = {"render_both_plates": "Off", **defines}
     for key, value in defines.items():
         command += [
             "-D",

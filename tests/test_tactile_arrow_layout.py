@@ -69,6 +69,8 @@ def _render(binary, tmp_path, name, defines):
     """Render once. Returns (stl_path, combined stdout+stderr)."""
     stl_path = tmp_path / f"{name}.stl"
     command = [str(binary), "--hardwarnings", "--check-parameter-ranges=true"]
+    # One plate unless a test asks for the pair: the file's default renders both.
+    defines = {"render_both_plates": "Off", **defines}
     for key, value in defines.items():
         command += [
             "-D",

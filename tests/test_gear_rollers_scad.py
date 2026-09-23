@@ -1,5 +1,5 @@
 """
-Integrated gears (BETA) — the one-piece roller, rendered.
+Integrated gears — the one-piece roller, rendered.
 
 With ``integrated_gears = "On"`` a plate stops being a bare barrel and becomes a
 72 mm roller: the vendored gear pair is unioned in at both ends, two hidden weld
@@ -90,6 +90,8 @@ def _render(binary, tmp_path, name, defines, scad_file=SCAD_FILE):
     """Render once. Returns (stl_path, combined output, returncode)."""
     stl_path = tmp_path / f"{name}.stl"
     command = [str(binary), "--hardwarnings", "--check-parameter-ranges=true"]
+    # One plate unless a test asks for the pair: the file's default renders both.
+    defines = {"render_both_plates": "Off", **defines}
     for key, value in defines.items():
         command += [
             "-D",
@@ -306,4 +308,4 @@ def test_the_makerworld_build_hides_the_gear_switch():
         return head[head.rindex("/* [") :].splitlines()[0]
 
     assert tab_above(makerworld) == "/* [Hidden] */"
-    assert tab_above(canonical) == "/* [Integrated Gears (BETA)] */"
+    assert tab_above(canonical) == "/* [Gears] */"

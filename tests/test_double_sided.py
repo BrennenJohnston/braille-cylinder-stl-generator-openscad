@@ -1222,7 +1222,7 @@ class TestSourceGuards:
 # Phase 12: the Customizer surface, and the back-line validation it carries
 # ---------------------------------------------------------------------------
 
-DS_TAB = "/* [Double-Sided Card (BETA)] */"
+DS_TAB = "/* [Card Sides] */"
 # tests/validate_parameter_schema.py stops parsing at the FIRST /* [Hidden] */,
 # and the Customizer hides everything grouped under one, so a control declared
 # below it reaches neither.
@@ -1243,7 +1243,7 @@ class TestCustomizerSurface:
     """
 
     def test_the_tab_exists_and_sits_above_both_markers(self, scad_source):
-        assert DS_TAB in scad_source, "The [Double-Sided Card (BETA)] tab is missing."
+        assert DS_TAB in scad_source, "The [Card Sides] tab is missing."
         assert scad_source.index(DS_TAB) < scad_source.index(FIRST_HIDDEN), (
             "The tab must sit above the first /* [Hidden] */ or neither the "
             "Customizer nor the parameter-schema validator will see its controls."

@@ -17,7 +17,7 @@ Version 2 listing. It needs **no flattening**: the canonical
 self-contained, with the preset tables inlined and no `include` directive.
 Since 2026-09-21 it follows the **same three-layer sync model as the Version 1
 build** rather than being a byte copy, because the canonical file can now fuse
-the Version 2 drive gears (`[Integrated Gears]`, reading
+the Version 2 drive gears (`[Gears]`, reading
 `../assets/v2_gears_a.stl` / `_b.stl`) and MakerWorld cannot carry those
 assets:
 
@@ -90,7 +90,7 @@ all above the marker, and there are four of them:
 - **`integrated_gears` sits in a `[Hidden]` tab** here instead of a visible one,
   so the Customizer never offers it. The parameter itself is identical in both
   files — only which tab it appears under differs, which is invisible to the
-  sync test. See "Integrated gears (BETA) are not in this build" below.
+  sync test. See "Integrated gears are not in this build" below.
 
 With identical settings the two builds produce byte-identical STLs, single-sided
 and double-sided alike. The one exception is integrated gears: the desktop build
@@ -114,37 +114,39 @@ test run rather than by counting lines.)
 3. Upload **only** `Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`.
 4. In the generated parameter panel:
    - Paste braille into `Line_1`, `Line_2`, … (do **not** type plain English).
-   - Choose `plate_type`: *Embossing Plate* or *Counter Plate*.
+   - Both cylinders render side by side by default. For one plate, set
+     `render_both_plates` to `Off` and choose `plate_type`: *Embossing Plate*
+     or *Counter Plate*.
    - Choose `indicator_mode`: `Visual` (default) or `Tactile` — see below.
    - Choose `paper_thickness_preset`: `0.4mm`, `0.3mm`, or `Custom`.
    - `dot_shape` is already set to `Rounded`; switch to `Cone` if preferred.
-   - To get **both** cylinders from one render, set `render_both_plates` to `On`
-     (see below) instead of rendering twice.
 5. Generate / render and download the STL.
 
-> Tip: you can get the matching pair either way. Set `render_both_plates` to
-> `On` and one render gives you both cylinders side by side; or leave it `Off`
-> and render the **Embossing Plate** and the **Counter Plate** separately with
-> the same settings, changing only `plate_type`. Either way the two plates only
+> Tip: you can get the matching pair either way. By default one render gives
+> you both cylinders side by side; or set `render_both_plates` to `Off` and
+> render the **Embossing Plate** and the **Counter Plate** separately with the
+> same settings, changing only `plate_type`. Either way the two plates only
 > work as the pair you made from one set of settings.
 
 ## Both plates in one render
 
-`render_both_plates` (in **[Plate Selection]**, default `Off`) builds Cylinder A,
-the embossing plate, on the left and Cylinder B, the counter plate, on the right
-in a single render. `plate_type` is ignored while it is `On`.
+`render_both_plates` (in **[Cylinders to Generate]**, default `On` since v2.9.0,
+matching the web app) builds Cylinder A, the embossing plate, on the left and
+Cylinder B, the counter plate, on the right in a single render. `plate_type` is
+ignored while it is `On`.
 
 `pair_spacing_mm` (default 10) sets the gap between the two barrel **surfaces**,
 for laying them out on one print plate. It is not how far apart they sit when
 they are working — a meshed pair runs closer than that.
 
 Rendering both plates is roughly twice the work of rendering one, so expect the
-preview to take longer.
+preview to take longer; set `render_both_plates` to `Off` for a quicker
+single-plate preview.
 
-## Integrated gears (BETA) are not in this build
+## Integrated gears are not in this build
 
-<!-- Wording signed off by Brennen 2026-08-25; reword only with his sign-off.
-     The hardware sentence is his signed S9 text, reused verbatim. -->
+<!-- The hardware sentence is the web app's gear note (signed 2026-09-21,
+     replacing S9'). Reword only with Brennen's sign-off. -->
 
 The desktop generator can build a cylinder as one piece with its drive gears
 already attached. **This MakerWorld build cannot**, and it is not an oversight or
@@ -167,18 +169,18 @@ switch is hidden for the same reason.
 Everything else on this page — braille, both plates, double-sided cards, the
 tactile indicators — works here exactly as it does on the desktop.
 
-> **Before you print geared cylinders anywhere:** they fit only **version 2** of
-> the braille embosser hardware. They do not fit version 1 — do not use geared
-> cylinders with a version 1 embosser body.
+> **Before you print geared cylinders anywhere:** fixed gears fit only the
+> fixed-gear housing for your version; the standard housing takes the standard
+> cylinders.
 
-## Double-sided cards (BETA)
+## Double-sided cards
 
-The `[Double-Sided Card (BETA)]` tab embosses braille on **both** faces of one
+The `[Card Sides]` tab embosses braille on **both** faces of one
 card in a single pass. Set `double_sided` to `On`, translate the back of the
 card the same way as the front, and paste it into `Back_Line_1` –
-`Back_Line_10` — all ten are in that one tab. Then render each `plate_type`
-once: the Embossing Plate is Cylinder A, the Counter Plate is Cylinder B, and
-they only work as the pair you rendered from one set of settings.
+`Back_Line_10` — all ten are in that one tab. One render builds both
+cylinders: the Embossing Plate is Cylinder A, the Counter Plate is Cylinder B,
+and they only work as the pair you rendered from one set of settings.
 
 Row indicators are forced to **Tactile** in this mode, and the double-sided dot
 and recess sizes are fixed — they follow `paper_thickness_preset` and there are
@@ -194,10 +196,10 @@ between a dot and its neighbouring recess is too thin to print, and the render
 reason is not shown — if a double-sided render produces nothing, put both
 offsets back to 1.25 mm. The `0.3mm` preset renders across the whole range.
 
-See the [double-sided section of the main README](../README.md#-double-sided-cards-beta)
+See the [double-sided section of the main README](../README.md#-double-sided-cards)
 for the full workflow and the footprint table.
 
-## Indicator mode: Visual or Tactile
+## Row indicator style: Visual or Tactile
 
 `indicator_mode` decides how each row is marked for alignment. The cylinder's
 diameter, height, and cutout are the same either way — only the surface

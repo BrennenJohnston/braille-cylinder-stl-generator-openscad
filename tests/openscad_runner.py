@@ -417,10 +417,12 @@ class OpenSCADRunner:
         if self.use_manifold:
             cmd.extend(["--backend", "Manifold"])
 
-        # Add parameter definitions
-        if parameters:
-            for key, value in parameters.items():
-                cmd.extend(["-D", self._format_parameter(key, value)])
+        # One plate per render unless the caller asks for the pair: the fixtures
+        # and tests describe one plate, and since v2.9.0 the file's own default
+        # renders both.
+        parameters = {"render_both_plates": "Off", **(parameters or {})}
+        for key, value in parameters.items():
+            cmd.extend(["-D", self._format_parameter(key, value)])
 
         # Add input file
         cmd.append(str(scad_file))

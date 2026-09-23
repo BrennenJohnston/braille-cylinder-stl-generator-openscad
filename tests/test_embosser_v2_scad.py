@@ -122,6 +122,8 @@ def _render(binary, tmp_path, name, defines):
     """Render once. Returns (stl_path, combined output, returncode)."""
     stl_path = tmp_path / f"{name}.stl"
     command = [str(binary), "--hardwarnings", "--check-parameter-ranges=true"]
+    # One plate unless a test asks for the pair: the file's default renders both.
+    defines = {"render_both_plates": "Off", **defines}
     for key, value in defines.items():
         command += [
             "-D",
@@ -685,8 +687,8 @@ def test_the_makerworld_copy_hides_the_gear_switch(source_text):
         return head[head.rindex("/* [") :].splitlines()[0]
 
     assert tab_above(makerworld) == "/* [Hidden] */"
-    assert tab_above(source_text) == "/* [Integrated Gears] */"
-    assert "/* [Integrated Gears] */" not in makerworld
+    assert tab_above(source_text) == "/* [Gears] */"
+    assert "/* [Gears] */" not in makerworld
     assert "MAKERWORLD SINGLE-FILE BUILD" in makerworld
     lowered = makerworld.lower()
     assert "signed off" not in lowered and "sign-off" not in lowered

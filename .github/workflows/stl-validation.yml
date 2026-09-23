@@ -131,6 +131,9 @@ jobs:
         # source-only invariant check still runs.
         run: pytest tests/test_text_too_long.py -v
 
+      - name: Run public wording guards
+        run: pytest tests/test_public_wording.py -v
+
   # ==========================================================================
   # Job 3: Full STL Validation
   # ==========================================================================

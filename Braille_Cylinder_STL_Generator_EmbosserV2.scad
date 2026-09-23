@@ -34,7 +34,7 @@
 //   • no polygonal cutout, and no seam offset: the keyed hole IS the bore, and
 //     the keys sit on the arrow column, so turning the seam would break them.
 //  Everything else — the braille, the dot shapes, the presets, the indicators
-//  and the double-sided beta — matches the Version 1 file, with ONE trim: the
+//  and double-sided cards — matches the Version 1 file, with ONE trim: the
 //  text input offers 4 rows per face (Line_1-4, Back_Line_1-4), the Version 2
 //  embosser's standard, where Version 1 offers 10.
 //
@@ -53,7 +53,7 @@
 //  • Cylinder Emboss Plate (Raised Dots) — dots on outer cylinder surface
 //  • Cylinder Counter Plate (Hemispherical Recesses) — recesses on outer surface
 //
-//  DOUBLE-SIDED CARD (BETA) — set double_sided = On to emboss BOTH faces of one
+//  DOUBLE-SIDED CARD — set double_sided = On to emboss BOTH faces of one
 //  card in a single pass between the two cylinders. The same two plates take on
 //  paired jobs, and each one then carries raised dots AND recesses:
 //  • Cylinder A = the Embossing Plate. The FRONT text as raised dots, plus one
@@ -89,10 +89,10 @@
 //  4. Type your English text in the left box
 //  5. Copy the braille output (right box showing characters like ⠓⠑⠇⠇⠕)
 //  6. In OpenSCAD's Customizer, paste into the Line_1, Line_2, etc. fields
-//  7. DOUBLE-SIDED (BETA) only — the back of the card is translated exactly the
+//  7. DOUBLE-SIDED only — the back of the card is translated exactly the
 //     same way: same site, same grade, Unicode Braille output. Paste that
 //     output into the Back_Line_1, Back_Line_2, … fields under the
-//     [Double-Sided Card (BETA)] tab. Back lines obey the same rules as the
+//     [Card Sides] tab. Back lines obey the same rules as the
 //     front — pre-translated Unicode braille only, same cell capacity per row,
 //     same row limit — and the same warnings cover them.
 //
@@ -107,12 +107,17 @@
 //  3. Raise grid_rows to at least the number of lines you filled in — only the
 //     first grid_rows lines are rendered, and a "TOO MANY LINES" warning tells
 //     you when text is being left off. Version 2 offers 4 lines per face.
-//  4. Choose plate_type: Embossing Plate or Counter Plate
+//  4. Both cylinders render side by side by default: Cylinder A (the Embossing
+//     Plate) on the left, Cylinder B (the Counter Plate) on the right. For one
+//     plate, set render_both_plates Off under [Cylinders to Generate] and
+//     choose plate_type.
 //  5. Choose dot_shape: Rounded or Cone (affects both plates)
 //  6. Adjust dimensions in Expert Mode if needed
 //  7. Render (F6) → File → Export → STL
-//  8. DOUBLE-SIDED (BETA): turn double_sided On, fill the Back_Line fields,
-//     then render each plate_type once — export the Embossing Plate as
+//  8. DOUBLE-SIDED: turn double_sided On and fill the Back_Line fields. One
+//     render builds both cylinders; export it as Cylinder_Pair_<your name>.stl.
+//     For separate files, set render_both_plates Off and render each
+//     plate_type once — export the Embossing Plate as
 //     Cylinder_A_<your name>.stl and the Counter Plate as
 //     Cylinder_B_<your name>.stl. The console prints the suggested name for
 //     whichever plate you are rendering.
@@ -125,15 +130,19 @@
 //  MAIN CONTROLS (always visible):
 //  • Text Input - Pre-Translated Braille (Line_1 - Line_4, the grid_rows
 //    maximum — the Version 2 embosser's standard 4 rows per face)
-//  • Double-Sided Card (BETA) (the double_sided gate, Back_Line_1 -
-//    Back_Line_4, and the two interpoint offsets)
-//  • Plate Selection
+//  • Card Sides (the double_sided switch, Back_Line_1 - Back_Line_4, and the
+//    two interpoint offsets)
+//  • Gears (the integrated_gears switch)
+//  • Cylinders to Generate (both cylinders by default, or one plate)
+//  • Row Indicator Style (Visual markers or the Tactile seam arrow)
+//  • Card Thickness (the 0.4mm and 0.3mm card presets, or Custom)
 //
 //  EXPERT MODE (expandable submenus matching web UI):
 //  • Expert Mode - Shape Selection (dot shapes, indicators)
-//  • Expert Mode - Cylinder Dimensions
+//  • Expert Mode - Cylinder Dimensions (including the slicer seam channel)
 //  • Expert Mode - Braille Spacing (grid layout + positioning)
 //  • Expert Mode - Braille Dot Adjustments (emboss/counter dimensions)
+//  • Version 2 Keyed Cutouts (the key clearance)
 //
 //  OPENSCAD-SPECIFIC:
 //  • Rendering Quality
@@ -169,8 +178,8 @@ Line_4 = ""; // Fourth line of braille text
 // Show TEXT TOO LONG warning and clip rows to the cell capacity. Off = render every pasted character (rows may crowd the seam).
 text_limit_check = "On"; // [On, Off]
 
-/* [Double-Sided Card (BETA)] */
-// BETA - emboss BOTH faces of one card in a single pass. On turns the two
+/* [Card Sides] */
+// Emboss BOTH faces of one card in a single pass. On turns the two
 // plates into a matched pair: the Embossing Plate becomes Cylinder A (front
 // text raised, one seat per back dot) and the Counter Plate becomes Cylinder B
 // (back text raised, one seat per front dot). Row indicators are forced to
@@ -198,7 +207,7 @@ interpoint_offset_x_mm = 1.25; // [1.15:0.01:1.35]
 // (mm) - back rows sit this far above the front rows.
 interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
 
-/* [Integrated Gears] */
+/* [Gears] */
 // Adds the Version 2 drive gears to each cylinder as one solid piece. The
 // barrel prints solid with no keyed holes; the cylinder must stay 30.8 mm x
 // 54 mm. Needs assets/v2_gears_a.stl and assets/v2_gears_b.stl, which ship
@@ -207,24 +216,26 @@ interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
 // housing. The standard Version 2 housing takes the standard keyed cylinders.
 integrated_gears = "Off"; // [Off, On]
 
-/* [Plate Selection] */
-// Choose which plate to generate. In DOUBLE-SIDED (BETA) mode the two names
-// take on the paired roles the web app uses: "Embossing Plate" IS Cylinder A
-// and "Counter Plate" IS Cylinder B, exported as Cylinder_A_*.stl and
-// Cylinder_B_*.stl. Single-sided keeps these names exactly as they are.
+/* [Cylinders to Generate] */
+// Choose which plate to generate while render_both_plates below is Off. In
+// DOUBLE-SIDED mode the two names take on the paired roles the web app uses:
+// "Embossing Plate" IS Cylinder A and "Counter Plate" IS Cylinder B, exported
+// as Cylinder_A_*.stl and Cylinder_B_*.stl. Single-sided keeps these names
+// exactly as they are.
 plate_type = "Embossing Plate"; // [Embossing Plate, Counter Plate]
 
-// BETA - render BOTH plates in one go, standing side by side and spaced apart
-// for printing on one plate: Embossing Plate (Cylinder A) on the left, Counter
+// Render BOTH plates in one go, standing side by side and spaced apart for
+// printing on one plate: Embossing Plate (Cylinder A) on the left, Counter
 // Plate (Cylinder B) on the right. While this is On the plate_type choice
-// above is ignored. Suggested export name: Cylinder_Pair_<your text>.stl.
-render_both_plates = "Off"; // [Off, On]
+// above is ignored; turn it Off to generate only that plate. Suggested export
+// name: Cylinder_Pair_<your text>.stl.
+render_both_plates = "On"; // [Off, On]
 // Gap between the two cylinders' surfaces (mm) - PRINT spacing only, not the
 // meshed-gear assembly distance (32.0473 mm axis to axis); a printed pair is
 // separated for assembly anyway.
 pair_spacing_mm = 10; // [2:1:50]
 
-/* [Indicator Mode] */
+/* [Row Indicator Style] */
 // How each row is marked for alignment. Visual = today's recessed triangle (plus the optional letter square) in marker cells at the start of every row. Tactile = a raised arrow on the embossing plate and a matching recess on the counter plate, centred in the seam gap and pointing at the cylinder top, so a blind user can find the alignment point and tell which end is up by touch. Tactile removes the marker cells (freeing them for text) and ignores the Indicator Letters toggle.
 indicator_mode = "Visual"; // [Visual, Tactile]
 // Tactile only: indicator width measured around the cylinder (mm)
@@ -238,8 +249,8 @@ tactile_recess_clearance = 0.2; // [0:0.05:1]
 // Tactile only: counter recess depth added on top of the arrow raise (mm). 0 = exact same-depth nesting. Large values thin the wall between the recess and the keyed hole.
 tactile_recess_extra_depth = 0.2; // [0:0.05:1]
 
-/* [Paper Thickness Preset] */
-// Preset optimized for paper thickness (sets multiple parameters below)
+/* [Card Thickness] */
+// Preset optimized for card thickness (sets multiple parameters below)
 paper_thickness_preset = "0.4mm"; // [0.4mm, 0.3mm, Custom]
 
 /* [Expert Mode - Shape Selection] */
@@ -456,7 +467,7 @@ function preset_value(preset, key, fallback) =
 // =============================================================================
 
 // =============================================================================
-// DOUBLE-SIDED (INTERPOINT) MATH  -  BETA
+// DOUBLE-SIDED (INTERPOINT) MATH
 // =============================================================================
 //
 // Double-sided ("interpoint") mode embosses BOTH faces of one card in a single
@@ -470,7 +481,7 @@ function preset_value(preset, key, fallback) =
 // guards. The geometry that reads them lives further down, in
 // ds_back_placements() and the two plate modules. The user-facing controls -
 // `double_sided`, `Back_Line_1..10` and the two interpoint offsets - are in the
-// [Double-Sided Card (BETA)] Customizer tab near the top of this file; the gate
+// [Card Sides] Customizer tab near the top of this file; the gate
 // defaults to "Off", and with it Off nothing here changes a single byte of the
 // rendered model.
 //
@@ -492,7 +503,7 @@ function preset_value(preset, key, fallback) =
 ds_self_check = false;
 
 // Normalized gate for the `double_sided` dropdown declared in the
-// [Double-Sided Card (BETA)] tab. Accepts the Customizer's "On"/"Off" and the
+// [Card Sides] tab. Accepts the Customizer's "On"/"Off" and the
 // lowercase "on"/"off" the test system passes with -D, the same way plate_type
 // and dot_shape accept both the label and a lowercase form. Declared here rather
 // than beside is_emboss_plate / tactile_on in CALCULATED VALUES because that
@@ -855,7 +866,7 @@ is_emboss_plate = (plate_type == "positive") ? true :
                   (plate_type == "negative") ? false :
                   (plate_type == "Embossing Plate");
 
-// Both-plates mode (BETA): lowercase accepted the way the other toggles
+// Both-plates mode: lowercase accepted the way the other toggles
 // accept theirs from the test system. While On, plate_type is ignored and
 // MAIN RENDERING at the bottom builds both cylinders side by side.
 both_on = (render_both_plates == "On") || (render_both_plates == "on");
@@ -1297,7 +1308,7 @@ seam_channel_theta_counter_deg = 180 - (seam_channel_s_mm / radius) * 180 / PI;
 
 // The console copies of the omission sentences, S-C2, S-C3 and S-C5 - the web
 // generator's own words, quoted verbatim and pinned by the tests; keep them
-// identical. S-C5 (signed 2026-09-23) is Tactile mode's: it names the room
+// identical. S-C5 is Tactile mode's: it names the room
 // beside the arrows, because the arrow width can take it as well as the cell
 // count and diameter. "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails
 // on that token.

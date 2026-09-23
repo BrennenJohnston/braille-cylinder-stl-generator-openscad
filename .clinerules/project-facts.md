@@ -25,3 +25,7 @@ and counter plates for cylinders, fully client-free. Working branch: develop.
    --camera=0,0,26,90,0,90,150  (side)
    --camera=0,0,26,60,0,45,150  (three-quarter)
    Raise the last number (distance) if a taller cylinder still overflows.
+   Since v2.9.0 the default render is BOTH cylinders side by side
+   (render_both_plates = "On", about 82 mm wide): use distance 200 and add
+   --render (a preview of the counter plate comes out blank), or pass
+   -D 'render_both_plates="Off"' to look at one plate.

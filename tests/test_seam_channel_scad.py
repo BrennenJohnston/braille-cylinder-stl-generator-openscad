@@ -110,6 +110,8 @@ def _signature(data):
 def _render(binary, scad_file, stl_path, defines, flags=BASELINE_FLAGS):
     """Render once as binary STL. Returns the combined stdout+stderr."""
     command = [str(binary), *flags]
+    # One plate unless a test asks for the pair: the file's default renders both.
+    defines = {"render_both_plates": "Off", **defines}
     for key, value in defines.items():
         command += [
             "-D",

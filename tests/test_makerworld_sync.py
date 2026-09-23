@@ -273,7 +273,7 @@ def test_dot_shape_defaults_to_rounded():
 
 
 def test_double_sided_tab_reaches_the_customizer():
-    """The beta's controls must sit above the first `/* [Hidden] */` group.
+    """The double-sided controls must sit above the first `/* [Hidden] */` group.
 
     MakerWorld's Parametric Model Maker IS a Customizer, and the repo's
     parameter-schema validator stops parsing at the first Hidden group - so a
@@ -281,10 +281,10 @@ def test_double_sided_tab_reaches_the_customizer():
     deliberate exception: it is a test hook, not a user control.
     """
     makerworld = MAKERWORLD.read_text(encoding="utf-8")
-    tab = makerworld.index("/* [Double-Sided Card (BETA)] */")
+    tab = makerworld.index("/* [Card Sides] */")
     first_hidden = makerworld.index("/* [Hidden] */")
     assert tab < first_hidden, (
-        "The [Double-Sided Card (BETA)] tab must be declared above the first "
+        "The [Card Sides] tab must be declared above the first "
         "`/* [Hidden] */` group, or none of its controls reach MakerWorld's "
         "Customizer."
     )

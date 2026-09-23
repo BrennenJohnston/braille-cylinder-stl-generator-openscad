@@ -306,16 +306,14 @@ def test_gears_off_is_the_pre_gears_geometry(openscad_binary, tmp_path, plate):
 
 def test_the_switch_is_declared_off_above_the_first_hidden_tab(source_text):
     """A Customizer dial, Off by default, described without development labels."""
-    assert "/* [Integrated Gears] */" in source_text, "the section header is missing"
-    assert (
-        "BETA" not in source_text.split("/* [Integrated Gears] */")[1].split("/* [")[0]
-    )
+    assert "/* [Gears] */" in source_text, "the section header is missing"
+    assert "BETA" not in source_text.split("/* [Gears] */")[1].split("/* [")[0]
     declaration = 'integrated_gears = "Off"; // [Off, On]'
     assert declaration in source_text
     assert source_text.index(declaration) < source_text.index("/* [Hidden] */"), (
         "the gear switch is hidden from the Customizer"
     )
-    description = source_text.split(declaration)[0].split("/* [Integrated Gears] */")[1]
+    description = source_text.split(declaration)[0].split("/* [Gears] */")[1]
     assert description.lstrip().startswith("// Adds the Version 2 drive gears"), (
         description
     )

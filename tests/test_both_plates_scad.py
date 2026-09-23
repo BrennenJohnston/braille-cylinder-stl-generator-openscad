@@ -1,7 +1,8 @@
 """
-Both-plates mode (BETA) - the side-by-side pair, rendered.
+Both-plates mode - the side-by-side pair, rendered.
 
-With ``render_both_plates = "On"`` one render builds Cylinder A (embossing
+Since v2.9.0 this is the default, as the web app's one Generate builds both
+cylinders. With ``render_both_plates = "On"`` one render builds Cylinder A (embossing
 plate) at -X and Cylinder B (counter plate) at +X, centres one barrel diameter
 plus ``pair_spacing_mm`` apart, so the barrel surfaces sit exactly the slider's
 distance from each other (Brennen chose the barrel-based measure 2026-08-25).
@@ -26,6 +27,7 @@ everywhere, including the no-OpenSCAD CI job.
 License: PolyForm Noncommercial 1.0.0
 """
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -38,6 +40,7 @@ from test_text_too_long import _resolve_openscad_path  # noqa: E402  (shared hel
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCAD_FILE = PROJECT_ROOT / "Braille_Cylinder_STL_Generator.scad"
+V2_FILE = PROJECT_ROOT / "Braille_Cylinder_STL_Generator_EmbosserV2.scad"
 
 # Default barrel 30.8 mm + default gap 10 mm.
 DEFAULT_CENTER_DISTANCE_MM = 40.8
@@ -96,6 +99,45 @@ def test_both_mode_renders_two_spaced_bodies(
 
     assert "Both plates: one STL containing Cylinder A" in output
     assert "plate_type is ignored" in output
+
+
+@pytest.mark.requires_openscad
+@pytest.mark.slow
+@pytest.mark.parametrize("scad_file", [SCAD_FILE, V2_FILE], ids=["v1", "v2"])
+def test_the_default_render_is_the_pair(
+    trimesh_module, openscad_binary, tmp_path, scad_file
+):
+    """
+    With nothing set, one render is both cylinders - the web app's one
+    Generate. Driven directly, because every render helper asks for one plate
+    unless a test says otherwise.
+    """
+    stl_path = tmp_path / "default.stl"
+    result = subprocess.run(
+        [
+            str(openscad_binary),
+            "--hardwarnings",
+            "--check-parameter-ranges=true",
+            "--export-format",
+            "binstl",
+            "-o",
+            str(stl_path),
+            str(scad_file),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=600,
+        cwd=PROJECT_ROOT,
+    )
+    output = (result.stdout or "") + "\n" + (result.stderr or "")
+    mesh = _load_roller(trimesh_module, stl_path, output)
+
+    bodies = mesh.split(only_watertight=False)
+    assert len(bodies) == 2
+    assert _center_distance_x(bodies) == pytest.approx(
+        DEFAULT_CENTER_DISTANCE_MM, abs=CENTROID_TOL_MM
+    )
+    assert "Both plates: one STL containing Cylinder A" in output
 
 
 @pytest.mark.requires_openscad
