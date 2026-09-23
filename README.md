@@ -82,7 +82,9 @@ its canonical file, and every parameter default above it equal, by
 
 3. **Configure**:
    - Paste braille into `Line_1`, `Line_2`, etc.
-   - Choose `plate_type`: Embossing Plate or Counter Plate
+   - Both cylinders render side by side by default. For one plate, set
+     `render_both_plates` to `Off` and choose `plate_type`: Embossing Plate or
+     Counter Plate
    - Choose `paper_thickness_preset`: 0.4mm, 0.3mm, or Custom
    - Choose `dot_shape`: Rounded or Cone
 
@@ -96,9 +98,9 @@ its canonical file, and every parameter default above it equal, by
 
 - **Cylinder Emboss Plate**: Raised braille dots on cylindrical surface
 - **Cylinder Counter Plate**: Recessed support for embossing cylindrical objects
-- **Double-Sided Card (BETA)**: the same two plates, paired so that one pass
+- **Double-Sided Card**: the same two plates, paired so that one pass
   embosses braille on **both** faces of a card — see
-  [Double-Sided Cards (BETA)](#-double-sided-cards-beta)
+  [Double-Sided Cards](#-double-sided-cards)
 
 ## 🎯 Features
 
@@ -106,7 +108,7 @@ its canonical file, and every parameter default above it equal, by
 - **Rounded**: Dome-shaped dots with spherical bowl recesses
 - **Cone**: Traditional frustum cone dots with matching cone recesses
 
-### Indicator Mode (Visual or Tactile)
+### Row Indicator Style (Visual or Tactile)
 
 `indicator_mode` chooses how each row is marked for alignment. Cylinder
 diameter, height, and the polygonal cutout are identical either way — only the
@@ -165,16 +167,16 @@ and the model says so: a console `NOTE:` and a red `SEAM CHANNEL LEFT OUT`
 badge above the cylinder. Leave your slicer's seam mode on *Aligned*; a profile
 set to *Back* / *Rear* ignores the groove, so switch it once.
 
-### Double-Sided Card (BETA)
+### Double-Sided Card
 
 `double_sided` pairs the two plates so one pass embosses braille on **both**
 faces of a card. Each plate then carries raised dots *and* recesses, every
 recess is the 1:1 partner of an actual dot, and the row indicators are forced to
 Tactile. Back-of-card text goes in `Back_Line_1` – `Back_Line_10`, still as
 pre-translated Unicode braille. Full workflow:
-[Double-Sided Cards (BETA)](#-double-sided-cards-beta).
+[Double-Sided Cards](#-double-sided-cards).
 
-### Paper Thickness Presets
+### Card Thickness Presets
 - **0.4mm Preset** (default): Optimized for thicker paper, larger dots
 - **0.3mm Preset**: Optimized for thinner paper, smaller dots
 - **Custom**: Use manually-entered parameter values
@@ -193,9 +195,10 @@ All parameters match the web-based generator UI:
 
 ## 📐 Default Settings
 
-Spacing and dimension defaults match the web app's **0.4mm Paper Thickness
-Preset** (applied on load). The default **dot shape is `Rounded`** (the
-dropdown still offers `Cone`):
+Spacing and dimension defaults match the web app's **0.4mm Card Thickness
+preset** (applied on load). The default **dot shape is `Rounded`** (the
+dropdown still offers `Cone`), and one render builds **both cylinders** side by
+side, as the web app's Generate does (`render_both_plates`, On by default):
 
 ### Cylinder Settings
 - Diameter: 30.8mm
@@ -235,7 +238,7 @@ dropdown still offers `Cone`):
 
 ---
 
-## 🧩 Double-Sided Cards (BETA)
+## 🧩 Double-Sided Cards
 
 Set `double_sided` to `On` to emboss braille on **both** faces of one card in a
 single pass between the two cylinders. The same two plates take on paired jobs,
@@ -262,14 +265,16 @@ the model says so on the console and in red text above the cylinder.
    translated exactly like the front; this version still has no automatic
    translation.
 2. Paste the front braille into `Line_1`, `Line_2`, … as usual.
-3. Open the **`[Double-Sided Card (BETA)]`** tab, set `double_sided` to `On`,
+3. Open the **`[Card Sides]`** tab, set `double_sided` to `On`,
    and paste the back braille into `Back_Line_1` – `Back_Line_10`. **All ten
    back-line fields are in that one tab** — there is no back-side counterpart to
    the front's `[More Braille Lines (Advanced)]` tab.
 4. Check `paper_thickness_preset` matches the card stock you will emboss (see
    the footprint table below).
-5. **Render each `plate_type` once.** Export the Embossing Plate as
-   `Cylinder_A_<your name>.stl` and the Counter Plate as
+5. **Render.** One render builds both cylinders side by side; export it as
+   `Cylinder_Pair_<your name>.stl`. For separate files, set
+   `render_both_plates` to `Off` and render each `plate_type` once: export the
+   Embossing Plate as `Cylinder_A_<your name>.stl` and the Counter Plate as
    `Cylinder_B_<your name>.stl`; the console prints the suggested name for
    whichever plate you are rendering. Both plates must use identical settings —
    they are a matched pair.
@@ -311,26 +316,27 @@ shape input, not the hole. The printability guard measures that printed mouth.
 On the `0.4mm` package this leaves a renderable offset band of **1.19–1.31 mm**
 rather than the slider's full range; the `0.3mm` package accepts all of it.
 
-### Beta status
+### Status
 
-Double-sided is a **beta**. It has been printed and embossed successfully, and
-the geometry is cross-validated against the web app's generator, but it has far
-less field use than the single-sided workflow. Report anything odd on the
+Double-sided cards are no longer a beta: the web app dropped the label on
+2026-09-20, and this version follows it. They have been printed and embossed
+successfully, and the geometry is cross-validated against the web app's
+generator. Report anything odd on the
 [issue tracker](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad/issues).
 
 ---
 
-## ⚙️ Integrated Gears (BETA)
+## ⚙️ Integrated Gears
 
-<!-- Wording signed off by Brennen 2026-08-25; reword only with his sign-off.
-     The hardware sentence is his signed S9 text, reused verbatim. -->
+<!-- The hardware sentence is the web app's gear note (signed 2026-09-21,
+     replacing S9'), worded for Version 1 the way the Version 2 file words its
+     own. Reword only with Brennen's sign-off. -->
 
-> **Hardware compatibility, before anything else:** integrated gears fit only
-> **version 2** of the braille embosser hardware. They do not fit version 1 — do
-> not use geared cylinders with a version 1 embosser body. (A link to the
-> version 2 build files will be added here once they are published.)
+> **Hardware compatibility, before anything else:** Version 1 fixed gears fit
+> only the Version 1 fixed-gear housing. The standard Version 1 housing takes
+> the standard cylinders.
 
-Set `integrated_gears` to `On` in the **[Integrated Gears (BETA)]** tab and the
+Set `integrated_gears` to `On` in the **[Gears]** tab and the
 cylinder is built as **one solid piece with its drive gears already attached**,
 instead of a bare barrel you push separately printed gears onto. Meshed gears
 are also what keeps a paired set turning together.
@@ -357,7 +363,7 @@ Things worth knowing before you switch it on:
 
 **Embosser Version 2 has its own fixed-gear option** (since 2026-09-21).
 `Braille_Cylinder_STL_Generator_EmbosserV2.scad` offers the same switch under
-**[Integrated Gears]**, and it fuses the **Version 2** gear set —
+**[Gears]**, and it fuses the **Version 2** gear set —
 `assets/v2_gears_a.stl` / `assets/v2_gears_b.stl` — to the 30.8 × 54 mm
 Version 2 barrel (any other size is refused). While it is On the barrel prints
 solid with **no keyed holes, nub or socket**: the gears' own pegs and pins are
@@ -369,10 +375,12 @@ Version 2 upload hides the switch for the same reason as the Version 1 build.
 
 ## 🔄 Rendering Both Plates At Once
 
-`render_both_plates = On` (in **[Plate Selection]**) builds the **complete pair
-in one render** — Cylinder A, the embossing plate, on the left, and Cylinder B,
-the counter plate, on the right — instead of rendering each plate separately and
-switching `plate_type` between them. `plate_type` is ignored while it is On.
+`render_both_plates` (in **[Cylinders to Generate]**) builds the **complete
+pair in one render** — Cylinder A, the embossing plate, on the left, and
+Cylinder B, the counter plate, on the right. It is **On by default** since
+v2.9.0, matching the web app, whose Generate builds both cylinders. Set it to
+`Off` to render one plate at a time, chosen with `plate_type`; `plate_type` is
+ignored while it is On.
 
 `pair_spacing_mm` (default 10) is the gap between the two barrel **surfaces**,
 for laying them out on one print plate. It is not the assembly distance: a
@@ -498,8 +506,8 @@ cut, so none of them follows the clearance dial.
 The Version 1 files are untouched and remain the default. Use
 `Braille_Cylinder_STL_Generator.scad` unless you are building the Version 2
 embosser. The file is self-contained (preset tables inlined, no `include`), and
-since 2026-09-21 it also offers **[Integrated Gears]** — the fused Version 2
-roller, see [Integrated Gears](#️-integrated-gears-beta). The MakerWorld
+since 2026-09-21 it also offers **[Gears]** — the fused Version 2
+roller, see [Integrated Gears](#️-integrated-gears). The MakerWorld
 Version 2 upload, `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`,
 is this file with that switch hidden, kept in step by
 `tests/test_makerworld_sync.py`.
@@ -523,9 +531,10 @@ the same render through CGAL is the better part of an hour.
 Inside Nightly, the two speeds you experience are different things:
 
 - **Render / F6 / export** builds exact geometry once. Measured at the shipped
-  defaults: embossing plate ≈ 0.3 s, counter plate ≈ 2 s (its universal grid
-  subtracts 312 recess spheres no matter how much text there is), High quality
-  counter plate ≈ 10 s. This is the number that matters for the STL.
+  defaults: both cylinders together ≈ 2 s (the default since v2.9.0), the
+  embossing plate alone ≈ 0.3 s, the counter plate alone ≈ 2 s (its universal
+  grid subtracts 312 recess spheres no matter how much text there is), High
+  quality counter plate ≈ 10 s. This is the number that matters for the STL.
 - **Preview / F5** redraws the boolean tree on **every frame while you rotate
   or zoom** (OpenCSG). A single frame of the counter plate costs roughly
   0.5–1 s, so rotation can feel like 1–2 frames per second even though nothing
@@ -533,8 +542,9 @@ Inside Nightly, the two speeds you experience are different things:
 
 What helps:
 
-- Do design passes on the **embossing plate** (fast everywhere) and render the
-  counter plate when you need it.
+- Do design passes on the **embossing plate** alone (fast everywhere): set
+  `render_both_plates` to `Off` — it is On by default, so the counter plate
+  renders too — and turn it back On for the pair when you need it.
 - For a smoother preview while editing, set `render_quality = "Low"`
   (Rendering Quality section) — **and set it back to your intended quality
   before exporting**, because unlike a preview-only trick this genuinely
@@ -692,5 +702,5 @@ For general braille embossing questions, see the [web app](https://braille-cylin
 
 ---
 
-**Version**: 2.8.2  
+**Version**: 2.9.0  
 **Last Updated**: 2026-09-23

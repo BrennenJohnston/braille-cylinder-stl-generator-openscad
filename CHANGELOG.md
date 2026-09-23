@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-09-23
+
+In line with the web app again. Since the last parity release the web
+generator took double-sided cards and integrated gears out of beta
+(2026-09-20), made one Generate build both cylinders (2026-09-21), renamed its
+sections, and replaced its gear hardware note. This release brings both files
+and both MakerWorld builds to the same terms. **Default renders change: one
+render now holds both cylinders.** Each plate's geometry is unchanged: with
+`render_both_plates = "Off"` all 24 checked single-plate renders (both files,
+both MakerWorld builds, both plates, Visual, Tactile and double-sided) match
+2.8.2 — Version 1 byte for byte, Version 2 by triangle count, vertex set,
+volume and area, because its countersink slivers already flip a diagonal
+between runs. No parameter name, value or range moved, so saved Customizer
+settings keep working.
+
+### Changed
+
+- **Both cylinders render by default** (`render_both_plates = "On"`), as the
+  web app's Generate builds both: Cylinder A, the Embossing Plate, on the left
+  and Cylinder B, the Counter Plate, on the right, 10 mm apart. Set it to `Off`
+  and choose `plate_type` for one plate at a time.
+- **The BETA labels are gone** from double-sided cards, integrated gears and
+  both-plates mode, in the Customizer, the file headers and the docs.
+- **Five Customizer sections carry the web app's names**: Card Sides (was
+  Double-Sided Card), Gears (was Integrated Gears), Cylinders to Generate (was
+  Plate Selection), Row Indicator Style (was Indicator Mode) and Card
+  Thickness (was Paper Thickness Preset). Only the section titles changed;
+  the dials inside them keep their names.
+- **The Version 1 gear hardware note is the web app's current one**, worded for
+  the Version 1 file the way the Version 2 file words its own: "Version 1
+  fixed gears fit only the Version 1 fixed-gear housing. The standard
+  Version 1 housing takes the standard cylinders." It replaces the older
+  sentence on the dial, in the console NOTE and in the READMEs, where the
+  README still carried a pre-2026-08-28 wording that named the wrong hardware.
+- **No sign-off bookkeeping reaches the public files.** The Version 1 file and
+  its MakerWorld build no longer carry "Wording SIGNED OFF ... reword only
+  with his sign-off" labels, which the Customizer showed as dial descriptions;
+  the Version 2 pair was already clean. The wording itself is unchanged, and
+  a new guard, `tests/test_public_wording.py` (also run by CI's quick job),
+  keeps BETA labels and sign-off tags out of all five public files and pins
+  the section names and the default.
+- **Docs**: the READMEs, the parameter mapping (JSON and Markdown), the
+  MakerWorld quick start and its PDF, and the Version 2 listing draft describe
+  the pair default and the new section names. The quick start also gains the
+  slicer tip (leave the seam mode on Aligned) and corrects the tactile arrow
+  height to 0.5 mm (it said 0.8).
+- **Tests**: every render helper asks for one plate unless a test asks for the
+  pair, because the fixtures and render tests describe one plate; a new
+  render test checks that the true default is the pair.
+
 ## [2.8.2] - 2026-09-23
 
 The raised tactile arrows are whole again. Brennen's testing of the seam
