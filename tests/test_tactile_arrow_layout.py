@@ -101,9 +101,9 @@ def _seam_column(trimesh_module, stl_path, output, raised):
     the end faces, the braille dots (which never come within 8 deg of the
     arrow - the 5 mm clear zone) and the seam channel's floor (it shares this
     column since D-T6, 0.5 mm down; the recess floor is 0.7 mm down) are
-    excluded. Since D-T7 the channel is recut through each RAISED arrow, so
-    above the surface an arrow ends at its own centre line: the V is 2 mm
-    wide at the top face, exactly the arrow's width there.
+    excluded. On the emboss plate the channel steps round the raised arrows
+    since D-T8, below the surface, so nothing of it stands proud: the raised
+    set is the arrows alone, whole.
     """
     import numpy as np
 
@@ -161,19 +161,17 @@ def _check_outlines(z, intervals, tol=0.3):
         )
 
 
-def _narrows_toward_the_top(z, dtheta, intervals):
+def _apex_points_up(z, dtheta, intervals):
     """
-    The bottom of each raised arrow is its 4 mm base (about 15 deg here); the
-    top of what stands proud of the surface is the 2 mm notch mouth where the
-    recut meets the arrow's own width (about 7 deg), so the arrow still reads
-    as pointing up.
+    The top of each arrow is a point, the bottom its 4 mm base (about 15 deg
+    here) - whole again since D-T8, where D-T7's recut left a 2 mm notch mouth.
     """
     for lo, hi in intervals:
         top = dtheta[(z > hi - 0.5) & (z <= hi + 0.3)]
         base = dtheta[(z >= lo - 0.3) & (z < lo + 0.5)]
         top_spread = float(top.max() - top.min())
         base_spread = float(base.max() - base.min())
-        assert top_spread < 10.0 < 12.0 < base_spread, (lo, hi, top_spread, base_spread)
+        assert top_spread < 3.0 < 10.0 < base_spread, (lo, hi, top_spread, base_spread)
 
 
 def _base_params(**overrides):
@@ -210,11 +208,11 @@ def test_the_03_preset_places_three_arrows_at_the_pitch(
     # offset(delta = clearance), a MITERED offset: its base moves down by the
     # clearance, but its apex - a 22.6 deg point - moves up by
     # clearance / sin(half-angle), about 1.02 mm, so the recess runs from
-    # -5.2 to +6.02 about its centre. The raised arrow is recut by the seam
-    # channel (D-T7): above the surface it ends at its own centre line, so it
-    # runs from -5 to 0 about its centre.
+    # -5.2 to +6.02 about its centre (3.8 mm of bare surface between recesses;
+    # 5 mm between the raised arrows, which are whole since D-T8 - the seam
+    # channel steps round them).
     if raised:
-        below, above = ARROW_LENGTH / 2.0, 0.0
+        below, above = ARROW_LENGTH / 2.0, ARROW_LENGTH / 2.0
     else:
         half_angle = math.atan2(ARROW_WIDTH / 2.0, ARROW_LENGTH)
         below = ARROW_LENGTH / 2.0 + RECESS_CLEARANCE
@@ -222,7 +220,7 @@ def test_the_03_preset_places_three_arrows_at_the_pitch(
     intervals = [(c - below, c + above) for c in (-PITCH, 0.0, PITCH)]
     _check_outlines(z, intervals)
     if raised:
-        _narrows_toward_the_top(z, dtheta, intervals)
+        _apex_points_up(z, dtheta, intervals)
 
 
 @pytest.mark.requires_openscad
@@ -230,7 +228,7 @@ def test_the_03_preset_places_three_arrows_at_the_pitch(
 def test_the_04_preset_keeps_one_touching_arrow_per_row(
     openscad_binary, trimesh_module, tmp_path
 ):
-    """The default: four 10 mm arrows on 10 mm rows, each recut back to its centre line (D-T7)."""
+    """The default: four whole 10 mm arrows on 10 mm rows, one continuous chain (D-T8)."""
     stl_path, output = _render(
         openscad_binary,
         tmp_path,
@@ -238,13 +236,16 @@ def test_the_04_preset_keeps_one_touching_arrow_per_row(
         _base_params(paper_thickness_preset="0.4mm", plate_type="Embossing Plate"),
     )
     z, dtheta = _seam_column(trimesh_module, stl_path, output, raised=True)
-    # Four outlines on the 10 mm row pitch. Below the surface the arrows form
-    # one chain from -20 to +20; above it the seam channel's recut (D-T7)
-    # takes each arrow's top half, so what stands proud runs from each base
-    # to its own centre line, with 5 mm of bare column between.
-    intervals = [(c - ARROW_LENGTH / 2.0, c) for c in (-15.0, -5.0, 5.0, 15.0)]
+    # Four 10 mm outlines on the 10 mm row pitch: each one's apex touches the
+    # next one's base, a chain from -20 to +20 with no empty stretch in it.
+    intervals = [
+        (c - ARROW_LENGTH / 2.0, c + ARROW_LENGTH / 2.0)
+        for c in (-15.0, -5.0, 5.0, 15.0)
+    ]
     _check_outlines(z, intervals)
-    _narrows_toward_the_top(z, dtheta, intervals)
+    # Only the topmost arrow has a free apex: lower down, each apex shares its
+    # height with the next arrow's base, so the spread there is the base's.
+    _apex_points_up(z, dtheta, intervals[-1:])
 
 
 @pytest.mark.requires_openscad

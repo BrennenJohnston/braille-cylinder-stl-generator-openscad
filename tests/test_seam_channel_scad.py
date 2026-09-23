@@ -200,13 +200,18 @@ SEAM_CONSTANTS = {
 S_C2 = "The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter."
 S_C3 = "The seam channel was left out: the cylinder wall would be thinner than 1.2 mm under it."
 S_C3_HEAD = "The seam channel was left out: the cylinder wall would be thinner than "
+# S-C5, Tactile mode's (signed off by Brennen 2026-09-23). The web module splits
+# it over two string literals, so the cross-check looks for each half there.
+S_C5_HEAD = "The seam channel was left out: there is not enough room for it beside the alignment arrows. "
+S_C5_TAIL = "Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator."
 # Worked numbers from the web spec (SURFACE_DIMENSIONS_SPECIFICATIONS.md 2.6),
 # 30.8 mm, 0.4 preset: the PHYSICAL groove angles in the exported STL, as
 # (embossing, counter). 15 visual columns = 13 text cells + 2 marker columns.
 # Physical angles (emboss, counter). Tactile: down the arrow column itself at
 # 180 on both plates since 2026-09-21 (web decisions D-T6 / D-T7), the full
-# height and recut through the raised arrows; this file measures the end
-# caps, tests/test_tactile_seam_column_scad.py the groove and the notches.
+# height, stepping round the raised arrows on the emboss plate since D-T8
+# (2026-09-22); this file measures the end caps, where the groove is on the
+# column, tests/test_tactile_seam_column_scad.py the path and the whole arrows.
 GROOVE_DEG = {
     ("visual", 15): (181.67, 178.33),
     ("tactile", 14): (180.0, 180.0),
@@ -242,6 +247,7 @@ def test_v1_constants_and_sentences_mirror_the_web_generator():
     assert here == SEAM_CONSTANTS
     assert f'echo("NOTE: {S_C2}");' in text
     assert f'"NOTE: {S_C3_HEAD}"' in text
+    assert f'echo("NOTE: {S_C5_HEAD}{S_C5_TAIL}");' in text
     if not WEB_GEOMETRY_SPEC.exists():
         pytest.skip(
             f"web repository not found at {WEB_GEOMETRY_SPEC.parents[1]} (set BRAILLE_WEB_REPO)"
@@ -253,6 +259,7 @@ def test_v1_constants_and_sentences_mirror_the_web_generator():
         assert float(there.group(1)) == value, f"{name} drifted between the generators"
     assert S_C2 in web
     assert S_C3_HEAD in web
+    assert S_C5_HEAD in web and S_C5_TAIL in web
 
 
 def _groove_cap_angles(trimesh_module, stl_path):
@@ -344,10 +351,14 @@ def test_v1_groove_is_left_out_when_the_visual_gap_is_too_narrow(
 
 
 @pytest.mark.slow
-def test_v1_tactile_15_columns_keep_the_groove_on_the_arrow_column(
+def test_v1_tactile_15_columns_leave_the_groove_out_and_say_why(
     openscad_binary, trimesh_module, tmp_path
 ):
-    """Tactile mode has no window (D-T6): 15 cells trip the seam-GAP warning, never the channel's."""
+    """
+    Since D-T8 the emboss plate's groove steps round the arrows on the
+    first-cell side, which needs 3.5 mm there; 15 cells leave 0.731 mm, so
+    the groove is left out with S-C5 beside the seam-GAP warning.
+    """
     stl_path = tmp_path / "plate.stl"
     output = _render(
         openscad_binary,
@@ -360,9 +371,8 @@ def test_v1_tactile_15_columns_keep_the_groove_on_the_arrow_column(
         },
     )
     assert "Tactile indicator needs a seam gap of at least" in output
-    assert "NOTE: The seam channel" not in output
-    angles = _groove_cap_angles(trimesh_module, stl_path)
-    assert angles and all(abs(a - 180.0) < 0.05 for a in angles), angles
+    assert f"NOTE: {S_C5_HEAD}{S_C5_TAIL}" in output
+    assert _groove_cap_angles(trimesh_module, stl_path) == []
 
 
 @pytest.mark.slow

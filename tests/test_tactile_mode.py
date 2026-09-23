@@ -13,7 +13,7 @@ They cover the three things most likely to silently break the feature:
    canonical desktop build and the MakerWorld single-file build).
 2. The geometry invariants the nesting fit depends on — the seam-centre
    placement, the curvature-conforming shell band, and the recess clearance
-   offset — and the tactile seam channel recut through the raised arrows.
+   offset — and the tactile seam channel's path round the raised arrows.
 3. The Visual code path staying gated behind ``!tactile_on`` so the default
    mode is untouched.
 
@@ -245,79 +245,104 @@ def test_indicator_sits_at_the_seam_gap_centre(scad_path):
 
 
 @BOTH_BUILDS
-def test_tactile_seam_channel_runs_through_the_raised_arrows(scad_path):
+def test_tactile_seam_channel_steps_round_the_raised_arrows(scad_path):
     """
-    D-T6 / D-T7: in tactile mode the groove is at 180 on both plates, the
-    full height, and the emboss plate cuts it a second time over the arrow
-    chain after the raised arrows are on - the V's sides carried past their
-    top faces - so the slicer has a corner at every layer. The counter plate's
-    recesses are deeper than the groove and get no recut.
+    D-T6 / D-T8: in tactile mode the groove is at 180 on both plates, the full
+    height, and on the emboss plate it steps round each raised arrow on the
+    first-cell side - one cut, from the bare barrel, along the path the web
+    generator's _tactile_detour_path() computes - so the arrows stay whole.
+    The D-T7 recut through them is gone. The counter plate's recesses are
+    deeper than the groove and keep the straight cut. Tactile mode now has a
+    room rule, and its own omission sentence (S-C5, signed 2026-09-23).
     """
     scad = _read(scad_path)
-    assert "SEAM_CHANNEL_ARROW_MARGIN_MM = 0.3;" in scad
-    assert "SEAM_CHANNEL_RECUT_INSET_MM  = 0.05;" in scad
+    assert "SEAM_CHANNEL_DETOUR_SLANT_DEG    = 45;" in scad
+    assert "SEAM_CHANNEL_DETOUR_ARC_STEP_DEG = 7.5;" in scad
+    assert "SEAM_CHANNEL_DETOUR_STEP_MM      = 1.0;" in scad
+    assert "SEAM_CHANNEL_CONE_FN = 32;" in scad
+    assert "seam_channel_fits = seam_channel_free_mm >= seam_channel_need_mm;" in scad
     assert (
-        "seam_channel_fits = tactile_on || (seam_channel_free_mm >= seam_channel_need_mm);"
+        "seam_channel_free_mm = tactile_on ? seam_gap_mm / 2 - seam_channel_footprint_mm"
         in scad
+    )
+    assert (
+        "seam_channel_need_mm = (tactile_on ? tactile_indicator_width / 2 : 0)" in scad
     )
     assert (
         "seam_channel_s_mm = tactile_on ? 0 : (seam_channel_lo_mm + seam_channel_hi_mm) / 2;"
         in scad
     )
-    assert "function tactile_recut_span(delta) =" in scad
-    assert (
-        "seam_channel_recut_span = tactile_on ? "
-        "tactile_recut_span(gears_on ? GEAR_ARROW_WELD_MM : 0) : undef;"
-    ) in scad
-    assert (
-        "seam_channel_recut_lip_mm = tactile_indicator_raise + SEAM_CHANNEL_LIP_MM;"
-        in scad
+    for name in ("arc", "one", "x_at", "sort", "envelope", "kept", "subdivide"):
+        assert f"function seam_detour_{name}(" in scad
+    assert "seam_channel_detour_path = (tactile_on && seam_channel_present)" in scad
+    assert "[180 - asin(p[1] / radius), p[0]]" in scad, (
+        "the first-cell side is above 180"
     )
-    assert "module seam_channel_arrow_recut() {" in scad
-    # The first cut, full height, in the shell; the recut in the emboss
-    # plate's difference() only, after its union.
-    assert "seam_channel_cut(channel_theta_deg);" in scad
+    assert "module seam_channel_path_cut(path) {" in scad
+    assert "$fn = SEAM_CHANNEL_CONE_FN);" in scad
+    # One cut, in the shell, before anything is unioned on; only the emboss
+    # plate hands the shell a path.
+    assert "seam_channel_path_cut(channel_path);" in scad
     emboss = scad.split("module cylinder_emboss_plate()")[1].split(
         "module cylinder_counter_plate()"
     )[0]
     counter = scad.split("module cylinder_counter_plate()")[1]
-    assert emboss.count("seam_channel_arrow_recut();") == 1
-    assert "seam_channel_arrow_recut();" not in counter
-    assert emboss.index("tactile_rows_raised();") < emboss.index(
-        "seam_channel_arrow_recut();"
-    )
+    assert emboss.count("channel_path = seam_channel_detour_path") == 1
+    assert "channel_path" not in counter
+    for gone in (
+        "seam_channel_arrow_recut",
+        "tactile_recut_span",
+        "seam_channel_recut_span",
+        "seam_channel_recut_lip_mm",
+        "SEAM_CHANNEL_ARROW_MARGIN_MM",
+        "SEAM_CHANNEL_RECUT_INSET_MM",
+    ):
+        assert gone not in scad, f"{gone} survived"
     assert "stretches" not in scad and "leave no room" not in scad
-    # GEAR_ARROW_WELD_MM is read by the recut span at top level, so it is
-    # declared beside gears_on, ahead of it (OpenSCAD evaluates top-level
-    # assignments in source order).
+    assert (
+        'echo("NOTE: The seam channel was left out: there is not enough room for it beside '
+        "the alignment arrows. Reduce the number of braille cells, increase the cylinder "
+        'diameter, or narrow the indicator.");'
+    ) in scad
+    # GEAR_ARROW_WELD_MM is read by the path at top level, so it is declared
+    # beside gears_on, ahead of it (OpenSCAD evaluates top-level assignments in
+    # source order).
     assert scad.index("GEAR_ARROW_WELD_MM = 0.005;") < scad.index(
-        "seam_channel_recut_span = "
+        "seam_channel_detour_path = "
     )
 
 
 @BOTH_BUILDS
-def test_seam_channel_arrow_constants_mirror_the_web_generator(scad_path):
+def test_seam_channel_detour_constants_mirror_the_web_generator(scad_path):
     """
-    app/geometry_spec.py owns SEAM_CHANNEL_ARROW_MARGIN_MM and
-    SEAM_CHANNEL_RECUT_INSET_MM; this file mirrors them. Skipped when the web
-    repository is not checked out beside this one.
+    app/geometry_spec.py owns the detour's SEAM_CHANNEL_DETOUR_* constants and
+    static/workers/csg-worker-manifold.js the sweep cones' segment count; this
+    file mirrors them. Skipped when the web repository is not checked out
+    beside this one.
     """
-    web = (
-        PROJECT_ROOT.parent
-        / "braille-cylinder-stl-generator"
-        / "app"
-        / "geometry_spec.py"
-    )
+    web_root = PROJECT_ROOT.parent / "braille-cylinder-stl-generator"
+    web = web_root / "app" / "geometry_spec.py"
     if not web.exists():
         pytest.skip(f"the web generator is not checked out at {web}")
     web_text = web.read_text(encoding="utf-8")
     scad = _read(scad_path)
-    for name in ("SEAM_CHANNEL_ARROW_MARGIN_MM", "SEAM_CHANNEL_RECUT_INSET_MM"):
+    for name in (
+        "SEAM_CHANNEL_DETOUR_SLANT_DEG",
+        "SEAM_CHANNEL_DETOUR_ARC_STEP_DEG",
+        "SEAM_CHANNEL_DETOUR_STEP_MM",
+    ):
         web_match = re.search(rf"^{name} = ([0-9.]+)", web_text, re.MULTILINE)
         assert web_match, f"{name} not found in the web generator"
         scad_match = re.search(rf"^{name}\s*= ([0-9.]+);", scad, re.MULTILINE)
         assert scad_match, f"{name} not found in the .scad"
         assert float(scad_match.group(1)) == float(web_match.group(1))
+    worker = (web_root / "static" / "workers" / "csg-worker-manifold.js").read_text(
+        encoding="utf-8"
+    )
+    cones = re.search(
+        r"^const SEAM_CHANNEL_CONE_SEGMENTS = (\d+);", worker, re.MULTILINE
+    )
+    assert cones and int(cones.group(1)) == 32 and "SEAM_CHANNEL_CONE_FN = 32;" in scad
 
 
 @BOTH_BUILDS

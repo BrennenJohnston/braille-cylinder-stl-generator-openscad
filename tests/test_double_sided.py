@@ -310,7 +310,7 @@ class _Features:
     translated up by half its height on the way out, which is undone here).
     """
 
-    def __init__(self, trimesh_module, stl_path, layout, arrow_sign=-1):
+    def __init__(self, trimesh_module, stl_path, layout, arrow_sign=-1, emboss=True):
         """
         arrow_sign: which side of angle 0 this mesh's tactile arrow would be
         on if it ever left the seam-gap centre: this generator's Cylinder A
@@ -319,6 +319,9 @@ class _Features:
         +, B is -. At the centre (180, since D-T6 reverted the one-day
         lead-in) the sign makes no difference, but the windows stay signed
         and one-sided so a moved arrow can never clip the far grid's dots.
+
+        emboss: an embossing plate, whose seam channel steps round the raised
+        arrows (D-T8) - on the side opposite arrow_sign's, the first-cell side.
         """
         import numpy as np
 
@@ -341,17 +344,23 @@ class _Features:
         # end faces, and the warning text that floats above the top.
         inside = np.abs(self.z) < layout["height"] / 2.0
         band = (self.r > self.radius - 1.0) & (self.r < self.radius + 2.0) & inside
-        # The seam channel shares the arrow column since D-T6, and since D-T7
-        # its V is recut through the raised arrows: its own vertices sit on
-        # the groove floor (0.5 mm down) and where its walls meet the arrows'
-        # embedded base (0.2 mm down), all within 2 deg of the arrow angle,
-        # and would otherwise cluster as recesses at 180. A recess arrow's own
-        # vertices are 0.7 mm down or on the surface, so this drops none.
+        # The seam channel shares the arrow column since D-T6: where it runs
+        # straight its own vertices sit on the groove floor (0.5 mm down)
+        # within 2 deg of the arrow angle, and would otherwise cluster as
+        # recesses at 180. A recess arrow's own vertices are 0.7 mm down or on
+        # the surface, so this drops none. On an emboss plate it steps round
+        # the raised arrows on the first-cell side (D-T8), its floor and walls
+        # (0.5 mm down to the surface) reaching about 12.2 deg out, where the
+        # nearest dot edge on that side is 15.9 deg away at 14 cells.
         column = self.near_arrow(2.0)
-        groove_floor = column & (
-            (np.abs(self.r - (self.radius - 0.5)) < 0.03)
-            | (np.abs(self.r - (self.radius - 0.2)) < 0.03)
-        )
+        groove_floor = column & (np.abs(self.r - (self.radius - 0.5)) < 0.03)
+        if emboss:
+            diff = ((self.theta - self.arrow_deg + 180.0) % 360.0) - 180.0
+            groove_floor |= (
+                (diff * -arrow_sign > 0)
+                & (np.abs(diff) < 13.0)
+                & (self.r > self.radius - 0.55)
+            )
         self.raised = band & (self.r > self.radius + 0.05)
         self.recessed = band & (self.r < self.radius - 0.05) & ~groove_floor
 
@@ -552,16 +561,14 @@ class TestCylinderAGeometry:
                 <= 0.01
             ), f"Row {row}'s arrow does not stand {layout['arrow_raise']} mm proud."
 
-        # Above the surface each arrow ends at its own centre line since the
-        # seam channel's recut (D-T7): the V is 2 mm wide at the top face,
-        # the arrow's own width there, so the topmost proud vertex sits a
-        # hair above the top row's centre (where the V wall, the arrow side
-        # and the top facet meet).
-        top = _row_y(layout, 0)
+        # Whole arrows (D-T8: the seam channel steps round them, where D-T7 cut
+        # them back to their centre lines): the band runs from the bottom
+        # arrow's base to the top arrow's tip.
+        top = _row_y(layout, 0) + half
         bottom = _row_y(layout, layout["rows"] - 1) - half
         z_seam = ds_features.z[seam]
         assert (
-            -Z_TOL_MM <= z_seam.max() - top <= 0.5
+            abs(z_seam.max() - top) <= Z_TOL_MM
             and abs(z_seam.min() - bottom) <= Z_TOL_MM
         ), (
             f"The seam band spans z {z_seam.min():.3f}..{z_seam.max():.3f} mm; "
@@ -704,7 +711,7 @@ def ds_b_features(ds_runner, _trimesh, layout, tmp_path_factory):
         ds_runner, tmp_path, _ds_params(plate_type="negative"), "cylinder_b"
     )
     assert "ERROR:" not in output, f"Render reported an error:\n{output[:800]}"
-    return _Features(_trimesh, stl_path, layout, arrow_sign=+1)
+    return _Features(_trimesh, stl_path, layout, arrow_sign=+1, emboss=False)
 
 
 class TestCylinderBGeometry:
@@ -897,8 +904,7 @@ class TestForcedTactile:
 
     def test_arrows_are_rendered_anyway(self, forced, layout):
         features, _ = forced
-        # The recut (D-T7) leaves nothing proud on the centre line; the arrows'
-        # ridges stand 3.6 to 7.4 deg out.
+        # Whole arrows (D-T8): proud on their centre line and out to 7.4 deg.
         seam = features.raised & features.near_arrow(5.0)
         assert seam.any(), "Forced tactile did not render the seam arrows."
 
@@ -1689,12 +1695,14 @@ def golden_features(
             golden_scad_stls[plate_type],
             golden_scad_layout,
             arrow_sign=scad_sign,
+            emboss=plate_type == "positive",
         )
         out[("golden", plate_type)] = _Features(
             _trimesh,
             web_fixtures / f"{stem}.stl",
             golden_web_layout,
             arrow_sign=-scad_sign,
+            emboss=plate_type == "positive",
         )
     return out
 
@@ -2252,28 +2260,21 @@ class TestGoldenContainmentProbes:
         # The goldens are the 0.3 mm package, so since 2026-09-20 they carry
         # the three fixed arrows, not one per row.
         for z in _arrow_zs(layout, GOLDEN_PACKAGE):
-            # The seam channel is recut through the raised arrow (D-T7), so its
-            # centre line is air: probe 1.2 mm beside it, 3 mm below the
-            # arrow's centre, where the arrow is 1.6 mm wide either side and
-            # the V only 0.75 mm at half the raise.
-            assert self._solid_at(
-                bodies[(source, "positive")],
-                layout,
-                arc_a + 1.2,
-                z - 3.0,
-                layout["radius"] + 0.5 * raise_mm,
-            ), (
-                f"{source} Cylinder A: the raised arrow at z {z} is hollow beside the recut."
-            )
-            assert not self._solid_at(
-                bodies[(source, "positive")],
-                layout,
-                arc_a,
-                z,
-                layout["radius"] + 0.5 * raise_mm,
-            ), (
-                f"{source} Cylinder A: the arrow at z {z} is not recut on its centre line."
-            )
+            # The seam channel steps round the raised arrow (D-T8) instead of
+            # cutting through it, so the arrow is solid on its centre line - at
+            # its middle and, 3 mm up, toward its point, which the D-T7 recut
+            # used to take.
+            for rise in (0.0, 3.0):
+                assert self._solid_at(
+                    bodies[(source, "positive")],
+                    layout,
+                    arc_a,
+                    z + rise,
+                    layout["radius"] + 0.5 * raise_mm,
+                ), (
+                    f"{source} Cylinder A: the raised arrow at z {z} is hollow on its centre line "
+                    f"{rise} mm above its middle."
+                )
             assert not self._solid_at(
                 bodies[(source, "positive")],
                 layout,
