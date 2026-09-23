@@ -7,13 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.2] - 2026-09-23
+
+The raised tactile arrows are whole again. Brennen's testing of the seam
+channel cut through the raised arrows (web decision D-T7, shipped here in 2.8.1)
+showed that the cut took their points and made the triangles less
+distinguishable by touch; on the web generator (web
+decision D-T8, 2026-09-22) the groove now steps round them, and this release
+brings both files and both MakerWorld builds into line, groove for groove.
+**Tactile Embossing Plate renders change in this release** (the arrows keep
+their points and the groove runs beside them); Counter Plate and Visual renders
+are unchanged, apart from Tactile layouts too crowded for the detour.
+
+### Changed
+
+- **In Tactile mode the seam channel steps round the raised arrows instead of cutting through
+  them** (web decision D-T8). On the Embossing Plate the groove still runs down the arrow column,
+  but before each raised arrow it slants out at 45 degrees toward the first braille cell, rounds
+  the base corner, runs beside the long side with 0.25 mm of flat surface between the arrow and
+  the groove, and rounds the tip back to the column. The 0.4mm preset's arrows touch tip to base,
+  so there the groove zig-zags beside the chain; the 0.3mm preset's three arrows are 5 mm apart,
+  so it returns to the column between them. The path is the web generator's own
+  `_tactile_detour_path()` ported line for line (`seam_detour_*` functions,
+  `seam_channel_detour_path`), cut from the bare barrel in one pass as the swept V of 32-segment
+  cones (`SEAM_CHANNEL_CONE_FN`, `$fn` tessellation case 6); the 2.8.1 recut, its two constants
+  and `tactile_recut_span()` are gone, and three constants join the mirrored set
+  (`SEAM_CHANNEL_DETOUR_SLANT_DEG`, `SEAM_CHANNEL_DETOUR_ARC_STEP_DEG`,
+  `SEAM_CHANNEL_DETOUR_STEP_MM`). A render's NOTE says where the groove leaves and rejoins the
+  column and how far it swings. The Counter Plate keeps its straight groove. A new render test
+  checks the groove floor against the web generator's path to 0.01 mm, both ways, for Version 1,
+  Version 2, integrated gears and the three-arrow layout.
+- **A Tactile layout with no room beside the arrows for the detour leaves the groove off both
+  plates and says why** - the web generator's room rule (the first-cell side's half gap less the
+  dot footprint against half the arrow width plus 1.5 mm). 15 cells on the default barrel now
+  lose it. The console note is the web generator's signed S-C5 sentence (Brennen, 2026-09-23),
+  which names the cause because the arrow width can take that room as well as the cell count and
+  diameter: "The seam channel was left out: there is not enough room for it beside the alignment
+  arrows. Reduce the number of braille cells, increase the cylinder diameter, or narrow the
+  indicator." The red badge reads `SEAM CHANNEL LEFT OUT: room` in Tactile mode.
+
 ### Removed
 
 - **The Embosser Version 2 file no longer prints its "work-in-progress prototype" note** on every
   render (Brennen, 2026-09-21; the web app dropped the prototype label on 2026-09-20). The R14-peg
   compatibility fact stays in the README and the file's comments; the MakerWorld copy follows.
   `tests/test_tactile_lead_in_scad.py` is renamed `test_tactile_seam_column_scad.py` - it pins
-  the D-T7 groove, not the reverted lead-in.
+  the tactile groove on the arrow column, not the reverted lead-in.
 - **The word "prototype" is gone from the Version 2 file's header, both READMEs and the MakerWorld
   listing draft** (Brennen's instruction, 2026-09-21): the 30.8 x 54 mm barrel and R14 cutouts were
   print-tested on 2026-09-01, the tactile seam channel on 2026-09-21.

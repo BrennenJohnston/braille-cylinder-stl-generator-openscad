@@ -138,10 +138,11 @@ surface features change.
   The Indicator Letters toggle is ignored in this mode
 - **The arrow sits at the middle of the seam gap** on both plates, with equal
   space before the first cell and after the last, and the counter plate's
-  recess meets it at the nip. Since 2.8.1 the slicer seam channel runs down
-  the arrow column the full height and is cut through the raised arrows, so
-  the slicer has a corner at every layer: each arrow keeps its base half as
-  two ridges and loses its point
+  recess meets it at the nip. The slicer seam channel runs down the arrow
+  column the full height, so the slicer has a corner at every layer; since
+  2.8.2 it steps round each raised arrow on the first-cell side instead of
+  cutting through it, so the arrows keep their points (in 2.8.1 each lost
+  its point to the groove)
 - Five sliders tune it: `tactile_indicator_width` / `_length` / `_raise`, plus
   `tactile_recess_clearance` and `tactile_recess_extra_depth` for the counter
   plate's fit
@@ -691,5 +692,5 @@ For general braille embossing questions, see the [web app](https://braille-cylin
 
 ---
 
-**Version**: 2.8.1  
-**Last Updated**: 2026-09-21
+**Version**: 2.8.2  
+**Last Updated**: 2026-09-23
