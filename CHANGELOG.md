@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.9.1] - 2026-09-23
+
+Documentation only. **No `.scad` file changed**, so every model renders exactly
+as in 2.9.0.
+
+### Fixed
+
+- **The MakerWorld quick start's diameter instruction works now.** It named a
+  dial that does not exist (`cylinder_diameter`; the dial is
+  `cylinder_diameter_mm`), and it never said that the 0.4mm and 0.3mm presets
+  fix the diameter at 30.8 mm and ignore the slider - checked 2026-09-23: at
+  the default preset a typed 55 still renders 30.8, and only
+  `paper_thickness_preset = Custom` lets it through. The sizing step and the
+  spice-jar example now say both, and the preset bullet says presets set the
+  cylinder dimensions too.
+- **The tactile recess wall is about 1.22 mm at defaults, not 0.93 mm.** The
+  quick start and the parameter mapping's crush-safety note still carried the
+  figures from before the arrow's default raise went from 0.8 to 0.5 mm
+  (2026-08-18); the mapping's arrow-tip and recess-floor radii (15.9 and
+  14.7 mm) and its raise are corrected with them. The model's own guard
+  computes the wall as 1.224 mm, just above its 1.2 mm printable minimum.
+- The quick-start PDF is regenerated from the corrected text.
+
 ## [2.9.0] - 2026-09-23
 
 In line with the web app again. Since the last parity release the web
