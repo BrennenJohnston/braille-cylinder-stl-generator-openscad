@@ -1,0 +1,90 @@
+{
+  "note": "Pre-seam-channel renders of the four default plates (O0 of the OpenSCAD parity plan, 2026-09-21), OpenSCAD 2026.01.03 Nightly, binary STL, rendered with the exact command tests/test_seam_channel_scad.py uses (flags + defines below). The STLs are NOT committed (1-8 MB each, *.stl is LFS here). The CONTRACT is the geometry signature - triangle count, unique vertex count, sha256 of the unique vertices rounded to 1e-5 mm, volume and area - which is invariant under the diagonal flips OpenSCAD makes on a few coplanar quads of the Version 2 countersink slivers when the command line changes (same vertices, different bytes). sha256/byte_size of the whole file are recorded for information only. Every render was made twice and matched itself.",
+  "openscad_version": "2026.01.03",
+  "renders": {
+    "v1_emboss": {
+      "file": "Braille_Cylinder_STL_Generator.scad",
+      "defines": {
+        "plate_type": "Embossing Plate",
+        "seam_channel": "Off"
+      },
+      "flags": [
+        "--hardwarnings",
+        "--check-parameter-ranges=true",
+        "--export-format",
+        "binstl"
+      ],
+      "tri_count": 24428,
+      "unique_vertex_count": 12214,
+      "vertex_sha256": "f80f2b64f44cb27f240f150745967f32b57b375d8c3f19f52cfeb025e14c64b5",
+      "volume_mm3": 10420.249789,
+      "area_mm2": 9886.965094,
+      "sha256": "d568864485a24a709ed8971833a556b7bfb8f10655877db95ec6c31467d10431",
+      "byte_size": 1221484,
+      "warnings_or_errors": 0
+    },
+    "v1_counter": {
+      "file": "Braille_Cylinder_STL_Generator.scad",
+      "defines": {
+        "plate_type": "Counter Plate",
+        "seam_channel": "Off"
+      },
+      "flags": [
+        "--hardwarnings",
+        "--check-parameter-ranges=true",
+        "--export-format",
+        "binstl"
+      ],
+      "tri_count": 161648,
+      "unique_vertex_count": 80824,
+      "vertex_sha256": "79cd951fec5393b630f618d1743e114dd66b90f9e55836ab38f543c5ff174d41",
+      "volume_mm3": 9992.77378,
+      "area_mm2": 10436.271354,
+      "sha256": "ae0302e85979cddfa63884cda942ad1afb508f5f38296299b39eb9e2e25f37a3",
+      "byte_size": 8082484,
+      "warnings_or_errors": 0
+    },
+    "v2_emboss": {
+      "file": "Braille_Cylinder_STL_Generator_EmbosserV2.scad",
+      "defines": {
+        "plate_type": "Embossing Plate",
+        "seam_channel": "Off"
+      },
+      "flags": [
+        "--hardwarnings",
+        "--check-parameter-ranges=true",
+        "--export-format",
+        "binstl"
+      ],
+      "tri_count": 26422,
+      "unique_vertex_count": 13211,
+      "vertex_sha256": "c619e937e16282a2307c58216e581332d8a3e641d0248a1fccdd1cb6e1f34e1e",
+      "volume_mm3": 29437.483423,
+      "area_mm2": 9502.100358,
+      "sha256": "50b719cdbef0d47d282dd949c89429b201c3eeb4b0348589148f22c3f2286e98",
+      "byte_size": 1321184,
+      "warnings_or_errors": 0
+    },
+    "v2_counter": {
+      "file": "Braille_Cylinder_STL_Generator_EmbosserV2.scad",
+      "defines": {
+        "plate_type": "Counter Plate",
+        "seam_channel": "Off"
+      },
+      "flags": [
+        "--hardwarnings",
+        "--check-parameter-ranges=true",
+        "--export-format",
+        "binstl"
+      ],
+      "tri_count": 163656,
+      "unique_vertex_count": 81828,
+      "vertex_sha256": "40604132af5f22f39dbbedff686a86f3636f7e8adfe27e441f29afb85fd5c0e4",
+      "volume_mm3": 29664.547604,
+      "area_mm2": 10070.026153,
+      "sha256": "c06125fd878f90522b919ef77a2d677a9abe37bf5d4e07f2a079e1208c2716c1",
+      "byte_size": 8182884,
+      "warnings_or_errors": 0
+    }
+  }
+}

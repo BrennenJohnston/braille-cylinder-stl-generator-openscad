@@ -282,9 +282,7 @@ class TestMainScadWiring:
             PRESETS_FILE.read_text(encoding="utf-8"), "PRESET_04"
         )
 
-    def test_every_preset_key_wired_through_preset_value(
-        self, scad_source, preset_04
-    ):
+    def test_every_preset_key_wired_through_preset_value(self, scad_source, preset_04):
         """
         For every key in PRESET_04 there must be a matching
         `_preset_<key> = preset_value(paper_thickness_preset, "<key>", <key>)`
@@ -304,15 +302,13 @@ class TestMainScadWiring:
         missing = [k for k in preset_04 if k not in wired]
         assert not missing, (
             "Preset keys are present in presets.scad but not consumed by "
-            "the main SCAD via `preset_value(paper_thickness_preset, \"<key>\", <key>)`:\n"
+            'the main SCAD via `preset_value(paper_thickness_preset, "<key>", <key>)`:\n'
             + "\n".join(f"  - {k}" for k in missing)
         )
 
         # Slider-name (3rd arg = fallback) must match the lookup key, so
         # Custom mode keeps each slider tied to its own variable.
-        mismatched = [
-            (k, slider) for k, (_, slider) in wired.items() if slider != k
-        ]
+        mismatched = [(k, slider) for k, (_, slider) in wired.items() if slider != k]
         assert not mismatched, (
             "preset_value() fallback (3rd arg) must equal the lookup key "
             "for every parameter, so the Custom preset preserves the "

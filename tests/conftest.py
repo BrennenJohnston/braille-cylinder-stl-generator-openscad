@@ -23,6 +23,11 @@ import yaml
 # so E402 is expected here.
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+# The warning fixtures below import their helpers from test_text_too_long by
+# its bare module name, the same name every other test module imports it under.
+# Inserting the tests directory here means that works whatever order pytest
+# collects in, rather than relying on another module having done it first.
+sys.path.insert(0, str(Path(__file__).parent))
 
 from tests.mesh_comparison import MeshComparator  # noqa: E402
 from tests.openscad_runner import OpenSCADRunner  # noqa: E402
@@ -108,21 +113,21 @@ def tool_versions(tests_dir) -> Dict[str, Any]:
 def comparison_config(tests_dir, pytestconfig) -> Dict[str, Any]:
     """Load comparison configuration."""
     import os
-    
+
     # Check for custom config path (CLI option or environment variable)
     custom_config = pytestconfig.getoption("--comparison-config", None)
     if not custom_config:
         custom_config = os.environ.get("COMPARISON_CONFIG", None)
-    
+
     if custom_config:
         config_path = Path(custom_config)
         logger.info(f"Using custom comparison config: {config_path}")
     else:
         config_path = tests_dir / "compare_config.json"
-    
+
     with open(config_path) as f:
         config = json.load(f)
-    
+
     # Log which profile is being used
     profile = config.get("profile", "baseline")
     logger.info(f"Comparison profile: {profile}")
@@ -148,7 +153,7 @@ def test_cases(fixtures_dir) -> Dict[str, Any]:
     test_cases_path = fixtures_dir / "test_cases.json"
     with open(test_cases_path, encoding="utf-8") as f:
         data = json.load(f)
-    
+
     # CI GUARD: Fail fast if any card test cases are found
     # Card tests are disabled until web UI parity is restored
     for test_case in data.get("test_cases", []):
@@ -159,7 +164,7 @@ def test_cases(fixtures_dir) -> Dict[str, Any]:
                 f"Card tests are disabled until web UI parity is restored. "
                 f"Only 'cylinder' shape_type is allowed."
             )
-    
+
     return data
 
 
@@ -172,23 +177,21 @@ def openscad_runner(tool_versions) -> OpenSCADRunner:
     In CI mode (CI=true env var), enforces exact version and Manifold backend.
     """
     import os
-    
+
     try:
         # Check if running in CI mode
         is_ci = os.environ.get("CI", "").lower() in ("true", "1", "yes")
-        
+
         # Get version requirements from tool_versions.yml
         openscad_config = tool_versions.get("required_tools", {}).get("openscad", {})
         required_version = openscad_config.get("ci_version") if is_ci else None
-        
+
         # Create runner with optional version enforcement
-        runner = OpenSCADRunner(
-            enforce_version=required_version if is_ci else None
-        )
-        
+        runner = OpenSCADRunner(enforce_version=required_version if is_ci else None)
+
         version = runner.get_version()
         logger.info(f"OpenSCAD available: {version}")
-        
+
         # Check Manifold backend (require in CI, warn in local)
         if is_ci:
             runner.check_manifold_backend(require_manifold=True)
@@ -198,7 +201,7 @@ def openscad_runner(tool_versions) -> OpenSCADRunner:
                 "⚠ Manifold backend not available - results may differ from CI. "
                 "Consider upgrading to OpenSCAD 2026.01.03+ nightly."
             )
-        
+
         return runner
     except Exception as e:
         pytest.skip(f"OpenSCAD not available: {e}")
@@ -208,6 +211,58 @@ def openscad_runner(tool_versions) -> OpenSCADRunner:
 def mesh_comparator(comparison_config) -> MeshComparator:
     """Create mesh comparator instance."""
     return MeshComparator(comparison_config)
+
+
+# -----------------------------------------------------------------------------
+# Shared fixtures for the render-based warning tests
+#
+# These live here rather than in test_text_too_long.py because pytest fixtures
+# imported into another test module shadow their own names, which is what the
+# F811 suppression in test_too_many_lines.py used to silence. A conftest fixture
+# needs no import at all, so the warning has nothing to report. The plain
+# helpers (_render, _baseline_params, _scad_constant, _resolve_openscad_path,
+# _z_max, BRAILLE_FULL_CELL) stay in test_text_too_long.py: ordinary imports
+# never triggered F811, and four modules import them from there.
+# -----------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def _trimesh():
+    try:
+        import trimesh
+    except ImportError:
+        pytest.skip("trimesh is not installed; skipping render-based warning test")
+    return trimesh
+
+
+@pytest.fixture(scope="module")
+def warning_offsets():
+    """Pull the warning-text positioning constants directly from the SCAD."""
+    from test_text_too_long import _scad_constant
+
+    return {
+        "z_offset": _scad_constant("INVALID_TEXT_Z_OFFSET"),
+        "size": _scad_constant("INVALID_TEXT_SIZE"),
+        "depth": _scad_constant("INVALID_TEXT_DEPTH"),
+    }
+
+
+@pytest.fixture(scope="module")
+def warning_runner():
+    """
+    Module-scoped OpenSCAD runner that prefers the nightly install. Lives
+    independently of the session-scoped ``openscad_runner`` fixture so the
+    rest of the suite is unaffected.
+    """
+    from test_text_too_long import _resolve_openscad_path
+
+    from openscad_runner import OpenSCADNotFoundError, OpenSCADRunner
+
+    explicit = _resolve_openscad_path()
+    try:
+        return OpenSCADRunner(openscad_path=explicit)
+    except OpenSCADNotFoundError as exc:
+        pytest.skip(f"OpenSCAD not available for render-based warning test: {exc}")
 
 
 @pytest.fixture

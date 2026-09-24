@@ -63,6 +63,7 @@ def _resolve_openscad_path():
             return p
     return None  # let OpenSCADRunner auto-detect
 
+
 # Same braille glyph used by other fixtures; six dots so it always produces
 # extrusion geometry on the cylinder surface.
 BRAILLE_FULL_CELL = "\u283f"  # U+283F: braille pattern dots-123456
@@ -119,39 +120,8 @@ def _baseline_params():
     }
 
 
-@pytest.fixture(scope="module")
-def _trimesh():
-    try:
-        import trimesh
-    except ImportError:
-        pytest.skip("trimesh is not installed; skipping render-based warning test")
-    return trimesh
-
-
-@pytest.fixture(scope="module")
-def warning_offsets():
-    """Pull the warning-text positioning constants directly from the SCAD."""
-    return {
-        "z_offset": _scad_constant("INVALID_TEXT_Z_OFFSET"),
-        "size": _scad_constant("INVALID_TEXT_SIZE"),
-        "depth": _scad_constant("INVALID_TEXT_DEPTH"),
-    }
-
-
-@pytest.fixture(scope="module")
-def warning_runner():
-    """
-    Module-scoped OpenSCAD runner that prefers the nightly install. Lives
-    independently of the session-scoped ``openscad_runner`` fixture so the
-    rest of the suite is unaffected.
-    """
-    from openscad_runner import OpenSCADNotFoundError, OpenSCADRunner
-
-    explicit = _resolve_openscad_path()
-    try:
-        return OpenSCADRunner(openscad_path=explicit)
-    except OpenSCADNotFoundError as exc:
-        pytest.skip(f"OpenSCAD not available for render-based warning test: {exc}")
+# _trimesh, warning_offsets and warning_runner now live in tests/conftest.py so
+# that no module has to import them - see the note there.
 
 
 def _render(openscad_runner, tmp_path, params, name):
@@ -209,7 +179,9 @@ def test_text_too_long_emits_warning_extrusion(
     z_oversize = _z_max(_trimesh, oversize_stl)
     z_exact = _z_max(_trimesh, exact_stl)
 
-    cyl_top = baseline_params["cylinder_height_mm"]  # cylinder centered then translated up
+    cyl_top = baseline_params[
+        "cylinder_height_mm"
+    ]  # cylinder centered then translated up
     z_offset = warning_offsets["z_offset"]
     depth = warning_offsets["depth"]
 
@@ -249,7 +221,7 @@ def test_text_too_long_emits_warning_extrusion(
     assert z_oversize >= expected_warning_top - 1.0, (
         f"Oversize render's z_max ({z_oversize:.3f}) is below the expected "
         f"warning top ({expected_warning_top:.3f} = cylinder_top {cyl_top} + "
-        f"z_offset {z_offset} + 8 + depth/2 {depth/2}). Either the warning "
+        f"z_offset {z_offset} + 8 + depth/2 {depth / 2}). Either the warning "
         f"didn't fire or the stack offset constant drifted."
     )
 

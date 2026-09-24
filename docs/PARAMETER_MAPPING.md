@@ -22,6 +22,33 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 
 ## Parameter Mapping
 
+### Version 2 Keyed Cutouts
+
+These apply to `Braille_Cylinder_STL_Generator_EmbosserV2.scad` only. The
+Version 1 file has no such tab.
+
+| OpenSCAD | Web API | Web UI Label | Default | Range |
+|----------|---------|--------------|---------|-------|
+| `key_clearance_mm` | `v2_key_clearance_mm` | Key clearance (mm) | 0.110 | 0–0.5 |
+
+Three Version 1 parameters are **not present in the Version 2 file** and have no
+Version 2 equivalent to map:
+
+| Parameter | Why it is gone |
+|-----------|----------------|
+| `polygon_cutout_radius_mm` | the keyed cutout IS the bore |
+| `polygon_cutout_points` | same |
+| `seam_offset_degrees` | the keys sit on the tactile arrow column; turning the seam would put them in the wrong place |
+
+`integrated_gears` is **present** in the Version 2 file too (since 2026-09-21),
+under the `[Gears]` tab: it fuses the **Version 2** gear set,
+not the Version 1 one — see [Gears](#gears) below.
+On the web that is `gear_rollers_enabled: 1` together with `embosser_version: 2`.
+
+On the web side these ride inside `settings` as the flat names
+`embosser_version` (integer 1 or 2) and `v2_key_clearance_mm`, and nothing is
+added to the request while Version 1 is selected.
+
 ### Text Input - Pre-Translated Braille
 | OpenSCAD Parameter | Web App Equivalent | Notes |
 |--------------------|-------------------|-------|
@@ -53,12 +80,83 @@ triggers a `TOO MANY LINES: n/grid_rows` warning — a console `echo()` plus red
 text above the cylinder for the MakerWorld preview, which has no console. The
 web app blocks the same case before generation instead of warning after.
 
-### Plate Selection
+### Card Sides
+
+Emboss BOTH faces of one card in a single pass. Turning `double_sided` On forces
+Tactile row indicators, replaces the counter plate's universal recess grid with
+1:1 paired seats, and renames the pair: **Cylinder A** is the Embossing Plate and
+**Cylinder B** the Counter Plate. The single-sided names and files are unchanged —
+this renaming applies only while double-sided is On.
+
+Back-side text is **pre-translated Unicode braille in both versions**. The web app
+translates front text with Liblouis but not back text, and OpenSCAD has no Liblouis
+at all, so this is the one place the two versions work identically by necessity.
+
+| OpenSCAD Parameter | Web App Equivalent | Notes |
+|--------------------|-------------------|-------|
+| `double_sided` | Card sides: Double-sided | `"Off"` (default), `"On"`. Web schema home `double_sided.enabled`; on the wire it is the flat integer `double_sided_enabled` (0/1), never sent for cards. OpenSCAD accepts the Customizer's `On`/`Off` and the lowercase `on`/`off` the test system passes with `-D`. |
+| `Back_Line_1` … `Back_Line_10` | `back_lines[0]` … `back_lines[9]` | **Composite mapping.** OpenSCAD needs one fixed field per row because the Customizer cannot add fields on demand; the web app carries the whole back face as ONE top-level array, `back_lines`, sent beside `lines`. Read only while `double_sided` is On. Settings-file spelling is `text.back_lines`; the Python keyword is `back_lines=`. |
+| `interpoint_offset_x_mm` | `interpoint_offset_x` | Circumferential half of the diagonal shift between the front and back grids, measured around the cylinder. Default **1.25 mm**, range **1.15–1.35 mm**. Web schema home `double_sided.interpoint_offset_x_mm`. |
+| `interpoint_offset_y_mm` | `interpoint_offset_y` | Axial half of the same diagonal shift, measured along the cylinder: back rows sit this far above the front rows. Default **1.25 mm**, range **1.15–1.35 mm**. Web schema home `double_sided.interpoint_offset_y_mm`; the web repo's `app/geometry/interpoint.py` calls this same number `offset_z`. |
+
+All ten back rows stay in this one tab, unlike the front's `Line_1`–`Line_8` /
+`Line_9`–`Line_10` split. That split exists only to keep the always-visible main
+text tab at eight fields; this tab is opt-in, so splitting it would send a
+double-sided user to a second tab — one that also holds single-sided fields — to
+finish one job.
+
+**Two asserts guard the offsets, not one.** The 1.15–1.35 mm range is enforced by
+an assert in the `.scad`, so a value outside it stops the render rather than
+exporting an unprintable pair. A second assert then checks the printed ridge
+between a raised dot and its neighbouring recess against the 0.34 mm floor.
+Clearance **peaks at 1.25 mm and falls off symmetrically**, so 1.15 and 1.35 are
+equally bad and the fix is always to move back *toward* 1.25 — never simply to
+increase or decrease. On the 0.4 mm card-stock package the renderable band is
+effectively **1.19–1.31 mm** (measured 2026-08-20); the 0.3 mm package accepts the
+whole range. The slider deliberately keeps the full 1.15–1.35 because that is the
+web schema's range and the 0.3 package uses all of it.
+
+The paired dot and bowl footprints are **fixed and keyed to the card-stock
+preset** — there are no double-sided dial parameters to map. See
+`paper_thickness_preset` below and `docs/specifications/INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md`
+in the web repository for the two packages.
+
+### Cylinders to Generate
 | OpenSCAD Parameter | Web App Equivalent | Values |
 |--------------------|-------------------|--------|
-| `plate_type` | Select Plate to Generate | `"Embossing Plate"`, `"Counter Plate"` |
+| `plate_type` | Cylinders to Generate: Cylinder A (Embossing Plate) / Cylinder B (Universal Counter Plate) | `"Embossing Plate"`, `"Counter Plate"`; used while `render_both_plates` is Off |
+| `render_both_plates` | Cylinders to Generate: Both Cylinder A and B (no wire field) | `"On"` (default since v2.9.0, matching the web app's default), `"Off"`. Renders Cylinder A and Cylinder B side by side in one pass; `plate_type` is ignored while On. **No request field maps to this**: the web app reaches the same outcome by running its single-plate pipeline twice and concatenating the two STLs into one combined download. Accepts the lowercase `on`/`off` the test system passes with `-D`. |
+| `pair_spacing_mm` | (no wire field; the web app hard-codes 10 mm) | `10` (default), range `2`–`50`. Gap between the two barrel **surfaces** while `render_both_plates` is On, for laying the pair out on one print plate; centre-to-centre is this plus one diameter. It is **not** the assembly distance — a meshed pair runs at a 32.0473 mm axis distance, and with gears On the teeth overhang the barrel, leaving about 8.58 mm tip to tip at the default. |
 
-### Indicator Mode
+### Gears
+
+| OpenSCAD Parameter | Web App Equivalent | Values |
+|--------------------|-------------------|--------|
+| `integrated_gears` | `gear_rollers_enabled` | `"Off"` (default), `"On"`. Builds the cylinder as one solid piece with its drive gears attached. The gears are a 1:1 replica of the reference set and are **not adjustable**, so the cylinder is locked to 30.8 mm × 52 mm while On and any other size is refused rather than mis-built; the barrel also prints solid (the polygonal cutout is dropped). Web schema home `gear_rollers.enabled`; on the wire it is the flat integer `gear_rollers_enabled` (0/1). |
+
+**Desktop build only.** The gear meshes are real files — `assets/gears_a.stl` and
+`assets/gears_b.stl` — that must sit beside the `.scad`. The MakerWorld
+single-file build declares the same parameter (the sync test requires it) but in
+a `[Hidden]` tab, so its Customizer never offers it. That is not a packaging
+choice that could be worked around: MakerWorld's Parametric Model Maker has no
+way to accept a mesh file at all (tested 2026-08-25).
+
+**Embosser Version 2 (`Braille_Cylinder_STL_Generator_EmbosserV2.scad`, since
+2026-09-21).** The same switch, under the `[Gears]` tab, fuses the **Version 2**
+gear set — `assets/v2_gears_a.stl` /
+`assets/v2_gears_b.stl`, derived from the web repo's packed assets and pinned by
+`assets/GEARS_PROVENANCE.json` — with the cylinder locked to **30.8 mm × 54 mm**
+(any other size is refused with the web generator's own sentence, "Fixed gears
+for the Version 2 embosser fit only a 30.8 mm x 54 mm cylinder."). While it is
+On the barrel is solid with **no keyed holes, nub or socket** — the gears' own
+pegs and pins are inside the imported solids — and each top gear's anti-rotation
+notch is filled by hidden material (the measured notch outline grown 0.05 mm as
+an exact parallel curve, capped at r 13.95 mm) so no void is sealed in. The seam
+channel is still cut. On the web the same roller is `gear_rollers_enabled: 1`
+with `embosser_version: 2`. The MakerWorld Version 2 upload hides the switch
+exactly as the Version 1 build does.
+
+### Row Indicator Style
 
 This mode originated here and the web app has since ported it, so every
 parameter below now has a web equivalent under the same name. The web app's
@@ -72,10 +170,11 @@ Expert Mode.
 |--------------------|----------------|---------|----------------|-------|
 | `indicator_mode` | `indicator_mode` | `"Visual"` | `"Visual"`, `"Tactile"` | `Visual` = recessed marker cells at the start of each row (current behavior). `Tactile` = raised arrow on the emboss plate + matching recess on the counter plate, in the seam gap. See Note 3. |
 | `tactile_indicator_width` | `tactile_indicator_width` | 4.0 mm | 2–10 mm | Indicator width around the cylinder |
-| `tactile_indicator_length` | `tactile_indicator_length` | 5.0 mm | 2–15 mm | Indicator length along the cylinder axis; the default matches the 5 mm braille dot field height |
-| `tactile_indicator_raise` | `tactile_indicator_raise` | 0.8 mm | 0–2 mm | How far the emboss arrow stands proud. Kept below the braille dot height so the dots carry the rolling pressure |
+| `tactile_indicator_length` | `tactile_indicator_length` | 10.0 mm | 2–15 mm | Indicator length along the cylinder axis; long enough for a fingertip to read the direction of the point in one pass. At the 10 mm default `line_spacing`, each row's arrow meets the base of the one above |
+| `tactile_indicator_raise` | `tactile_indicator_raise` | 0.5 mm | 0–2 mm | How far the emboss arrow stands proud. Kept below the braille dot height so the dots carry the rolling pressure |
 | `tactile_recess_clearance` | `tactile_recess_clearance` | 0.2 mm | 0–1 mm | Outline margin around the counter recess |
 | `tactile_recess_extra_depth` | `tactile_recess_extra_depth` | 0.2 mm | 0–1 mm | Counter recess depth beyond the raise; 0 = exact same-depth nesting |
+| *(derived: `paper_thickness_preset == "0.3mm"`)* | `tactile_indicator_layout` | one per row | `per_row`, `three_spaced` | **2026-09-20.** Where the arrows sit along the axis. `"0.4mm"` and `"Custom"` keep one arrow per braille row; `"0.3mm"` places exactly three, at mid-height and `TACTILE_THREE_SPACED_PITCH` (15 mm) above and below it, whatever the row count — so a blind user can tell the presets apart by touch and a 0.3 mm cylinder will not nest with a 0.4 mm one. No slider here: the preset decides. The web UI sends `three_spaced` for its 0.3 preset (and for Custom when 0.3 was the preset last chosen — its radio can flip to Custom by itself, which this Customizer's cannot). An `assert` refuses a barrel too short for the outer arrows, as the web API does. The pitch is pinned across the two repos by `tests/test_tactile_arrow_layout.py`. |
 
 Defaults are asserted equal on the web side
 (`tests/test_smoke.py::test_tactile_settings_defaults_match_openscad`), so the
@@ -85,9 +184,12 @@ there — deliberately.
 The five tactile sliders are **not** preset-driven — same policy as
 `grid_columns`. The paper-thickness presets describe paper and dot geometry;
 the indicator is a mechanical alignment feature and must not move when the
-user switches preset.
+user switches preset. The one exception, since 2026-09-20, is the arrow
+*layout* above: the arrow itself never changes size, but the 0.3mm preset
+places three of them instead of one per row, precisely so the preset can be
+recognised by touch.
 
-### Paper Thickness Preset
+### Card Thickness
 | OpenSCAD Parameter | Web App Equivalent | Default | Values |
 |--------------------|-------------------|---------|--------|
 | `paper_thickness_preset` | Card Thickness | `"0.4mm"` | `"0.4mm"`, `"0.3mm"`, `"Custom"` |
@@ -108,6 +210,24 @@ user switches preset.
 | `polygon_cutout_radius_mm` | Cutout Radius | 13.0 mm | 0-50 mm |
 | `polygon_cutout_points` | Cutout Points/Sides | 12 | 3-24 |
 | `seam_offset_degrees` | Seam Offset | 0.0° | 0-360° |
+| `seam_channel` | Slicer seam channel (Expert Mode switch, wire name `seam_channel_enabled`) | `On` | `On` / `Off` |
+
+**Slicer seam channel** (both files, since 2026-09-21): a V groove **1.0 mm
+wide × 0.5 mm deep** the full height of the outer surface, in the seam gap
+beside the row markers, where a slicer's default *Aligned* seam mode hides each
+layer's seam instead of in a dot. On by default on every cylinder, both plates.
+The size is a constant, not a dial, in both implementations
+(`SEAM_CHANNEL_WIDTH_MM` 1.0, `DEPTH` 0.5, `MARGIN` 0.25, `OVERSHOOT` 1.0,
+`LIP` 0.5, `MIN_WALL` 1.2 — `tests/test_seam_channel_scad.py` diffs them
+against the web repo's `app/geometry_spec.py`). It is left out, with a console
+`NOTE:` and a red `SEAM CHANNEL LEFT OUT` badge on the model, when the free
+window is under 1.5 mm (15 columns in Tactile mode) or the wall under the groove
+would be under 1.2 mm. On the web the switch sends `seam_channel_enabled: 0`
+only when turned off; On adds nothing to the request. The groove's angle is the
+web spec's `theta` taken as a **physical** angle here — embossing plate
+`180 + s/R`, counter plate `180 − s/R` (181.67° / 178.33° at 15 visual columns
+on the 30.8 mm cylinder); see
+[`OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md` §3.6](OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md).
 
 ### Expert Mode - Braille Spacing
 | OpenSCAD Parameter | Web App Equivalent | Default | Range |
@@ -204,9 +324,12 @@ blind-accessible indicator carried by both plates. Cylinder diameter, height,
 and the polygonal cutout are unchanged — only surface features differ.
 
 - **Placement.** One indicator per braille row, centred in the seam gap
-  between the last and first cell. The grid is centred on angle 0, so that
-  midpoint is always exactly **180°** — and 180° is the fixed point of the
-  counter plate's `mirror([0,1,0])` / angle-negation construction, so the
+  between the last and first cell — or, on the `"0.3mm"` paper-thickness
+  preset since 2026-09-20, exactly three at mid-height and ±15 mm, whatever
+  the row count (`tactile_arrow_y_positions()`; the preset's tactile
+  marking, see the Row Indicator Style table). The grid is centred on angle 0, so
+  that midpoint is always exactly **180°** — and 180° is the fixed point of
+  the counter plate's `mirror([0,1,0])` / angle-negation construction, so the
   emboss arrow and the counter recess self-align radially with no extra maths,
   at any rotation of the paired cylinders.
 - **Shape.** An isosceles triangle, **symmetric circumferentially** (so the
@@ -214,18 +337,44 @@ and the polygonal cutout are unchanged — only surface features differ.
   collide) and **asymmetric axially, apex toward the cylinder top** (so a
   blind user feels which end is up on either plate). Raised-vs-recessed
   distinguishes the embosser from the counter by touch.
-- **Crush safety.** The default 0.8 mm raise is below the 1.0 mm braille dot
+- **Crush safety.** The default 0.5 mm raise is below the 1.0 mm braille dot
   height, so the dots always carry the rolling pressure. At defaults the arrow
-  tip sits at radius 16.2 mm and the recess floor at 14.4 mm — 0.2 mm of radial
-  slack, 0.2 mm of outline clearance, and ~0.93 mm of wall left over the
-  polygonal cutout.
+  tip sits at radius 15.9 mm and the recess floor at 14.7 mm — 0.2 mm of radial
+  slack, 0.2 mm of outline clearance, and ~1.22 mm of wall left over the
+  polygonal cutout, just above the 1.2 mm printable minimum the model warns at.
 - **Uniform raise/depth.** Both features are a radial prism intersected with a
   shell band tessellated at `CYLINDER_SHELL_FN`, so the raise and depth stay
   constant across the arrow. A flat prism 4 mm wide on a 15.4 mm radius would
   lose ~0.13 mm at its edges to the chord sagitta — large next to the 0.2 mm
   nesting margin.
 - **Capacity.** No marker cells, so `actual_grid_columns == grid_columns` and
-  up to 14 text cells fit the default cylinder. `indicators` is ignored.
+  14 text cells fit the default cylinder — but a 90 mm card loaded at the
+  alignment arrow holds only 13 (`CARD_LENGTH_MM`, a Hidden constant; the web
+  app reads its `card_width` field): 14 cells need 92.8 mm, and both plates
+  render a red `TEXT RUNS OFF CARD: 92.8/90mm` badge plus a console NOTE, never
+  a stop. `indicators` is ignored.
+- **Position (web decision D-T6, 2026-09-21).** The arrow sits at the 180°
+  seam-gap centre on both plates, with equal space before the first cell and
+  after the last (`tactile_surface_prism` places it with
+  `place_cylinder_marker(180, …)`; a fixed lead-in before the first cell was
+  tried and reverted the same day). The card need is measured from there:
+  `seam_gap/2 + grid + the cell's dot footprint`. In Tactile mode the slicer
+  seam channel runs down the arrow column at 180° the full height on both
+  plates, and on the emboss plate it steps round each raised arrow on the
+  first-cell side (web decision D-T8, 2026-09-22): `seam_channel_detour_path`,
+  the web generator's `_tactile_detour_path()` ported line for line, keeps
+  the groove's centre line `SEAM_CHANNEL_WIDTH_MM / 2 + SEAM_CHANNEL_MARGIN_MM`
+  (0.75 mm) from each arrow and slants at most
+  `SEAM_CHANNEL_DETOUR_SLANT_DEG` (45°) off the axis, and
+  `seam_channel_path_cut()` sweeps the V along it from the bare barrel, so
+  the arrows keep their points. The counter plate's recesses are deeper than
+  the groove, so its straight cut runs through them. When the first-cell
+  side lacks the room (`seam_gap/2 − footprint` under
+  `tactile_indicator_width/2 + 1.5 mm`) both plates leave the groove out
+  with the signed S-C5 NOTE. The render's `NOTE:` states where the groove
+  leaves and rejoins the column and how far it swings. (2.8.1 recut the V
+  through the raised arrows instead - web decision D-T7 - which took each
+  arrow's point.)
 - **Seam-gap guard.** When the gap drops below
   `tactile_indicator_width + 5 mm`, both plates render a red
   `TACTILE GAP TOO SMALL: <gap>mm` extrusion above the cylinder and the desktop
@@ -254,23 +403,25 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
 - Default shape: Rounded (the dropdown still offers Cone)
 - Default indicator mode: Visual (the dropdown still offers Tactile)
 - Default preset: 0.4mm (optimized for thicker paper, larger dots)
+- Default output: both cylinders side by side (`render_both_plates = "On"`),
+  matching the web app, whose Generate builds both
 
 ## Workflow Comparison
 
 ### Web App Workflow:
-1. Enter English text
-2. Select language/grade
-3. Choose shape and plate type
-4. Adjust expert parameters (optional)
-5. Generate STL
-6. Download
+1. Choose the embosser setup (version, card sides, gears)
+2. Enter English text and select language/grade
+3. Adjust expert parameters (optional)
+4. Generate STL — both cylinders unless Cylinders to Generate names one
+5. Download — one file holding the pair
 
 ### OpenSCAD Workflow:
 1. Translate text at https://www.branah.com/braille-translator
 2. Copy Unicode braille output
 3. Open OpenSCAD file
 4. Paste braille into Line_1, Line_2, etc.
-5. Choose `dot_shape` and `plate_type` in Customizer
+5. Choose `dot_shape` in the Customizer (both cylinders render by default; for
+   one, set `render_both_plates` to `Off` and choose `plate_type`)
 6. Adjust expert parameters (optional)
 7. Render (F6)
 8. Export STL (File → Export → Export as STL)
@@ -294,7 +445,7 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
 
 ## Notes
 
-1. **Paper Thickness Preset System**: This is a convenience system that sets 21 parameters to known-good values:
+1. **Card Thickness Preset System**: This is a convenience system that sets 21 parameters to known-good values:
    - **0.4mm preset** (thicker paper, larger dots): Default setting that matches web app on-load behavior
    - **0.3mm preset** (thinner paper, smaller dots): Alternative optimized for thinner materials
    - **Custom**: Indicator state when values deviate from presets
@@ -311,7 +462,7 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
    cells *available for text*, not including markers — the code internally adds
    2 cells when Indicator Letters is On and 1 cell when Off.
 
-3. **Indicator Mode**: `indicator_mode = "Tactile"` reserves **no** marker
+3. **Row Indicator Style**: `indicator_mode = "Tactile"` reserves **no** marker
    cells (`actual_grid_columns == grid_columns`), places the alignment
    indicator in the seam gap at 180° instead, and ignores `indicators`
    entirely. `Visual` is the default and reproduces the layout in Note 2
@@ -319,7 +470,7 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
 
 4. **Rounded vs. Cone**: The web app calls these "Rounded" and "Cone" - both terms refer to the combined emboss+counter shape pair.
 
-5. **Counter Plate Universality**: Counter plates have recesses at ALL possible dot positions (all 6 dots × all cells × all rows), making them universal for any braille pattern.
+5. **Counter Plate Universality**: Counter plates have recesses at ALL possible dot positions (all 6 dots × all cells × all rows), making them universal for any braille pattern. **This holds for single-sided only.** With `double_sided` On there is no universal grid: both cylinders carry 1:1 paired recesses, one per actual dot on the opposing face, so a double-sided pair is specific to its text and cannot be reused for another message.
 
 6. **Parameter Names**: OpenSCAD uses snake_case (e.g., `grid_columns`) to match the web app's JavaScript variable names, ensuring consistency across platforms.
 

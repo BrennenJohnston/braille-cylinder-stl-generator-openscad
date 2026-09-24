@@ -10,7 +10,9 @@ def test_indicator_shapes_not_cylinders_in_scad_source():
     even before OpenSCAD/mesh comparison runs.
     """
 
-    scad_path = Path(__file__).resolve().parents[1] / "Braille_Cylinder_STL_Generator.scad"
+    scad_path = (
+        Path(__file__).resolve().parents[1] / "Braille_Cylinder_STL_Generator.scad"
+    )
     scad = scad_path.read_text(encoding="utf-8")
 
     # Modules required by the web-spec indicator implementation
@@ -33,10 +35,18 @@ def test_indicator_shapes_not_cylinders_in_scad_source():
 
     # Emboss renders the shared layout directly; the counter renders the SAME
     # module under mirror([0,1,0]) for the mirrored pair.
-    assert "place_row_indicators(y_pos, INDICATOR_TRIANGLE_DEPTH_EMBOSS, INDICATOR_RECT_DEPTH_EMBOSS)" in scad
+    assert (
+        "place_row_indicators(y_pos, INDICATOR_TRIANGLE_DEPTH_EMBOSS, INDICATOR_RECT_DEPTH_EMBOSS)"
+        in scad
+    )
     assert "mirror([0, 1, 0])" in scad
-    assert "place_row_indicators(y_pos, active_counter_height, active_counter_height)" in scad
+    assert (
+        "place_row_indicators(y_pos, active_counter_height, active_counter_height)"
+        in scad
+    )
 
     # Old buggy implementation patterns (cylindrical markers) must not reappear
     assert "active_emboss_base_diameter / 3" not in scad
-    assert "Start marker" not in scad  # old marker terminology (start/end cylinders) should be gone
+    assert (
+        "Start marker" not in scad
+    )  # old marker terminology (start/end cylinders) should be gone

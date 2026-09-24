@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 def check_python_packages():
     """Check if required Python packages are installed."""
     print("\n📦 Checking Python packages...")
-    
+
     required_packages = [
         ("trimesh", "Mesh loading and analysis"),
         ("numpy", "Numerical computing"),
@@ -37,7 +37,7 @@ def check_python_packages():
         ("yaml", "YAML parsing"),
         ("requests", "HTTP client"),
     ]
-    
+
     missing = []
     for package, description in required_packages:
         try:
@@ -46,12 +46,12 @@ def check_python_packages():
         except ImportError:
             print(f"  ✗ {package:15s} - {description} (MISSING)")
             missing.append(package)
-    
+
     if missing:
         print(f"\n⚠ Missing packages: {', '.join(missing)}")
         print("  Install with: pip install -r tests/requirements.txt")
         return False
-    
+
     print("  ✓ All Python packages installed")
     return True
 
@@ -59,13 +59,14 @@ def check_python_packages():
 def check_openscad():
     """Check if OpenSCAD is available."""
     print("\n🔧 Checking OpenSCAD...")
-    
+
     openscad_path = shutil.which("openscad")
     if openscad_path:
         print(f"  ✓ OpenSCAD found: {openscad_path}")
-        
+
         # Try to get version
         import subprocess
+
         try:
             result = subprocess.run(
                 ["openscad", "--version"],
@@ -77,7 +78,7 @@ def check_openscad():
             print(f"    Version: {version}")
         except Exception as e:
             print(f"    Warning: Could not get version: {e}")
-        
+
         return True
     else:
         print("  ✗ OpenSCAD not found in PATH")
@@ -89,7 +90,7 @@ def check_openscad():
 def check_cloudcompare():
     """Check if CloudCompare is available (optional)."""
     print("\n☁️  Checking CloudCompare (optional)...")
-    
+
     cloudcompare_path = shutil.which("CloudCompare")
 
     # Also check common default install locations (users often don't add to PATH)
@@ -129,7 +130,7 @@ def check_cloudcompare():
 def check_git_lfs():
     """Check if Git LFS is installed."""
     print("\n📁 Checking Git LFS...")
-    
+
     git_lfs_path = shutil.which("git-lfs")
     if git_lfs_path:
         print(f"  ✓ Git LFS found: {git_lfs_path}")
@@ -144,7 +145,7 @@ def check_git_lfs():
 def check_config_files():
     """Check if configuration files exist."""
     print("\n⚙️  Checking configuration files...")
-    
+
     config_files = [
         ("tests/parameter_mapping.json", "Parameter mapping", True),
         ("tests/compare_config.json", "Comparison config", True),
@@ -153,7 +154,7 @@ def check_config_files():
         ("tests/requirements.txt", "Python requirements", True),
         ("pytest.ini", "Pytest config", True),
     ]
-    
+
     all_present = True
     for file_path, description, required in config_files:
         full_path = PROJECT_ROOT / file_path
@@ -164,14 +165,14 @@ def check_config_files():
             print(f"  {marker} {description:25s} ({file_path}) - MISSING")
             if required:
                 all_present = False
-    
+
     return all_present
 
 
 def check_source_files():
     """Check if test modules exist."""
     print("\n🐍 Checking test modules...")
-    
+
     test_modules = [
         "tests/openscad_runner.py",
         "tests/mesh_comparison.py",
@@ -180,7 +181,7 @@ def check_source_files():
         "tests/cross_platform_validation.py",
         "scripts/regenerate_fixtures.py",
     ]
-    
+
     all_present = True
     for module_path in test_modules:
         full_path = PROJECT_ROOT / module_path
@@ -189,14 +190,14 @@ def check_source_files():
         else:
             print(f"  ✗ {module_path} - MISSING")
             all_present = False
-    
+
     return all_present
 
 
 def check_scad_file():
     """Check if OpenSCAD file exists."""
     print("\n📄 Checking OpenSCAD file...")
-    
+
     scad_file = PROJECT_ROOT / "Braille_Cylinder_STL_Generator.scad"
     if scad_file.exists():
         print(f"  ✓ OpenSCAD file found: {scad_file.name}")
@@ -209,13 +210,13 @@ def check_scad_file():
 def check_fixtures():
     """Check fixture status."""
     print("\n🗂️  Checking test fixtures...")
-    
+
     fixtures_dir = PROJECT_ROOT / "tests" / "fixtures" / "cross_platform"
-    
+
     if not fixtures_dir.exists():
         print("  ⚠ Fixtures directory not found")
         return False
-    
+
     # Check version file
     version_file = fixtures_dir / "FIXTURES_VERSION.txt"
     if version_file.exists():
@@ -225,16 +226,16 @@ def check_fixtures():
             print(f"    {first_line}")
     else:
         print("  ⚠ No FIXTURES_VERSION.txt (fixtures not generated)")
-    
+
     # Count test case directories
     test_case_dirs = [d for d in fixtures_dir.iterdir() if d.is_dir()]
     if test_case_dirs:
         print(f"  ℹ️ Found {len(test_case_dirs)} test case fixture(s)")
-        
+
         # Check if they have reference.stl files
         with_stl = sum(1 for d in test_case_dirs if (d / "reference.stl").exists())
         print(f"    {with_stl} with reference.stl")
-        
+
         if with_stl == 0:
             print("  ⚠ No reference STL files found")
             print("    Generate with: python scripts/regenerate_fixtures.py")
@@ -243,14 +244,14 @@ def check_fixtures():
         print("  ⚠ No test case fixtures found")
         print("    Generate with: python scripts/regenerate_fixtures.py")
         return False
-    
+
     return True
 
 
 def print_next_steps(all_checks_passed, has_fixtures):
     """Print next steps based on check results."""
     print("\n" + "=" * 70)
-    
+
     if all_checks_passed and has_fixtures:
         print("✅ SETUP COMPLETE - Ready to run validation tests!")
         print("=" * 70)
@@ -260,8 +261,10 @@ def print_next_steps(all_checks_passed, has_fixtures):
         print("\n  2. Run validation tests:")
         print("     pytest tests/cross_platform_validation.py -v")
         print("\n  3. Run specific test:")
-        print("     pytest tests/cross_platform_validation.py -k cylinder_rounded_emboss_indicators_on")
-    
+        print(
+            "     pytest tests/cross_platform_validation.py -k cylinder_rounded_emboss_indicators_on"
+        )
+
     elif all_checks_passed and not has_fixtures:
         print("⚠️  SETUP INCOMPLETE - Generate fixtures first")
         print("=" * 70)
@@ -273,7 +276,7 @@ def print_next_steps(all_checks_passed, has_fixtures):
         print("     python scripts/regenerate_fixtures.py")
         print("\n  3. Run validation tests:")
         print("     pytest tests/cross_platform_validation.py -v")
-    
+
     else:
         print("❌ SETUP FAILED - Fix issues above")
         print("=" * 70)
@@ -281,31 +284,27 @@ def print_next_steps(all_checks_passed, has_fixtures):
         print("  - Missing Python packages: pip install -r tests/requirements.txt")
         print("  - OpenSCAD not found: See tests/tool_versions.yml for install help")
         print("  - Missing files: Ensure you're in the project root directory")
-    
+
     print("=" * 70)
 
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Check validation framework setup"
-    )
-    parser.add_argument(
-        "--verbose", action="store_true", help="Enable verbose logging"
-    )
-    
+    parser = argparse.ArgumentParser(description="Check validation framework setup")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+
     args = parser.parse_args()
-    
+
     # Setup logging
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
     )
-    
+
     print("=" * 70)
     print("STL VALIDATION FRAMEWORK - SETUP CHECKER")
     print("=" * 70)
-    
+
     # Run all checks
     checks = {
         "Python packages": check_python_packages(),
@@ -316,15 +315,15 @@ def main():
         "Test modules": check_source_files(),
         "OpenSCAD file": check_scad_file(),
     }
-    
+
     # Fixtures are checked separately (not required for initial setup)
     has_fixtures = check_fixtures()
-    
+
     # Summary
     print("\n" + "=" * 70)
     print("SUMMARY")
     print("=" * 70)
-    
+
     for check_name, result in checks.items():
         if result is True:
             status = "✓ PASS"
@@ -333,16 +332,14 @@ def main():
         else:
             status = "✗ FAIL"
         print(f"  {status:12s} {check_name}")
-    
+
     # Determine overall status
-    critical_checks = [
-        v for v in checks.values() if v is not None and v is not True
-    ]
+    critical_checks = [v for v in checks.values() if v is not None and v is not True]
     all_checks_passed = len(critical_checks) == 0
-    
+
     # Print next steps
     print_next_steps(all_checks_passed, has_fixtures)
-    
+
     # Exit code
     if all_checks_passed:
         return 0

@@ -7,6 +7,756 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.9.1] - 2026-09-23
+
+Documentation only. **No `.scad` file changed**, so every model renders exactly
+as in 2.9.0.
+
+### Fixed
+
+- **The MakerWorld quick start's diameter instruction works now.** It named a
+  dial that does not exist (`cylinder_diameter`; the dial is
+  `cylinder_diameter_mm`), and it never said that the 0.4mm and 0.3mm presets
+  fix the diameter at 30.8 mm and ignore the slider - checked 2026-09-23: at
+  the default preset a typed 55 still renders 30.8, and only
+  `paper_thickness_preset = Custom` lets it through. The sizing step and the
+  spice-jar example now say both, and the preset bullet says presets set the
+  cylinder dimensions too.
+- **The tactile recess wall is about 1.22 mm at defaults, not 0.93 mm.** The
+  quick start and the parameter mapping's crush-safety note still carried the
+  figures from before the arrow's default raise went from 0.8 to 0.5 mm
+  (2026-08-18); the mapping's arrow-tip and recess-floor radii (15.9 and
+  14.7 mm) and its raise are corrected with them. The model's own guard
+  computes the wall as 1.224 mm, just above its 1.2 mm printable minimum.
+- The quick-start PDF is regenerated from the corrected text.
+
+## [2.9.0] - 2026-09-23
+
+In line with the web app again. Since the last parity release the web
+generator took double-sided cards and integrated gears out of beta
+(2026-09-20), made one Generate build both cylinders (2026-09-21), renamed its
+sections, and replaced its gear hardware note. This release brings both files
+and both MakerWorld builds to the same terms. **Default renders change: one
+render now holds both cylinders.** Each plate's geometry is unchanged: with
+`render_both_plates = "Off"` all 24 checked single-plate renders (both files,
+both MakerWorld builds, both plates, Visual, Tactile and double-sided) match
+2.8.2 — Version 1 byte for byte, Version 2 by triangle count, vertex set,
+volume and area, because its countersink slivers already flip a diagonal
+between runs. No parameter name, value or range moved, so saved Customizer
+settings keep working.
+
+### Changed
+
+- **Both cylinders render by default** (`render_both_plates = "On"`), as the
+  web app's Generate builds both: Cylinder A, the Embossing Plate, on the left
+  and Cylinder B, the Counter Plate, on the right, 10 mm apart. Set it to `Off`
+  and choose `plate_type` for one plate at a time.
+- **The BETA labels are gone** from double-sided cards, integrated gears and
+  both-plates mode, in the Customizer, the file headers and the docs.
+- **Five Customizer sections carry the web app's names**: Card Sides (was
+  Double-Sided Card), Gears (was Integrated Gears), Cylinders to Generate (was
+  Plate Selection), Row Indicator Style (was Indicator Mode) and Card
+  Thickness (was Paper Thickness Preset). Only the section titles changed;
+  the dials inside them keep their names.
+- **The Version 1 gear hardware note is the web app's current one**, worded for
+  the Version 1 file the way the Version 2 file words its own: "Version 1
+  fixed gears fit only the Version 1 fixed-gear housing. The standard
+  Version 1 housing takes the standard cylinders." It replaces the older
+  sentence on the dial, in the console NOTE and in the READMEs, where the
+  README still carried a pre-2026-08-28 wording that named the wrong hardware.
+- **No sign-off bookkeeping reaches the public files.** The Version 1 file and
+  its MakerWorld build no longer carry "Wording SIGNED OFF ... reword only
+  with his sign-off" labels, which the Customizer showed as dial descriptions;
+  the Version 2 pair was already clean. The wording itself is unchanged, and
+  a new guard, `tests/test_public_wording.py` (also run by CI's quick job),
+  keeps BETA labels and sign-off tags out of all five public files and pins
+  the section names and the default.
+- **Docs**: the READMEs, the parameter mapping (JSON and Markdown), the
+  MakerWorld quick start and its PDF, and the Version 2 listing draft describe
+  the pair default and the new section names. The quick start also gains the
+  slicer tip (leave the seam mode on Aligned) and corrects the tactile arrow
+  height to 0.5 mm (it said 0.8).
+- **Tests**: every render helper asks for one plate unless a test asks for the
+  pair, because the fixtures and render tests describe one plate; a new
+  render test checks that the true default is the pair.
+
+## [2.8.2] - 2026-09-23
+
+The raised tactile arrows are whole again. Brennen's testing of the seam
+channel cut through the raised arrows (web decision D-T7, shipped here in 2.8.1)
+showed that the cut took their points and made the triangles less
+distinguishable by touch; on the web generator (web
+decision D-T8, 2026-09-22) the groove now steps round them, and this release
+brings both files and both MakerWorld builds into line, groove for groove.
+**Tactile Embossing Plate renders change in this release** (the arrows keep
+their points and the groove runs beside them); Counter Plate and Visual renders
+are unchanged, apart from Tactile layouts too crowded for the detour.
+
+### Changed
+
+- **In Tactile mode the seam channel steps round the raised arrows instead of cutting through
+  them** (web decision D-T8). On the Embossing Plate the groove still runs down the arrow column,
+  but before each raised arrow it slants out at 45 degrees toward the first braille cell, rounds
+  the base corner, runs beside the long side with 0.25 mm of flat surface between the arrow and
+  the groove, and rounds the tip back to the column. The 0.4mm preset's arrows touch tip to base,
+  so there the groove zig-zags beside the chain; the 0.3mm preset's three arrows are 5 mm apart,
+  so it returns to the column between them. The path is the web generator's own
+  `_tactile_detour_path()` ported line for line (`seam_detour_*` functions,
+  `seam_channel_detour_path`), cut from the bare barrel in one pass as the swept V of 32-segment
+  cones (`SEAM_CHANNEL_CONE_FN`, `$fn` tessellation case 6); the 2.8.1 recut, its two constants
+  and `tactile_recut_span()` are gone, and three constants join the mirrored set
+  (`SEAM_CHANNEL_DETOUR_SLANT_DEG`, `SEAM_CHANNEL_DETOUR_ARC_STEP_DEG`,
+  `SEAM_CHANNEL_DETOUR_STEP_MM`). A render's NOTE says where the groove leaves and rejoins the
+  column and how far it swings. The Counter Plate keeps its straight groove. A new render test
+  checks the groove floor against the web generator's path to 0.01 mm, both ways, for Version 1,
+  Version 2, integrated gears and the three-arrow layout.
+- **A Tactile layout with no room beside the arrows for the detour leaves the groove off both
+  plates and says why** - the web generator's room rule (the first-cell side's half gap less the
+  dot footprint against half the arrow width plus 1.5 mm). 15 cells on the default barrel now
+  lose it. The console note is the web generator's signed S-C5 sentence (Brennen, 2026-09-23),
+  which names the cause because the arrow width can take that room as well as the cell count and
+  diameter: "The seam channel was left out: there is not enough room for it beside the alignment
+  arrows. Reduce the number of braille cells, increase the cylinder diameter, or narrow the
+  indicator." The red badge reads `SEAM CHANNEL LEFT OUT: room` in Tactile mode.
+
+### Removed
+
+- **The Embosser Version 2 file no longer prints its "work-in-progress prototype" note** on every
+  render (Brennen, 2026-09-21; the web app dropped the prototype label on 2026-09-20). The R14-peg
+  compatibility fact stays in the README and the file's comments; the MakerWorld copy follows.
+  `tests/test_tactile_lead_in_scad.py` is renamed `test_tactile_seam_column_scad.py` - it pins
+  the tactile groove on the arrow column, not the reverted lead-in.
+- **The word "prototype" is gone from the Version 2 file's header, both READMEs and the MakerWorld
+  listing draft** (Brennen's instruction, 2026-09-21): the 30.8 x 54 mm barrel and R14 cutouts were
+  print-tested on 2026-09-01, the tactile seam channel on 2026-09-21.
+
+## [2.8.1] - 2026-09-21
+
+The tactile seam-channel fix, tagged on Brennen's go-ahead after his print
+test of a 13-cell tactile pair passed (2026-09-21): in Tactile mode the slicer
+seam channel runs down the alignment-arrow column the full height and is cut
+through the raised arrows, the arrow stays at the seam-gap centre, and a
+card-fit check warns when a row would run off the 90 mm card. The wording
+of the card-fit note, badge and `grid_columns` description is signed.
+**Tactile renders at the shipped defaults change in this release** (the
+groove moves onto the arrow column and each raised arrow loses its point);
+Visual renders are unchanged.
+
+### Fixed
+
+- **`pair_spacing_mm` is declared as an integer dial in `tests/parameter_mapping.json`**, so
+  the schema validator (the PR check) passes again; it had been red since 2026-08-25.
+
+### Changed
+
+- **In Tactile mode the slicer seam channel runs down the arrow column the
+  full height and is cut through the raised arrows, and the alignment arrow
+  sits at the seam-gap centre** (both files, the MakerWorld copies with them;
+  web decisions D-T6 and D-T7, 2026-09-21, after Brennen's prints). A fixed
+  lead-in before the first cell with the groove behind the arrow was built and
+  reverted the same day (the groove sat beside the arrows and a large trailing
+  space followed the last cell); a groove in two stretches that stopped short
+  of the arrow chain was built and reverted the same day too (wherever it
+  stopped, the slicer chose a braille dot or bowl for its seam). The arrow is
+  back at 180° on both plates — equal space either side of it — and the
+  tactile groove is cut at 180° the full height on both plates; on the emboss
+  plate it is cut a second time after the raised arrows are on, over the arrow
+  chain plus `SEAM_CHANNEL_ARROW_MARGIN_MM` (0.3 mm) at each end, held
+  `SEAM_CHANNEL_RECUT_INSET_MM` (0.05 mm) inside the end faces, with the V's
+  sides carried `tactile_indicator_raise + SEAM_CHANNEL_LIP_MM` past the
+  surface. The V is 2 mm wide at an arrow's top face, so each arrow keeps its
+  base half as two ridges and loses its point (Brennen's choice: the tested V
+  at every layer). The counter plate's recesses are deeper than the groove,
+  so its single cut already runs through them. Visual renders are unchanged.
+  The render prints a `NOTE:` with the recut span. In the Version 1 file
+  `GEAR_ARROW_WELD_MM` moved up beside `gears_on` (the span reads it at top
+  level), as the Version 2 file already had it.
+
+### Added
+
+- **A card-fit check for tactile rows.** `CARD_LENGTH_MM = 90` (Hidden): the
+  card's leading edge sits at the arrow, at the middle of the seam gap, so a
+  row needs `gap/2 + grid + footprint` of card — 14 cells need 92.8 mm — and
+  when that exceeds the card both plates render a red
+  `TEXT RUNS OFF CARD: 92.8/90mm` badge and the console says `NOTE: this row
+  needs 92.8 mm of card from the alignment arrow; the card is 90 mm. Lower
+  grid_columns to 13 or fewer.` Never a stop. The `grid_columns` description
+  says 13 is what a 90 mm card holds in Tactile mode. Renders pinned by
+  `tests/test_tactile_seam_column_scad.py` (named for the reverted lead-in it was
+  written for).
+
+## [2.8.0] - 2026-09-21
+
+Everything since 2.7.0, tagged on Brennen's go-ahead after his print tests
+passed (2026-09-21): the slicer seam channel in both files, fixed gears for the
+Embosser Version 2 file, the MakerWorld Version 2 upload under the three-layer
+sync model, the tactile arrow layouts, the Version 2 54 mm barrel, and the
+integrated-gears beta and both-plates work that had been waiting for this tag.
+**Renders at the shipped defaults change in this release:** every cylinder now
+carries the seam channel (`seam_channel = "Off"` gives the 2.7.0 geometry back
+byte for byte), and the Version 2 file's preset barrel is 30.8 × 54 mm with
+four text rows per face.
+
+Entry wording signed off by Brennen 2026-08-25 — including the both-plates
+preview entry, whose CLI/GUI cap correction he approved the same day; they
+fold into 2.8.0 on his go-ahead of 2026-09-21.
+
+The `hemisphere_quality`, rounded-dome-weld and MakerWorld-gears entries were
+signed off the same day, at the end of the session that added them.
+
+The three 2026-09-21 entries (the slicer seam channel, Version 2 fixed gears,
+the MakerWorld Version 2 sync model) were signed off by Brennen on 2026-09-21
+with the OpenSCAD parity plan.
+
+### Added
+
+- **Slicer seam channel, both files** (`Braille_Cylinder_STL_Generator.scad`
+  and `_EmbosserV2.scad`; 2026-09-21, OpenSCAD parity with the web app's
+  2026-09-20 programme). Every cylinder now carries a V groove 1.0 mm wide ×
+  0.5 mm deep the full height of the outer surface, in the seam gap beside the
+  row markers, where a slicer's default *Aligned* seam mode hides each layer's
+  seam instead of in a dot. New `seam_channel = "On"; // [On, Off]` in
+  **[Expert Mode - Cylinder Dimensions]**; the size is a constant
+  (`SEAM_CHANNEL_*`, the web's numbers, diffed by a test), not a dial. Cut from
+  the bare cylinder before the cutout, the keyed halves, the gears or anything
+  unioned on, at the web spec's angle taken as a physical angle (181.67° /
+  178.33° at 15 visual columns). Left out — with a console `NOTE:` and a red
+  `SEAM CHANNEL LEFT OUT: gap X mm` / `wall X mm` badge — when the free window
+  is under 1.5 mm or the wall under it under 1.2 mm. `Off` reproduces the
+  pre-channel geometry exactly (`tests/fixtures/seam_channel/`). Both MakerWorld
+  builds carry it.
+- **Embosser Version 2 fixed gears** (`Braille_Cylinder_STL_Generator_EmbosserV2.scad`,
+  2026-09-21). New **[Integrated Gears]** tab, `integrated_gears = "Off"; // [Off, On]`.
+  On, the plate exports as ONE solid roller with the Version 2 gear set fused
+  on — `assets/v2_gears_a.stl` / `v2_gears_b.stl`, 1:1 replicas of the v8
+  Version 2 gears derived from the web repo's packed assets and pinned by
+  `assets/GEARS_PROVENANCE.json`, gear bodies at z −10..0 and 54..64 with the
+  15 mm keyed pegs inside the barrel. The barrel is solid: no keyed halves,
+  mouths, nub or socket (the gears carry their own pegs and pins), and each top
+  gear's anti-rotation notch is filled by hidden material — the raw notch
+  outline grown 0.05 mm as an exact parallel curve, capped at r 13.95 mm — so no
+  void is sealed in. The two hidden weld rings are the Version 1 ones. Cylinder
+  size is a hard stop at 30.8 × 54 mm (the web app's sentence). D-V6 ("Version 2
+  never has integrated gears") is retired. `Off` is the previous file exactly
+  (`tests/fixtures/version2_gears/`). New `tests/test_embosser_v2_gears_scad.py`.
+
+- **The tactile seam arrows now tell the two paper-thickness presets apart by touch.** In `indicator_mode = "Tactile"`, the **`"0.4mm"`** preset keeps one arrow per braille row exactly as before, while the **`"0.3mm"`** preset places **exactly three arrows, evenly spaced** — at the cylinder's mid-height and 15 mm above and below it (`TACTILE_THREE_SPACED_PITCH`) — whatever the row count. Three separated arrows against a chain of four touching ones can be counted with a fingertip, and a mixed pair will not nest by hand: a 0.4mm emboss cylinder's second and third arrows meet bare surface on a 0.3mm counter, and a 0.3mm emboss cylinder's middle arrow stands proud on a 0.4mm one. `"Custom"` keeps one per row (it is an explicit choice in this Customizer, unlike the web UI's auto-detected one, which follows the preset last chosen). Both row modules now draw their heights from one `tactile_arrow_y_positions()` function, so the counter recesses can never sit at different heights from the arrows they nest; an `assert` refuses a barrel too short for the outer arrows, matching the web generator's rejection (the presets' 52 mm barrel passes at every slider setting). Applied to all four files: the canonical Version 1 file, its `_v1.5` MakerWorld flattening (body re-synced), the Embosser Version 2 file and its byte-identical `_v2` MakerWorld copy. Covered by new source guards in `tests/test_tactile_mode.py` and a new render suite, `tests/test_tactile_arrow_layout.py`, which measures the STL on both plates and pins the 15 mm pitch against the web repository's `TACTILE_THREE_SPACED_PITCH_MM`. Positions, the Custom rule and the rejection were decided by Brennen on 2026-09-20; the web generator carries the same change (`tactile_indicator_layout`, sent only for its 0.3 preset).
+
+### Changed
+
+- **The MakerWorld Embosser Version 2 upload is no longer a byte copy**
+  (`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`, 2026-09-21).
+  Because the canonical Version 2 file can now fuse its gears and MakerWorld
+  cannot carry the gear meshes, the upload follows the Version 1 build's
+  three-layer sync model: the geometry body byte-identical from the
+  `BACKWARD COMPATIBILITY` marker to EOF, every declaration above it equal, and
+  two presentation differences above the marker — a MakerWorld header block and
+  `integrated_gears` declared in a `[Hidden]` tab. `tests/test_makerworld_sync.py`
+  now runs its body and declaration layers over both pairs.
+
+- **Embosser Version 2: the barrel grows to 30.8 × 54 mm and the text input is trimmed to 4 rows per face.** (`Braille_Cylinder_STL_Generator_EmbosserV2.scad` only — every Version 1 file is untouched, and the guard test proves it.) The extra 2 mm is a **1 mm shelf past each edge of the 52 mm card**, so a slightly mis-rolled card rides the shelf instead of ruffling over the cylinder ends; the braille rows center themselves in the height, and the keyed holes, nubs, sockets and countersinks all place from height/2, so no feature moves relative to its face. This matches the web generator, where the 54 mm barrel is Version 2's alone — the project-wide default returned to Version 1's 52 the same day. Text input is now **Line_1–4 and Back_Line_1–4**, the Version 2 embosser's standard four rows per face, replacing the ten-field layout inherited from Version 1 (which keeps its ten); the `grid_rows` slider stops at 4 to match the fields that exist. The size note reads "30.8 mm x 54 mm". Two lagging comments were corrected to the shipped facts: the keyed-cutouts tab now quotes the 0.110 mm clearance (the wording had stayed at the first print test's 0.075; the dial itself was already 0.110) with its 0.890 mm wrong-pair margin, and the header's nub bullet now records the anti-rotation feature on BOTH plates, as the file has cut since the v7.1 gear mirror. Covered by `tests/test_embosser_v2_scad.py` (23 tests, including two new source guards and the cross-repo number mirror). **A 30.8 × 54 pair printed from this file passed Brennen's print test on 2026-09-01, and the wording revisions were signed off the same day.**
+
+- **The Version 1 MakerWorld file is renamed `_v2` → `_v1.5`** (`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`, byte-identical content — Brennen's rename, 2026-09-01). The old `_v2` suffix meant the second generation of the MakerWorld FILE and collided confusingly with Embosser **Version 2**, which is different hardware; `v1.x` suffixes now belong to the Version 1 model's MakerWorld build. Every test path, README, quick-start and rules reference follows the new name, and `_v2` now means what it sounds like — see the Version 2 upload entry below. (The rename had briefly broken the Version 2 test suite's Version-1-files-untouched guard, which watches the old path — that is the "Version 2 error" seen when testing locally on 2026-09-01, and re-pointing the guard fixes it.)
+
+### Added
+
+- **`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` — the Embosser Version 2 MakerWorld upload.** A copy of the canonical root `_EmbosserV2` file, sitting beside the Version 1 build so the `makerworld/` folder holds the upload for every listing (`_v1.5` = Version 1 model, `_v2` = Embosser Version 2). Because the canonical file is self-contained there is no flattening step and **no allowed difference**: the copy is byte-identical, and `test_the_makerworld_copy_is_byte_identical` fails the suite if the two ever drift. After editing the canonical file, re-copy it over this one.
+- **`docs/MAKERWORLD_V2_LISTING_DRAFT.md` — the Embosser Version 2 MakerWorld listing, as a rough draft.** The signed S-V12 title and S-V13 status wording are quoted verbatim and marked SIGNED; every other block (short and full description, print notes, image shot list with alt-text drafts, tags) is marked DRAFT and awaits Brennen's sign-off, per the accessibility rule that user-facing text is never silently finalized. Includes his pre-publish checklist: sign the drafts, print-test 54 mm, confirm print orientation, shoot and approve the five images, then update the Version 2 specification's §12 and the web repo's KNOWN_ISSUES footnote (which still reads "30.5 × 52").
+
+- **Embosser Version 2 (PROTOTYPE): `Braille_Cylinder_STL_Generator_EmbosserV2.scad`.**
+  A NEW self-contained file beside the Version 1 ones, which are untouched and
+  still the default. Version 2 is a new embosser design whose four drive gears
+  each carry a differently shaped peg; this file cuts a matching keyed
+  through-hole at each end of the cylinder, so a gear cannot be seated in the
+  wrong place, plus a 3 mm anti-rotation nub above each plate's top face and a
+  matching socket in each bottom face, so all four cylinder ends key against
+  their gear. Cylinder A carries the triangle that mates with gear A1's notch
+  and A2's pin; Cylinder B a square for B1 and B2.
+  **What it changes** from the Version 1 file: the keyed cutout replaces the
+  polygonal one; there
+  is one new dial, `key_clearance_mm = 0.110; // [0:0.005:0.5]`, under a
+  `[Version 2 Keyed Cutouts]` tab; and Integrated Gears, `polygon_cutout_radius_mm`,
+  `polygon_cutout_points` and `seam_offset_degrees` are not offered — the gears
+  BETA builds the Version 1 one-piece roller, and the other three are inert when
+  the keyed hole IS the bore and the keys sit on the arrow column.
+  The preset barrel is **30.8 x 52 mm**, the same as Version 1. It did differ
+  while the size was being found by printing - 30.1, then 30.5 on 2026-08-29 -
+  but a printed 30.5 double-sided pair felt loose and left shallow, uneven dots,
+  the same symptoms the 30.1 pair gave, so on 2026-08-30 it went to the size
+  Version 1 has always used. Nothing about the keys moved with it: every keyed
+  hole and anti-rotation feature is at a fixed radius from the axis.
+  **What it keeps**: everything else. The braille, the dot shapes, both paper
+  presets, the indicators, the double-sided beta and both-plates mode are the
+  Version 1 code, unchanged.
+  **The gears must be re-cut.** The four holes are family R14 — rounded
+  rectangles of 14 x 14 mm (A top), 18 x 10 (A bottom), 16 x 12 (B top) and
+  20 x 8 (B bottom), each with a 0.5 mm corner radius. None of the earlier star,
+  hexagon or 15 x 15 mm square pegs will enter an R14 hole.
+  The file is **self-contained** — the preset tables are inlined between
+  sentinels, with no `include` — so the same bytes serve the desktop build and a
+  MakerWorld upload. Covered by `tests/test_embosser_v2_scad.py`.
+- **The version bump and tag for this entry are Brennen's call.** 2.9.0 is
+  suggested if 2.8.0 ships first; nothing here bumps the version line.
+
+- **Both-plates mode (BETA): `render_both_plates = "Off"; // [Off, On]` plus
+  `pair_spacing_mm = 10; // [2:1:50]`**, both builds, `[Plate Selection]` tab.
+  On, one render builds the complete pair side by side — Cylinder A (embossing
+  plate) on the left, Cylinder B (counter plate) on the right, barrel surfaces
+  exactly `pair_spacing_mm` apart (centres one diameter plus the gap apart;
+  Brennen chose the barrel-based measure 2026-08-25 — with gears On the tips
+  overhang to a 8.58 mm tip-to-tip gap, documented on the slider). `plate_type`
+  is ignored while On, and the console suggests `Cylinder_Pair_<name>.stl`.
+  **Off, renders are byte-identical to before** (sha256-checked on both plates,
+  with and without gears). Matches the web app's new combined-pair download.
+- **A "Rendering feels very slow" README section.** Measured 2026-08-25: the
+  stable 2021.01 release takes over ten minutes (CGAL) for the counter plate
+  Nightly's Manifold engine renders in about 2 s — use Nightly — and inside
+  Nightly the F5 preview re-pays ~0.5–1 s per frame while rotating (OpenCSG),
+  which is normal, while F6 stays fast.
+- **The MakerWorld build now says that integrated gears are not available in
+  it**, instead of the control simply being absent. `makerworld/README.md` gains
+  a short section pointing at the desktop build and the web app, and repeats the
+  version-2 hardware warning. Tested rather than assumed on 2026-08-25:
+  MakerWorld's Parametric Model Maker (v1.1.0, redesigned 2025-10-27) offers no
+  way to upload a mesh at all — no asset panel, and a file picker that refuses
+  STL selection and takes one file at a time — so no packaging of the gear
+  meshes could reach it. Recorded alongside: this build's customizer syntax
+  parses correctly there, and a single-file gear delivery is otherwise solved
+  (one combined mesh with the second set parked 100 mm away and cropped per
+  plate, proven exact locally), should asset uploads ever appear.
+- **A hardware-compatibility warning on Integrated Gears** (customizer text and
+  a console `NOTE:` while gears are on): the gears fit only version 2 of the
+  braille embosser hardware, not version 1. Wording signed off by Brennen
+  2026-08-25; a link to the version 2 build files will be added once published.
+
+### Fixed
+
+- **Both-plates preview no longer comes back empty.** Two whole plates in one
+  preview tree could blow past OpenCSG's normalization cap ("Normalized tree is
+  growing past 100000/200000 elements … resulted in an empty tree" — CLI and GUI
+  caps; reported from the GUI 2026-08-25, reproduced with both plates + gears +
+  double-sided). Each body in the pair branch is now wrapped in `render()`: the
+  preview tree stays at two elements whatever the dials say, at the cost of one
+  ~2 s evaluation. Single-plate renders never enter that branch — their output
+  is proven byte-identical (sha256) — and the exported pair STL still passes
+  every both-plates test.
+- **`hemisphere_quality = "high"` was silently ignored.** The test override and
+  the `render_quality` dropdown were interleaved in one ternary chain, so with
+  the shipped default `render_quality = "Medium"` standing, `"high"` fell
+  through the first arm, matched `"Medium"` in the second and returned 32 — the
+  64 arm was unreachable. Measured on one short line: `"high"` produced 8,976
+  triangles, exactly what `"medium"` produced; it now produces 28,176. `"low"`
+  and `"medium"` looked correct only by accident (`"medium"` collides with the
+  default's own answer), which is why nothing caught it. The override is now
+  ranked above the dropdown. **No shipped render changes** — nothing in the
+  repo sets `render_quality`, and no fixture used `"high"`; both default plates
+  are sha256-identical. Regression cover: `tests/test_hemisphere_quality.py`,
+  which asserts low < medium < high by triangle count.
+- **The rounded dot's two halves now overlap instead of touching** — the second
+  tangency reported under 2.6.1's known issues, and the last one in the file.
+  The spherical cap was cut off at exactly the frustum's top plane, where the
+  cap's base circle is exactly the frustum's top radius, so dome and base met on
+  one shared circle with no overlap and different tessellation either side
+  (`cone_segments` against `quality_fn`). New `DOT_DOME_WELD_MM = 0.005` — the
+  figure `GEAR_ARROW_WELD_MM` already uses for the same job — lowers the cap's
+  **cutting plane** only. **The sphere does not move, so the apex does not move
+  and the dot stands exactly as proud as before**: max radius identical to nine
+  decimal places (16.397665601 mm) on the default plate, and the tactile height
+  guard in `tests/test_dot_base_embed.py` passes unchanged on all four
+  preset/shape combinations. Exported meshes gain the buried cap geometry
+  (22,444 → 24,428 triangles on the default plate) and stay one watertight body.
+  Stated plainly: this is preventive. The split the 2.6.1 entry recorded could
+  **not** be reproduced at the 100 mm diameter ceiling on the old code — one
+  watertight body there too — so what is removed is a zero-overlap tangency the
+  file's own "overlap, never touch" rule forbids, not an observed failure. The
+  guard is a source assertion for that reason: a render test would have been
+  green before and after.
+
+### Changed
+
+- `gear_set()` takes its plate as a parameter (`emboss = true/false`) instead
+  of reading the global plate selection, so a single render can give each
+  cylinder its own gear set. No geometry change (sha256-verified).
+- The double-sided per-plate filename hint stands aside while
+  `render_both_plates` is On — one render, one suggested filename (the pair
+  hint). Condition change only; the signed wording is untouched.
+
+**The integrated-gears beta and the both-plates render**, written up for this
+release on 2026-08-24/25 and shipped in it:
+
+Integrated gears, in beta: a cylinder can now be generated as ONE solid part with
+its top and bottom drive gears already attached, instead of a bare barrel that
+separately printed gears are pushed onto. Meshed gears are also what keeps a
+paired set turning together. **Renders at the shipped defaults are unchanged** —
+`integrated_gears` is Off by default, and with it off both plates render
+byte-identically to v2.7.0.
+
+Wording in this entry signed off by Brennen 2026-08-25.
+
+### Added
+
+- **`integrated_gears = "Off"; // [Off, On]`, desktop build only.** On, either
+  plate exports as a 72 mm roller: the barrel at z 0..52 with a 10 mm gear at
+  each end (z −10..0 and 52..62). Measured on both plates — ONE watertight body,
+  no enclosed cavity, 24 tooth clusters in each gear band.
+
+- **`assets/gears_a.stl` and `assets/gears_b.stl`**, with
+  `assets/GEARS_PROVENANCE.json`. These are a 1:1 replication of the reference
+  gear set, never parametric geometry: 24 teeth, tip diameter 32.2187 mm, root
+  radius 13.6613702290795, 10.000 mm thick, blind bores, and the axially crowned
+  tooth form (a flipped gear is a different gear). A meshed pair runs at an axis
+  distance of **32.0473 mm**, which leaves 32.0473 − 30.8000 = **1.2473 mm** of
+  barrel-to-barrel gap at the nip. They are derived by the web generator's
+  `scripts/derive_gear_assets.py` and converted into this file's frame by
+  `python -m tests.test_gear_assets`; never edit them by hand. Both hashes are
+  pinned by `tests/test_gear_assets.py`.
+
+- **Two hidden weld rings** (r 8.0–13.0 × 0.1 mm) at the gear/barrel interfaces.
+  The gear meets the barrel on an exactly coincident face, which the
+  printability rules forbid and float32 STL rounding can turn into a pinch edge.
+  They are entirely buried: no external surface changes.
+
+### Changed
+
+- **The barrel prints SOLID while gears are on**, and the console says so when a
+  polygonal cutout was set. A one-piece roller has no through-path along its
+  axis anyway — the gear bores are blind pockets — so keeping the cutout would
+  seal a cavity nothing can reach or drain.
+
+- **Raised tactile row arrows grow by 0.005 mm while gears are on.** At the
+  default 10 mm indicator length on 10 mm line spacing each arrow's apex touches
+  the next arrow's base exactly, and float32 STL rounding welds that tangency
+  into a non-manifold pinch edge — which would break the watertight promise.
+  5 µm makes it a real overlap: 2.5% of the recess nesting clearance, far below
+  print accuracy. **Off, the outline is untouched**, so existing exports keep the
+  tangency they ship with.
+
+- **The MakerWorld single-file build carries the same geometry body**, because
+  `tests/test_makerworld_sync.py` requires the two files to stay byte-identical
+  below the compatibility marker. It ships no `assets/` folder, so its copy of
+  the `integrated_gears` dropdown is declared in a **Hidden** tab and its
+  Customizer never offers it.
+
+### Notes
+
+- **The cylinder size is fixed while gears are on: 30.8 mm × 52.0 mm, or the
+  render is refused** with "Integrated gears are matched to the reference roller
+  and only fit a 30.8 mm x 52 mm cylinder." The gears are baked at fixed heights
+  and do not move with the barrel: 1 mm short exports as three loose bodies —
+  and each of those is closed, so the file still reports watertight, which is
+  why only a body count catches it — while 10 mm tall swallows the teeth. Both
+  paper-thickness presets already set 30.8 × 52, so the shipped defaults pass.
+
+- **MakerWorld support is DEFERRED, not forgotten.** That build accepts a single
+  `.scad` file and cannot `import()` external assets; embedding two
+  30,000-triangle meshes as `polyhedron()` text would risk the Customizer's
+  limits. If it is wanted there later, that is its own decision.
+
+- The version bump, tag and release for 2.8.0 are Brennen's to make.
+
+
+## [2.7.0] - 2026-08-23
+
+One printability threshold moves and one workaround it forced is removed, so this
+generator and the web app now warn at the same number. **Renders at the shipped
+defaults are unchanged** — the only geometry difference is that the raised
+"DOTS TOO CLOSE" text can now appear for the 0.4 mm package in a band that is
+reachable only by moving the interpoint offsets off 1.25.
+
+### Changed
+
+- **`DS_GAP_RELIABLE` lowered 0.50 → 0.45 mm, and it is PROVISIONAL.** The web
+  app made this change first, after an NVDA walkthrough on 2026-08-23 found that
+  its shipped 0.4 mm package (0.4678 mm nominal) sat permanently below the
+  0.50 mm line, so *every* double-sided run warned about a package the physical
+  validation records as embossing clean. Investigating it turned up that
+  **0.50 had no stated basis** in either generator or in any specification: it
+  sits beside `DS_GAP_FLOOR` in the same comment, but the Bambu X1C Arachne
+  figures quoted there (paths 0.1–0.34 mm force-widened to 0.34, dropped below
+  0.1) justify only the floor.
+
+  **0.45 is not a measured value either, and the comment in the `.scad` says so.**
+  The two data points that exist — 0.4953 and 0.4278 mm printed ridge — *both
+  passed*, and two passing samples cannot locate a failure boundary; they prove
+  only that it lies below 0.4278. A print test that walks the gap down until the
+  ridge visibly fails is what should set the real number.
+
+- **BEHAVIOUR CHANGE — `DS_GAP_ACCEPTED` is now one line for both packages.** It
+  was `ds_use_03_package ? DS_GAP_RELIABLE : DS_GAP_FLOOR`, ratified 2026-08-20,
+  which pointed the 0.4 package at the floor and so **retired the physical
+  "DOTS TOO CLOSE" text for it entirely**. That existed only to stop the 0.4
+  package nagging against a 0.50 mm line it could never clear. At 0.45 it clears
+  the line honestly (0.4678 nominal), so the workaround has nothing left to work
+  around and it is gone — this generator and the web app now warn at the same
+  number instead of two.
+
+  **What existing users of the default 0.4 mm package will see:** the raised
+  "DOTS TOO CLOSE" text can now appear in the **0.34–0.45 mm nominal band**, where
+  it was previously silent. That band is only reachable by moving
+  `interpoint_offset_x_mm` / `interpoint_offset_y_mm` away from 1.25 — at the
+  shipped default nothing changes. Verified by facet count: **27,134 facets at
+  offset 1.25 (quiet) against 32,038 at 1.21 (text present)**.
+
+  The hard assert is untouched: it still measures `ds_printed_ridge_mm` against
+  `DS_GAP_FLOOR` (0.34), so exactly the same renders are blocked as before.
+
+  `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` is synced from
+  the canonical file, and two tests were updated to pin the new single line.
+
+
+## [2.6.2] - 2026-08-21
+
+Documentation and test hygiene only. **No `.scad` file was touched**, so every
+model renders byte-identically to 2.6.1 — no geometry, dimension, parameter,
+default, or range changed.
+
+### Fixed
+
+- **`docs/PARAMETER_MAPPING.md` gains the double-sided parameters.**
+  `tests/parameter_mapping.json` went to mapping version 2.6.0 in 2.6.0 with 13
+  new entries, but the prose mapping was never updated to match: grepping it for
+  `double_sided`, `Back_Line` or `interpoint` returned **nothing**. This repo's
+  stated convention — see the 2.5.0 entry — is that the `.md` and the `.json`
+  move together, and 2.6.0 broke it. The `.md` now carries a
+  **Double-Sided Card (BETA)** section documenting `double_sided`,
+  `Back_Line_1`–`Back_Line_10` (as the composite mapping onto the web app's single
+  `back_lines` array), and both interpoint offsets with their 1.15–1.35 mm range,
+  the two asserts that guard them, and the measured 1.19–1.31 mm renderable band
+  on the 0.4 mm package. The mapping version is unchanged at 2.6.0: the `.md` is
+  catching up to the `.json`, not describing anything new.
+
+- **Note 5's "Counter Plate Universality" claim is now scoped to single-sided.**
+  It stated flatly that counter plates carry recesses at every possible dot
+  position and are therefore reusable for any braille pattern. That is false with
+  `double_sided` On, where both cylinders carry 1:1 paired recesses and the pair
+  is specific to its text.
+
+### Changed
+
+- **The three shared warning-test fixtures move into `tests/conftest.py`.**
+  `_trimesh`, `warning_offsets` and `warning_runner` lived in
+  `tests/test_text_too_long.py` and were imported by `tests/test_too_many_lines.py`,
+  where the import shadowed the test's own parameter names and needed an `F811`
+  suppression to stay quiet. A conftest fixture needs no import, so the warning
+  now has nothing to report and the suppression is gone along with two `F401`
+  ones. The plain helpers (`_render`, `_baseline_params`, `_scad_constant`,
+  `_resolve_openscad_path`, `_z_max`, `BRAILLE_FULL_CELL`) deliberately stay in
+  `test_text_too_long.py` — ordinary imports never triggered `F811`, and four
+  modules import them from there. `tests/conftest.py` also puts the tests
+  directory on `sys.path` itself rather than relying on a test module having done
+  it first. Suite unchanged at **224 passed, 0 xfailed**.
+
+## [2.6.1] - 2026-08-21
+
+Fuses every raised braille dot to the cylinder shell. **No dimension changed** -
+no dot height, diameter or spacing, and no parameter, default or range - so every
+model renders the same shape it did in 2.6.0. What changed is the mesh's
+topology, and it changed on every cylinder this project has ever produced.
+
+### Fixed
+
+- **Raised dots no longer export as separate bodies.** The shell is a 64-sided
+  prism, so each facet dips inside the ideal radius at its centre - 0.0186 mm on
+  the shipped 30.8 mm cylinder. A dot's flat base sat at exactly that ideal
+  radius, spanning the dip instead of biting into it, so it touched the shell
+  only along the facet edges and exported as its own connected body. Measured
+  with trimesh: the single-sided emboss default split into **32** bodies (1 shell
+  + 31 dots), double-sided Cylinder A into **6** and Cylinder B into **9**, which
+  is where the negative Genus readings came from. All three are now **1** body,
+  and OpenSCAD reports **Genus 1** on the default where it reported -30.
+
+  The meshes were watertight before and remain so - this was a topology artefact,
+  never a hole - but a loose body can be shifted or dropped by some toolchains,
+  the gap was a real void under a tactile feature, and a negative Genus reading
+  masks any future manifoldness bug behind noise.
+
+  The fix is `DOT_BASE_EMBED`, which lengthens each dot's base frustum downward
+  along its own taper so it overlaps solid shell. Because the skirt continues the
+  same cone, the dot's radius **at** the shell surface is still the full base
+  diameter and its tip is still exactly where it was: the furthest vertex from
+  the axis is unchanged to five decimal places in every shipped configuration.
+  The tactile seam arrow already did this via `TACTILE_BASE_EMBED`; the dots
+  never got the equivalent.
+
+  `DOT_BASE_EMBED` is derived from `radius` and `CYLINDER_SHELL_FN` rather than
+  being a fixed figure, because the facet dip scales with radius: 0.0186 mm at
+  30.8 mm but 0.0602 mm at the 100 mm the diameter slider allows, so a constant
+  small enough to be tidy would leave large cylinders floating. It works out at
+  0.0371 mm on the shipped default.
+
+### Known issues
+
+- Inside every *rounded* dot the dome's base circle exactly meets the frustum's
+  top with no overlap, and the two are tessellated differently (`cone_segments`
+  16 against `quality_fn` 24). It welds today, but it is a zero-overlap tangency
+  and therefore luck, not design - a large enough base embed (0.08 mm, 0.18 mm
+  and 0.20 mm were all observed) splits the dome off as its own body. Pre-existing
+  and unrelated to the embed above; reported, not fixed.
+
+## [2.6.0] - 2026-08-21
+
+Ports the web app's double-sided (interpoint) beta to OpenSCAD, so a single pass
+between the two cylinders can emboss braille on **both** faces of one card.
+
+Two of the changes below reach **single-sided Tactile renders as well**: the two
+tactile indicator defaults now match the web app, and a new wall guard reports a
+printability problem that has been latent in Tactile mode since 2.4.0. Visual
+mode — the shipped default — renders byte-identically to 2.5.0 either way.
+
+### Added
+
+- **Double-Sided Card (BETA).** `double_sided = "On"` turns the existing pair of
+  plates into partners that each carry raised dots *and* recesses:
+  - **Cylinder A** (the Embossing Plate) — the FRONT text as raised dots, plus
+    one recessed seat for every BACK dot the other cylinder raises.
+  - **Cylinder B** (the Counter Plate) — the BACK text as raised dots, plus one
+    recessed seat for every FRONT dot Cylinder A raises.
+
+  Two things change in this mode. There is **no universal recess grid**: every
+  recess is the 1:1 partner of an actual dot, so a seat can never sit under this
+  plate's own raised dot. And **row indicators are always Tactile** (the raised
+  seam arrows), because the paired seats occupy the ground the Visual marker
+  columns would stand on, and a blind user needs the arrow to tell the two
+  cylinders apart. Choosing Visual while `double_sided` is On is overridden, and
+  the model says so on the console and in red text above the cylinder.
+
+  The two faces are offset from each other by the **interpoint offsets**,
+  `interpoint_offset_x_mm` and `interpoint_offset_y_mm`, both defaulting to
+  1.25 mm and adjustable over 1.15–1.35 mm. Clearance between a dot and its
+  neighbouring recess is widest at 1.25 mm and falls off symmetrically toward
+  both ends of that range, so "back toward 1.25 mm" is always the fix — never
+  "larger" or "smaller".
+
+  **Back-of-card text** goes in `Back_Line_1` – `Back_Line_10`. As on the front,
+  this is **pre-translated Unicode braille only** — translation stays a web-app
+  feature and is not ported (OpenSCAD has no liblouis). Translate the back the
+  same way as the front: Branah, same grade, Unicode Braille output.
+
+  **Double-sided dot and bowl footprints are fixed** — no Customizer dials —
+  and **keyed to `paper_thickness_preset`**, which is the card-stock thickness
+  being embossed:
+
+  | `paper_thickness_preset` | raised dot | paired recess (nominal) | recess as printed |
+  |---|---|---|---|
+  | `0.3mm` | ⌀1.2 mm, 0.4 mm base + ⌀0.8 mm dome 0.4 mm high (total 0.8 mm) | ⌀1.3 × 0.5 mm | ⌀1.345 × 0.6725 mm deep |
+  | `0.4mm` (default) | ⌀1.2 mm, 0.5 mm base + ⌀1.0 mm dome 0.5 mm high (total 1.0 mm) | ⌀1.4 × 0.5 mm | ⌀1.480 × 0.740 mm deep |
+
+  Both packages were chosen by physical embossing tests on a Bambu Lab X1C with
+  a 0.4 mm nozzle during 2026-08, not by calculation: the `0.3mm` package
+  embossed legible braille on both sides of 0.3 mm card stock, and the `0.4mm`
+  package is the only one in the test matrix that came out clean on 0.4 mm
+  stock. Total dot height is capped at 1.0 mm because taller dies scrape the
+  embosser's cylinder-holder housing.
+
+  The port is **cross-validated against the web generator's committed
+  double-sided golden STL pair**: all 26 double-sided features on both plates
+  land within 0.0068 mm of arc and 0.0024 mm of height of their golden partners,
+  and the A-minus-B volume (in which the shell cancels exactly) agrees to
+  0.168 mm³, or 0.157%. Because the goldens were generated with the `0.3mm`
+  package, that comparison renders this program at
+  `paper_thickness_preset = "0.3mm"`.
+
+- **`[Double-Sided Card (BETA)]` Customizer tab.** It holds the `double_sided`
+  gate, all ten `Back_Line_N` fields, and both interpoint offset sliders
+  (`[1.15:0.01:1.35]`, the same range the render's own assert enforces). All ten
+  back lines sit in the one tab — there is no back-side counterpart to the
+  front's `[More Braille Lines (Advanced)]` tab — and the footprints above are
+  deliberately absent, so there is nothing there to hunt for.
+
+- **Back lines are covered by the existing text warnings.** This is the
+  user-visible half of the tab. Until now, untranslated text in a back line
+  rendered an all-zero dot pattern and left the back of the card **silently
+  blank**. `INVALID CHARACTERS`, `TEXT TOO LONG` and `TOO MANY LINES` all count
+  the back lines whenever `double_sided` is On, and each console message names
+  the `Back_Line` that actually overflowed.
+
+- **A suggested export filename** is echoed on every double-sided render —
+  `Cylinder_A_…` for the Embossing Plate, `Cylinder_B_…` for the Counter Plate —
+  so the pair does not get mixed up between two renders.
+
+- **Tactile seam-recess wall guard — this affects single-sided renders too.**
+  The counter plate's arrow recess cuts inward toward the polygonal cutout, and
+  nothing stopped a user thinning the wall between them past what an FDM printer
+  can hold. When `indicator_mode` is Tactile and a polygonal cutout is present,
+  the generator now checks that wall against a 1.2 mm minimum; below it, the
+  console echoes a `WARNING:` naming the measured thickness and red
+  `TACTILE WALL TOO THIN: <n> mm` text renders above the cylinder for the
+  MakerWorld preview, which has no console. It **warns only** — the STL is still
+  written, on the same reasoning as `TACTILE GAP TOO SMALL`: this is a wall an
+  informed user may have a reason to thin.
+
+  At the shipped defaults the wall measures **1.224 mm** and is clear. The
+  pre-2.6.0 `tactile_indicator_raise` of 0.8 mm left **0.924 mm** — already
+  under the printable minimum, which is what the guard was written to catch.
+
+### Changed
+
+- **`tactile_indicator_length` 5.0 → 10.0 mm** and **`tactile_indicator_raise`
+  0.8 → 0.5 mm**, aligning both with the web app, which has carried these values
+  since it ported tactile mode. These were the only two numeric drifts in a
+  46-parameter audit against the web schema.
+
+  **This is a behavior change for existing users, in Tactile indicator mode
+  only** — Visual-mode renders are byte-identical to 2.5.0. The arrow is now
+  twice as long along the cylinder axis (at the 10 mm default `line_spacing`,
+  each row's arrow meets the base of the one above) and stands 0.3 mm lower.
+  The safety consequence, measured off real STLs rather than assumed: on the
+  counter plate the seam recess is now 0.7 mm deep instead of 1.0 mm, which
+  takes the wall out to the polygonal cutout from 0.924 mm to **1.224 mm** —
+  the old value was below the 1.2 mm minimum FDM wall.
+
+- **`INVALID CHARACTERS` is now shown on the Counter Plate as well as the
+  Embossing Plate — this affects single-sided renders too.** Before, a counter
+  plate rendered from untranslated text said nothing at all, even though its
+  paired embossing plate would come out blank. This follows the precedent set by
+  `TACTILE GAP TOO SMALL`, which has always appeared on both plates because the
+  pair is printed from one set of settings.
+
+- **The double-sided printability guard now measures the recess's PRINTED mouth
+  rather than its nominal diameter.** The recess is cut as a hemisphere centred
+  on the shell surface, so its mouth comes out wider than the number typed into
+  it — ⌀1.480 mm printed against a ⌀1.4 mm nominal on the `0.4mm` package — and
+  the old guard let through a ridge the printer cannot hold.
+
+  Consequence worth knowing before you move a slider: with the `0.4mm` package
+  the renderable interpoint-offset band is **1.19–1.31 mm**, not the slider's
+  full 1.15–1.35 mm; the `0.3mm` package accepts the whole range. Clearance
+  peaks at 1.25 mm and falls off symmetrically toward both ends, so the guard's
+  message points back to 1.25 mm rather than telling you to increase or decrease
+  anything. The `DOTS TOO CLOSE` warning deliberately still reports the
+  **nominal** figure, so it keeps quoting the same number as the web app's live
+  warning.
+
+- `tests/parameter_mapping.json` is bumped to mapping version 2.6.0 — 13 new
+  entries, for 59 parameters and 31 slider ranges.
+
+### Notes for maintainers
+
+- **The MakerWorld v2 variant is synced, and it has no geometry or default
+  divergences from the canonical file at all.** With identical `-D` arguments
+  the two builds now produce **byte-identical** double-sided STLs on both
+  plates. Only three **presentation** differences remain above the sync marker:
+  the MakerWorld single-file header block, the three-line `dot_shape` comment
+  explaining the flattened build's Rounded default, and `presets.scad` inlined
+  in place of `include <presets.scad>;`. All three double-sided asserts were
+  copied across verbatim rather than swapped for rendered red text, so the two
+  builds agree about what is printable.
+- The MakerWorld sync guard in `tests/test_makerworld_sync.py` now compares
+  **parameter defaults and slider ranges** across 89 top-level declarations —
+  every Customizer parameter, all twenty text fields, and every `DS_*` constant
+  — plus the inlined `presets.scad` block, not just the geometry body. The
+  earlier body-only guard is what let the two tactile defaults above drift apart
+  in the first place.
+- MakerWorld users receive the double-sided beta **and** the two tactile default
+  changes in this one release; desktop users on 2.5.x already had neither.
+- `makerworld/README.md`'s re-flatten procedure gained the step it was missing:
+  the `DOUBLE-SIDED (INTERPOINT) MATH` section must be copied into the variant's
+  header **after** the inlined-presets `END` sentinel, because `ds_use_03_package`
+  reads `paper_thickness_preset` and `ds_printed_ridge_mm` reads both offset
+  sliders, and OpenSCAD evaluates top-level assignments in source order.
+- The SCAD hashes move with this release. The web app repo vendors the MakerWorld
+  build and pins it by hash, so it needs a re-vendor against this tag.
+
 ## [2.5.0] - 2026-08-01
 
 Closes the gap between how many braille rows the generator can render and how

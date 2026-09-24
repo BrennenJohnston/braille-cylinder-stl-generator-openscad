@@ -11,13 +11,13 @@ but this Playwright automation provides a working alternative.
 Usage:
     # Install Playwright browsers first (one-time setup)
     python -m playwright install chromium
-    
+
     # Generate all fixtures from web UI
     python scripts/generate_web_fixtures.py --web-url https://braille-stl-generator.example.com
-    
+
     # Generate specific fixture
     python scripts/generate_web_fixtures.py --web-url https://braille-stl-generator.example.com --test-case cylinder_rounded_emboss_indicators_on
-    
+
     # Dry run (check without downloading)
     python scripts/generate_web_fixtures.py --web-url https://braille-stl-generator.example.com --dry-run
 
@@ -80,14 +80,14 @@ class WebFixtureGenerator:
 
         self.playwright = sync_playwright().start()
         self.browser = self.playwright.chromium.launch(headless=self.headless)
-        
+
         # Create context with download path
         self.context = self.browser.new_context(
             accept_downloads=True,
             locale="en-US",
             viewport={"width": 1920, "height": 1080},
         )
-        
+
         self.page = self.context.new_page()
         logger.info(f"Browser initialized (headless={self.headless})")
         return self
@@ -111,14 +111,14 @@ class WebFixtureGenerator:
         try:
             logger.info(f"Navigating to {self.web_url}")
             self.page.goto(self.web_url, wait_until="networkidle", timeout=30000)
-            
+
             # Wait for a stable, always-visible element.
             # NOTE: Some text inputs (e.g., #auto-text) are hidden by default, so waiting
             # on generic textarea/input selectors can flake.
             self.page.wait_for_selector("#action-btn", timeout=15000)
             logger.info("✓ Web generator loaded")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to load web generator: {e}")
             return False
@@ -143,20 +143,26 @@ class WebFixtureGenerator:
 
             # Always use MANUAL placement so #line1..#line4 exist
             try:
-                self.page.check("input[name='placement_mode'][value='manual']", timeout=3000)
+                self.page.check(
+                    "input[name='placement_mode'][value='manual']", timeout=3000
+                )
             except Exception:
                 pass
 
             # Plate type
             plate_type = parameters.get("plate_type", "positive")
             try:
-                self.page.check(f"input[name='plate_type'][value='{plate_type}']", timeout=3000)
+                self.page.check(
+                    f"input[name='plate_type'][value='{plate_type}']", timeout=3000
+                )
             except Exception as e:
                 logger.warning(f"Could not set plate_type '{plate_type}': {e}")
 
             # Choose contracted UEB table to better match existing braille fixtures
             try:
-                self.page.select_option("#language-table", value="en-ueb-g2.ctb", timeout=3000)
+                self.page.select_option(
+                    "#language-table", value="en-ueb-g2.ctb", timeout=3000
+                )
             except Exception:
                 pass
 
@@ -220,22 +226,42 @@ class WebFixtureGenerator:
                         # Cylinder geometry
                         "cylinder_diameter_mm": parameters.get("cylinder_diameter_mm"),
                         "cylinder_height_mm": parameters.get("cylinder_height_mm"),
-                        "cylinder_polygonal_cutout_radius_mm": parameters.get("polygon_cutout_radius_mm"),
-                        "cylinder_polygonal_cutout_sides": parameters.get("polygon_cutout_points"),
+                        "cylinder_polygonal_cutout_radius_mm": parameters.get(
+                            "polygon_cutout_radius_mm"
+                        ),
+                        "cylinder_polygonal_cutout_sides": parameters.get(
+                            "polygon_cutout_points"
+                        ),
                         "seam_offset_deg": parameters.get("seam_offset_degrees"),
                         # Rounded dot params
-                        "rounded_dot_base_diameter": parameters.get("rounded_dot_base_diameter"),
-                        "rounded_dot_base_height": parameters.get("rounded_dot_base_height"),
-                        "rounded_dot_dome_height": parameters.get("rounded_dot_dome_height"),
-                        "bowl_counter_dot_base_diameter": parameters.get("bowl_counter_dot_base_diameter"),
+                        "rounded_dot_base_diameter": parameters.get(
+                            "rounded_dot_base_diameter"
+                        ),
+                        "rounded_dot_base_height": parameters.get(
+                            "rounded_dot_base_height"
+                        ),
+                        "rounded_dot_dome_height": parameters.get(
+                            "rounded_dot_dome_height"
+                        ),
+                        "bowl_counter_dot_base_diameter": parameters.get(
+                            "bowl_counter_dot_base_diameter"
+                        ),
                         "counter_dot_depth": parameters.get("counter_dot_depth"),
                         # Cone dot params
-                        "emboss_dot_base_diameter": parameters.get("emboss_dot_base_diameter"),
+                        "emboss_dot_base_diameter": parameters.get(
+                            "emboss_dot_base_diameter"
+                        ),
                         "emboss_dot_height": parameters.get("emboss_dot_height"),
                         "emboss_dot_flat_hat": parameters.get("emboss_dot_flat_hat"),
-                        "cone_counter_dot_base_diameter": parameters.get("cone_counter_dot_base_diameter"),
-                        "cone_counter_dot_height": parameters.get("cone_counter_dot_height"),
-                        "cone_counter_dot_flat_hat": parameters.get("cone_counter_dot_flat_hat"),
+                        "cone_counter_dot_base_diameter": parameters.get(
+                            "cone_counter_dot_base_diameter"
+                        ),
+                        "cone_counter_dot_height": parameters.get(
+                            "cone_counter_dot_height"
+                        ),
+                        "cone_counter_dot_flat_hat": parameters.get(
+                            "cone_counter_dot_flat_hat"
+                        ),
                     },
                 },
             )
@@ -246,7 +272,9 @@ class WebFixtureGenerator:
                 try:
                     self.page.wait_for_selector("#line1", timeout=15000)
                 except Exception:
-                    logger.warning("Timed out waiting for #line1 to appear (dynamic inputs)")
+                    logger.warning(
+                        "Timed out waiting for #line1 to appear (dynamic inputs)"
+                    )
 
                 for i in range(1, 5):
                     line_key = f"Line_{i}"
@@ -438,7 +466,9 @@ class WebFixtureGenerator:
                 "browser": "chromium",
                 "headless": self.headless,
             },
-            "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "generated_at": datetime.now(timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z"),
         }
 
         # Save metadata
@@ -597,7 +627,9 @@ Setup:
         # Create version file
         version_info = {
             "version": "1.0.0",
-            "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "generated_at": datetime.now(timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z"),
             "generation_method": "web_ui_playwright",
             "web_url": args.web_url,
             "total_fixtures": len(fixtures_metadata),

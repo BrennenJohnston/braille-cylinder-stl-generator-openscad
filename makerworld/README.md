@@ -6,7 +6,52 @@ STL Generator for uploading to
 
 | File | Purpose |
 |------|---------|
-| [`Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`](Braille_Cylinder_STL_Generator_MakerWorld_v2.scad) | The single `.scad` file to upload to MakerWorld. |
+| [`Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`](Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad) | The single `.scad` file to upload to the **Version 1** MakerWorld listing. |
+| [`Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`](Braille_Cylinder_STL_Generator_MakerWorld_v2.scad) | The single `.scad` file to upload to the **Embosser Version 2** MakerWorld listing. |
+
+## Embosser Version 2
+
+`Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` is the upload for the
+Version 2 listing. It needs **no flattening**: the canonical
+`../Braille_Cylinder_STL_Generator_EmbosserV2.scad` was written
+self-contained, with the preset tables inlined and no `include` directive.
+Since 2026-09-21 it follows the **same three-layer sync model as the Version 1
+build** rather than being a byte copy, because the canonical file can now fuse
+the Version 2 drive gears (`[Gears]`, reading
+`../assets/v2_gears_a.stl` / `_b.stl`) and MakerWorld cannot carry those
+assets:
+
+- everything from the `// BACKWARD COMPATIBILITY` marker to EOF (the geometry
+  body) is **byte-identical** to the canonical file;
+- every parameter default and slider range above the marker is the same;
+- the **two** presentation differences, both above the marker: a MakerWorld
+  header block, and `integrated_gears` declared in the first `[Hidden]` tab
+  (with the reason beside it) instead of its own visible tab, so the Customizer
+  never offers a switch that would render a gearless plate.
+
+`tests/test_makerworld_sync.py` runs its body and declaration layers over this
+pair too (the `v2` id), and
+`tests/test_embosser_v2_scad.py::test_the_makerworld_copy_hides_the_gear_switch`
+pins the hidden switch. **Re-sync after editing the canonical file:** copy it
+from the marker to EOF over this file's body, carry across any changed
+declaration above the marker, and keep `integrated_gears` in the Hidden tab.
+Then render this file once headless (`scripts\scad-check.ps1 -File
+makerworld\Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`).
+
+**Listing label (S-V12) — signed off by Brennen 2026-08-28; reword only with
+his sign-off:**
+
+> Braille Cylinder STL Generator — Embosser Version 2 (keyed gear pegs)
+
+A note on the version number: this is the **Version 1 model's** MakerWorld
+build, labeled **v1.5**. Until 2026-09-01 the file was named `_v2`, where the
+suffix meant the second generation of the MakerWorld FILE — a label that
+collided confusingly with Embosser **Version 2**, which is different hardware.
+The rename ends the collision: `v1.x` suffixes belong to the Version 1 model's
+file, and `_v2` now means what it sounds like — the **Embosser Version 2**
+upload (above), a test-guarded build of the root `_EmbosserV2` file.
+The listing text for the Version 2 posting lives at
+[`../docs/MAKERWORLD_V2_LISTING_DRAFT.md`](../docs/MAKERWORLD_V2_LISTING_DRAFT.md).
 
 ## Why a separate single-file build?
 
@@ -27,8 +72,9 @@ file is an **alternative** build, not the default.
 
 Everything from the `// BACKWARD COMPATIBILITY` marker to the end of the file
 (the entire geometry body) is **byte-identical** to
-`../Braille_Cylinder_STL_Generator.scad`. The only difference is above that
-marker:
+`../Braille_Cylinder_STL_Generator.scad`, and every parameter default and slider
+range above that marker matches it too. The differences are all **presentation**,
+all above the marker, and there are four of them:
 
 - **Inlined presets.** `include <presets.scad>;` is replaced by the contents of
   `presets.scad` between these sentinels:
@@ -39,11 +85,25 @@ marker:
   // ==== END inlined from presets.scad ====
   ```
 
-Both this file and the canonical desktop file default `dot_shape` to `"Rounded"`
-and `paper_thickness_preset` to `"0.4mm"` (the dropdowns still offer the other
-options).
+- **A MakerWorld-specific header block** in place of the desktop header.
+- **A three-line `dot_shape` comment** explaining this build's Rounded default.
+- **`integrated_gears` sits in a `[Hidden]` tab** here instead of a visible one,
+  so the Customizer never offers it. The parameter itself is identical in both
+  files — only which tab it appears under differs, which is invisible to the
+  sync test. See "Integrated gears are not in this build" below.
 
-`tests/test_makerworld_sync.py` guards these invariants in CI.
+With identical settings the two builds produce byte-identical STLs, single-sided
+and double-sided alike. The one exception is integrated gears: the desktop build
+can render them and this one cannot, because it has no `assets/` folder and
+MakerWorld has no way to supply one. Both files default `dot_shape` to
+`"Rounded"` and `paper_thickness_preset` to `"0.4mm"` (the dropdowns still offer
+the other options).
+
+`tests/test_makerworld_sync.py` guards these invariants in CI — the geometry
+body, all 93 top-level declarations above the marker with their slider ranges,
+and the inlined presets block against `../presets.scad`. (That count is what the
+test itself reports; if you change the parameter set, take the new number from a
+test run rather than by counting lines.)
 
 ## Upload steps (MakerWorld Parametric Model Maker)
 
@@ -51,20 +111,95 @@ options).
    the **Unicode Braille** output (e.g. `⠓⠑⠇⠇⠕`).
 2. Go to MakerWorld → **Create** → **Parametric Model Maker** (a.k.a. the
    OpenSCAD-based customizer).
-3. Upload **only** `Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`.
+3. Upload **only** `Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`.
 4. In the generated parameter panel:
    - Paste braille into `Line_1`, `Line_2`, … (do **not** type plain English).
-   - Choose `plate_type`: *Embossing Plate* or *Counter Plate*.
+   - Both cylinders render side by side by default. For one plate, set
+     `render_both_plates` to `Off` and choose `plate_type`: *Embossing Plate*
+     or *Counter Plate*.
    - Choose `indicator_mode`: `Visual` (default) or `Tactile` — see below.
    - Choose `paper_thickness_preset`: `0.4mm`, `0.3mm`, or `Custom`.
    - `dot_shape` is already set to `Rounded`; switch to `Cone` if preferred.
 5. Generate / render and download the STL.
 
-> Tip: generate the **Embossing Plate** and the **Counter Plate** separately
-> (same settings, only `plate_type` changes) so the two plates form a matching
-> pair.
+> Tip: you can get the matching pair either way. By default one render gives
+> you both cylinders side by side; or set `render_both_plates` to `Off` and
+> render the **Embossing Plate** and the **Counter Plate** separately with the
+> same settings, changing only `plate_type`. Either way the two plates only
+> work as the pair you made from one set of settings.
 
-## Indicator mode: Visual or Tactile
+## Both plates in one render
+
+`render_both_plates` (in **[Cylinders to Generate]**, default `On` since v2.9.0,
+matching the web app) builds Cylinder A, the embossing plate, on the left and
+Cylinder B, the counter plate, on the right in a single render. `plate_type` is
+ignored while it is `On`.
+
+`pair_spacing_mm` (default 10) sets the gap between the two barrel **surfaces**,
+for laying them out on one print plate. It is not how far apart they sit when
+they are working — a meshed pair runs closer than that.
+
+Rendering both plates is roughly twice the work of rendering one, so expect the
+preview to take longer; set `render_both_plates` to `Off` for a quicker
+single-plate preview.
+
+## Integrated gears are not in this build
+
+<!-- The hardware sentence is the web app's gear note (signed 2026-09-21,
+     replacing S9'). Reword only with Brennen's sign-off. -->
+
+The desktop generator can build a cylinder as one piece with its drive gears
+already attached. **This MakerWorld build cannot**, and it is not an oversight or
+a setting you are missing — the gears are a separate mesh file, and MakerWorld's
+Parametric Model Maker has no way to accept one (checked 2026-08-25: its editor
+offers no place to attach a model file, and its file picker will not select an
+STL at all).
+
+If you want geared cylinders, use either:
+
+- the **desktop OpenSCAD build** — [`../Braille_Cylinder_STL_Generator.scad`](../Braille_Cylinder_STL_Generator.scad)
+  for Version 1, or [`../Braille_Cylinder_STL_Generator_EmbosserV2.scad`](../Braille_Cylinder_STL_Generator_EmbosserV2.scad)
+  for the fused Embosser Version 2 roller — each reads its gear meshes from
+  the `assets/` folder beside it, or
+- the **web app**, which generates them in the browser.
+
+The same limit applies to the Version 2 upload above: its `integrated_gears`
+switch is hidden for the same reason.
+
+Everything else on this page — braille, both plates, double-sided cards, the
+tactile indicators — works here exactly as it does on the desktop.
+
+> **Before you print geared cylinders anywhere:** fixed gears fit only the
+> fixed-gear housing for your version; the standard housing takes the standard
+> cylinders.
+
+## Double-sided cards
+
+The `[Card Sides]` tab embosses braille on **both** faces of one
+card in a single pass. Set `double_sided` to `On`, translate the back of the
+card the same way as the front, and paste it into `Back_Line_1` –
+`Back_Line_10` — all ten are in that one tab. One render builds both
+cylinders: the Embossing Plate is Cylinder A, the Counter Plate is Cylinder B,
+and they only work as the pair you rendered from one set of settings.
+
+Row indicators are forced to **Tactile** in this mode, and the double-sided dot
+and recess sizes are fixed — they follow `paper_thickness_preset` and there are
+deliberately no dials for them. The two interpoint offset sliders default to
+1.25 mm each; clearance is widest there and falls off toward both ends of the
+1.15–1.35 mm range, so if `DOTS TOO CLOSE` appears, move both back toward
+1.25 mm rather than up or down.
+
+One thing to know before you move those sliders here: on the `0.4mm` preset the
+offsets that actually render are **1.19–1.31 mm**. Outside that band the ridge
+between a dot and its neighbouring recess is too thin to print, and the render
+**stops without producing an STL**. MakerWorld's preview has no console, so the
+reason is not shown — if a double-sided render produces nothing, put both
+offsets back to 1.25 mm. The `0.3mm` preset renders across the whole range.
+
+See the [double-sided section of the main README](../README.md#-double-sided-cards)
+for the full workflow and the footprint table.
+
+## Row indicator style: Visual or Tactile
 
 `indicator_mode` decides how each row is marked for alignment. The cylinder's
 diameter, height, and cutout are the same either way — only the surface
@@ -72,7 +207,7 @@ features change, so **both plates must use the same mode**.
 
 | | Visual (default) | Tactile |
 |---|---|---|
-| Where | Marker cells at the start of every row | One indicator per row, centred in the seam gap |
+| Where | Marker cells at the start of every row | One indicator per row (three evenly spaced on the 0.3mm preset), centred in the seam gap |
 | Emboss plate | Recessed triangle (+ square when `indicators` is On) | Raised arrow pointing at the cylinder top |
 | Counter plate | Mirrored recesses | Matching arrow recess the arrow nests into |
 | Cells used for markers | 2 (On) or 1 (Off) | 0 |
@@ -82,7 +217,7 @@ Choose **Tactile** when a blind user needs to align the cylinders unaided: the
 arrow is felt as a single continuous wedge, nothing like a braille dot, and its
 point tells you which end is up on either plate. Raised-vs-recessed tells you
 which cylinder you are holding. The arrow is deliberately lower than the
-braille dots (0.8 mm vs 1.0 mm) so the dots, not the indicator, take the
+braille dots (0.5 mm vs 1.0 mm) so the dots, not the indicator, take the
 rolling pressure.
 
 Five Tactile-only sliders are available if you need to tune the fit:
@@ -101,9 +236,11 @@ Lower `grid_columns` or raise `cylinder_diameter_mm` to clear it.
   matching the web app). In Visual indicator mode, 2 extra marker cells
   (triangle + square) are added automatically when `indicators` is On, or just
   the always-present triangle cell when Off. Tactile indicator mode adds no
-  marker cells at all. Text capacity is unchanged in every case, and either of
-  the narrower layouts fits up to 14 text cells on the default 30.8 mm
-  cylinder.
+  marker cells at all. Text capacity is unchanged in every case; the
+  Indicator-Letters-off layout fits up to 14 text cells on the default 30.8 mm
+  cylinder, and Tactile mode fits 14 on the cylinder but only **13 on a 90 mm
+  card** loaded at the alignment arrow — the model shows a red
+  `TEXT RUNS OFF CARD` badge when a row would run off.
 - The `grid_columns` / `grid_rows` sliders always govern capacity; the paper
   thickness presets deliberately do **not** override them.
 - If any line exceeds the capacity, red 3D text appears above the cylinder
@@ -137,13 +274,27 @@ change. Do it manually (no codegen step is committed) and let
    ```
 
    **to the end of the file**. Paste it over the corresponding region in
-   `Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` so the two are byte-identical.
+   `Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad` so the two are byte-identical.
 
-2. **Re-sync the Customizer parameters** (the section above the
-   `BACKWARD COMPATIBILITY` marker) if any parameter names, defaults, ranges, or
-   section headings changed upstream. Both files currently default `dot_shape`
-   to `"Rounded"`; if the upstream default ever diverges, decide deliberately
-   which default this single-file build should ship.
+2. **Re-sync everything else above the marker.** Two parts, both required:
+
+   a. **The Customizer parameters** — if any parameter names, defaults, ranges,
+      or section headings changed upstream, copy them across. Both files
+      currently default `dot_shape` to `"Rounded"`; if the upstream default ever
+      diverges, decide deliberately which default this single-file build should
+      ship.
+
+   b. **The `DOUBLE-SIDED (INTERPOINT) MATH` section** — copy it **verbatim**
+      from `../Braille_Cylinder_STL_Generator.scad`. Every `DS_*` constant,
+      `ds_on`, `_all_back_lines`, the three pure functions, the self-check echo
+      block and the three guards. The geometry body you pasted in step 1
+      references all of it, so a variant missing this section does not parse.
+
+      **It belongs AFTER the inlined-presets `END` sentinel** (see step 3), not
+      before it: `ds_use_03_package` reads `paper_thickness_preset` and
+      `ds_printed_ridge_mm` reads both interpoint offset sliders, and OpenSCAD
+      evaluates top-level assignments in source order. Put it above them and
+      those reads are `undef`.
 
 3. **Re-inline presets if `../presets.scad` changed.** Replace everything between
 
@@ -165,9 +316,20 @@ change. Do it manually (no codegen step is committed) and let
 
    ```bash
    pytest tests/test_makerworld_sync.py -v
-   openscad -o /tmp/mw.stl makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad
+   openscad -o /tmp/mw.stl makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad
    ```
 
-   The sync test confirms the geometry body matches the canonical file and that
-   the sentinels + Rounded default are present; the render confirms the file is a
-   valid standalone single-file build.
+   The sync test now checks four things, not just the geometry body: the body is
+   byte-identical to the canonical file; **every top-level parameter default and
+   slider range above the marker matches it** (93 declarations, including all the
+   `DS_*` constants from step 2b); the inlined presets block matches
+   `../presets.scad`; and the sentinels plus the Rounded default are present. The
+   render confirms the file is a valid standalone single-file build.
+
+   Render the double-sided path too — it exercises step 2b, which the body-only
+   check cannot see:
+
+   ```bash
+   openscad -o /tmp/mw_ds.stl -D 'double_sided="On"' -D 'Back_Line_1="⠙⠑⠋"' \
+     makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad
+   ```

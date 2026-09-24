@@ -56,10 +56,7 @@ def _write_box_stl(path: Path, *, translate_x: float = 0.0) -> None:
 def test_parse_cloudcompare_asc_distances(tmp_path: Path):
     asc = tmp_path / "cloud.asc"
     asc.write_text(
-        "X,Y,Z,Distance\n"
-        "0,0,0,0.1\n"
-        "1,0,0,0.2\n"
-        "2,0,0,0.3\n",
+        "X,Y,Z,Distance\n0,0,0,0.1\n1,0,0,0.2\n2,0,0,0.3\n",
         encoding="utf-8",
     )
 
@@ -116,7 +113,9 @@ def test_icp_alignment_triggered_and_reloads_properties(
     _write_box_stl(ref)
     _write_box_stl(test, translate_x=5.0)  # exceeds 0.5mm ICP threshold
 
-    comparator = MeshComparator(_base_config(cloudcompare_enabled=True, icp_enabled=True))
+    comparator = MeshComparator(
+        _base_config(cloudcompare_enabled=True, icp_enabled=True)
+    )
     comparator.cloudcompare_path = Path("CloudCompare")  # pretend it's installed
 
     def fake_icp(self, data_mesh: Path, model_mesh: Path, work_dir: Path):

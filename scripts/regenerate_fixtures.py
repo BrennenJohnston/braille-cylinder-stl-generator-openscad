@@ -8,17 +8,17 @@ Supports two modes:
 1. OpenSCAD Mode (default): Uses OpenSCAD to generate reference STLs
    - Self-test mode for internal consistency validation
    - No external dependencies
-   
+
 2. Web API Mode (deprecated): Uses web generator API
    - Requires running web server (deprecated as of 2026-01-05)
 
 Usage:
     # OpenSCAD mode (recommended)
     python scripts/regenerate_fixtures.py --openscad-mode
-    
+
     # Generate specific fixture
     python scripts/regenerate_fixtures.py --openscad-mode --test-case card_rounded_emboss_basic
-    
+
     # Web API mode (deprecated, will fail)
     python scripts/regenerate_fixtures.py --web-api-url http://localhost:5000
 
@@ -60,12 +60,10 @@ class OpenSCADFixtureGenerator:
         self.scad_file = scad_file
         self.output_dir = output_dir
         self.runner = OpenSCADRunner()
-        
+
         logger.info(f"OpenSCAD version: {self.runner.get_version()}")
 
-    def generate_fixture(
-        self, test_case: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def generate_fixture(self, test_case: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate reference fixture for a test case.
 
@@ -86,7 +84,7 @@ class OpenSCADFixtureGenerator:
 
         # Generate STL using OpenSCAD
         stl_path = fixture_dir / "reference.stl"
-        
+
         result = self.runner.generate_stl(
             scad_file=self.scad_file,
             output_stl=stl_path,
@@ -154,7 +152,9 @@ class OpenSCADFixtureGenerator:
                 "scad_file": str(self.scad_file.name),
                 "duration_seconds": result.duration_seconds,
             },
-            "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "generated_at": datetime.now(timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z"),
         }
 
         # Save metadata
@@ -164,9 +164,7 @@ class OpenSCADFixtureGenerator:
 
         return metadata
 
-    def generate_all_fixtures(
-        self, test_cases: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def generate_all_fixtures(self, test_cases: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Generate all reference fixtures.
 
@@ -194,7 +192,9 @@ class OpenSCADFixtureGenerator:
         # Create version file
         version_info = {
             "version": "1.0.0",
-            "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "generated_at": datetime.now(timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z"),
             "generation_method": "openscad",
             "openscad_version": self.runner.get_version(),
             "scad_file": str(self.scad_file.name),
@@ -236,14 +236,14 @@ class WebAPIFixtureGenerator:
             web_api_url: Base URL of web generator API
         """
         import requests
-        
+
         self.web_api_url = web_api_url.rstrip("/")
         self.session = requests.Session()
 
     def check_api_health(self) -> bool:
         """Check if web API is accessible."""
         import requests
-        
+
         try:
             response = self.session.get(f"{self.web_api_url}/health", timeout=5)
             if response.status_code == 200:
@@ -266,7 +266,7 @@ class WebAPIFixtureGenerator:
     def generate_stl(self, parameters: Dict[str, Any]) -> bytes:
         """Generate STL from web API (deprecated)."""
         import requests
-        
+
         try:
             response = self.session.post(
                 f"{self.web_api_url}/generate_braille_stl",
@@ -312,7 +312,7 @@ Examples:
     python scripts/regenerate_fixtures.py --list-cases
         """,
     )
-    
+
     # Mode selection
     mode_group = parser.add_mutually_exclusive_group()
     mode_group.add_argument(
@@ -325,7 +325,7 @@ Examples:
         "--web-api-url",
         help="Web generator API URL (deprecated - will likely fail)",
     )
-    
+
     # Options
     parser.add_argument(
         "--test-case",
@@ -359,7 +359,8 @@ Examples:
         help="List available test cases and exit",
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Enable verbose logging",
     )
@@ -411,30 +412,30 @@ Examples:
             logger.warning("The web generator API was removed on 2026-01-05")
             logger.warning("Use --openscad-mode instead (recommended)")
             logger.warning("=" * 70)
-            
+
             generator = WebAPIFixtureGenerator(args.web_api_url)
             if not generator.check_api_health():
                 logger.error("Web API is not accessible.")
                 logger.info("Use --openscad-mode for local fixture generation.")
                 return 1
-            
+
             if args.check_only:
                 logger.info("✓ Web API check complete (but deprecated)")
                 return 0
-                
+
             logger.error("Web API fixture generation not supported (deprecated)")
             return 1
-            
+
         else:
             # OpenSCAD mode (default, recommended)
             logger.info("=" * 70)
             logger.info("OpenSCAD Self-Test Fixture Generation")
             logger.info("=" * 70)
-            
+
             if not args.scad_file.exists():
                 logger.error(f"OpenSCAD file not found: {args.scad_file}")
                 return 1
-            
+
             try:
                 generator = OpenSCADFixtureGenerator(
                     scad_file=args.scad_file,
@@ -442,20 +443,22 @@ Examples:
                 )
             except OpenSCADNotFoundError as e:
                 logger.error(f"OpenSCAD not found: {e}")
-                logger.info("Please install OpenSCAD: https://openscad.org/downloads.html")
+                logger.info(
+                    "Please install OpenSCAD: https://openscad.org/downloads.html"
+                )
                 return 1
-            
+
             if args.check_only:
                 logger.info("✓ OpenSCAD check complete")
                 return 0
-            
+
             # Generate fixtures
             logger.info(f"Generating {len(test_cases)} fixture(s)...")
             logger.info(f"Output directory: {args.output_dir}")
             logger.info("")
-            
+
             version_info = generator.generate_all_fixtures(test_cases)
-            
+
             # Print summary
             print("\n" + "=" * 70)
             print("FIXTURE GENERATION COMPLETE")
@@ -466,11 +469,11 @@ Examples:
             print(f"  OpenSCAD: {version_info['openscad_version']}")
             print(f"  Output: {args.output_dir}")
             print("=" * 70)
-            
+
             if version_info["failed_fixtures"] > 0:
                 logger.warning("Some fixtures failed to generate")
                 return 1
-            
+
             logger.info("✓ All fixtures generated successfully")
             return 0
 

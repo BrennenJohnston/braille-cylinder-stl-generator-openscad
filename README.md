@@ -56,13 +56,15 @@ Want to run this in MakerWorld's **Parametric Model Maker** instead of the
 desktop app? A flattened, single-file build lives in
 [`makerworld/`](makerworld/):
 
-- [`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`](makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad) — one `.scad` file (presets inlined, no `include`), ready to upload. Defaults to the `Rounded` dot shape.
+- [`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`](makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad) — one `.scad` file (presets inlined, no `include`), ready to upload. Defaults to the `Rounded` dot shape.
+- [`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`](makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad) — the **Embosser Version 2** upload, built from the root `_EmbosserV2` file under the same sync model (its fixed-gear switch is hidden there, because MakerWorld cannot carry the gear meshes).
 - See [`makerworld/README.md`](makerworld/README.md) for upload steps and the maintainer re-flatten procedure.
 - New to the workflow? Start with the [MakerWorld Quick Start Guide](docs/MAKERWORLD_QUICK_START.md) (also as a printable [PDF](docs/MakerWorld_Quick_Start_Guide.pdf)).
 
 The dual-file desktop version in the repository root remains the canonical
-source of truth; the MakerWorld file's geometry body is kept byte-identical to
-it by `tests/test_makerworld_sync.py`.
+source of truth; each MakerWorld file's geometry body is kept byte-identical to
+its canonical file, and every parameter default above it equal, by
+`tests/test_makerworld_sync.py`.
 
 ---
 
@@ -80,7 +82,9 @@ it by `tests/test_makerworld_sync.py`.
 
 3. **Configure**:
    - Paste braille into `Line_1`, `Line_2`, etc.
-   - Choose `plate_type`: Embossing Plate or Counter Plate
+   - Both cylinders render side by side by default. For one plate, set
+     `render_both_plates` to `Off` and choose `plate_type`: Embossing Plate or
+     Counter Plate
    - Choose `paper_thickness_preset`: 0.4mm, 0.3mm, or Custom
    - Choose `dot_shape`: Rounded or Cone
 
@@ -94,6 +98,9 @@ it by `tests/test_makerworld_sync.py`.
 
 - **Cylinder Emboss Plate**: Raised braille dots on cylindrical surface
 - **Cylinder Counter Plate**: Recessed support for embossing cylindrical objects
+- **Double-Sided Card**: the same two plates, paired so that one pass
+  embosses braille on **both** faces of a card — see
+  [Double-Sided Cards](#-double-sided-cards)
 
 ## 🎯 Features
 
@@ -101,7 +108,7 @@ it by `tests/test_makerworld_sync.py`.
 - **Rounded**: Dome-shaped dots with spherical bowl recesses
 - **Cone**: Traditional frustum cone dots with matching cone recesses
 
-### Indicator Mode (Visual or Tactile)
+### Row Indicator Style (Visual or Tactile)
 
 `indicator_mode` chooses how each row is marked for alignment. Cylinder
 diameter, height, and the polygonal cutout are identical either way — only the
@@ -123,17 +130,53 @@ surface features change.
   paired cylinders
 - The arrow **points at the cylinder top**, so you can feel which end is up on
   either plate; raised-vs-recessed tells you which cylinder is the embosser
-- **Crush-safe**: the 0.8 mm default raise sits below the 1.0 mm braille dot
+- **Crush-safe**: the 0.5 mm default raise sits below the 1.0 mm braille dot
   height, so the dots — not the indicator — carry the rolling pressure
-- **No marker cells**, so up to 14 text cells fit the default cylinder. The
-  Indicator Letters toggle is ignored in this mode
+- **No marker cells**, so 14 text cells fit the default cylinder — but the
+  card is the tighter limit: it is loaded with its leading edge at the arrow,
+  which sits at the middle of the seam gap, and 14 cells need 92.8 mm of a
+  90 mm card, so **13** is the most that fits and the model says so (a red
+  `TEXT RUNS OFF CARD` badge and a console NOTE) when a row would run off.
+  The Indicator Letters toggle is ignored in this mode
+- **The arrow sits at the middle of the seam gap** on both plates, with equal
+  space before the first cell and after the last, and the counter plate's
+  recess meets it at the nip. The slicer seam channel runs down the arrow
+  column the full height, so the slicer has a corner at every layer; since
+  2.8.2 it steps round each raised arrow on the first-cell side instead of
+  cutting through it, so the arrows keep their points (in 2.8.1 each lost
+  its point to the groove)
 - Five sliders tune it: `tactile_indicator_width` / `_length` / `_raise`, plus
   `tactile_recess_clearance` and `tactile_recess_extra_depth` for the counter
   plate's fit
 
 Text capacity always stays at `grid_columns` in every mode.
 
-### Paper Thickness Presets
+### Slicer Seam Channel
+
+Every cylinder carries a shallow **V groove, 1.0 mm wide × 0.5 mm deep**, the
+full height of the outer surface, in the seam gap beside the row markers. A
+slicer's default *Aligned* seam mode snaps each layer's seam to a concave
+corner, and on a smooth barrel the only corners are where dots meet the
+surface — a seam inside a dot ruins that dot on paper. The groove gives the
+slicer a better corner, so no seam painting is needed. It is **On by default**
+on both plates (`seam_channel` in **[Expert Mode - Cylinder Dimensions]**; set
+it to `Off` for a plain surface). Its size is a constant, not a dial, the same
+numbers as the web app. When it cannot fit — the free window under 1.5 mm, as
+with 15 columns in Tactile mode, or too little wall under it — it is left out
+and the model says so: a console `NOTE:` and a red `SEAM CHANNEL LEFT OUT`
+badge above the cylinder. Leave your slicer's seam mode on *Aligned*; a profile
+set to *Back* / *Rear* ignores the groove, so switch it once.
+
+### Double-Sided Card
+
+`double_sided` pairs the two plates so one pass embosses braille on **both**
+faces of a card. Each plate then carries raised dots *and* recesses, every
+recess is the 1:1 partner of an actual dot, and the row indicators are forced to
+Tactile. Back-of-card text goes in `Back_Line_1` – `Back_Line_10`, still as
+pre-translated Unicode braille. Full workflow:
+[Double-Sided Cards](#-double-sided-cards).
+
+### Card Thickness Presets
 - **0.4mm Preset** (default): Optimized for thicker paper, larger dots
 - **0.3mm Preset**: Optimized for thinner paper, smaller dots
 - **Custom**: Use manually-entered parameter values
@@ -152,15 +195,17 @@ All parameters match the web-based generator UI:
 
 ## 📐 Default Settings
 
-Spacing and dimension defaults match the web app's **0.4mm Paper Thickness
-Preset** (applied on load). The default **dot shape is `Rounded`** (the
-dropdown still offers `Cone`):
+Spacing and dimension defaults match the web app's **0.4mm Card Thickness
+preset** (applied on load). The default **dot shape is `Rounded`** (the
+dropdown still offers `Cone`), and one render builds **both cylinders** side by
+side, as the web app's Generate does (`render_both_plates`, On by default):
 
 ### Cylinder Settings
 - Diameter: 30.8mm
 - Height: 52mm
 - Polygonal Cutout: 13mm radius, 12 points/sides
 - Seam Offset: 0°
+- Slicer seam channel: On (V groove 1.0 × 0.5 mm; a constant, not a dial)
 
 ### Braille Grid
 - Cells per row: 13 (available for text; in Visual indicator mode 2 additional cells are reserved when Indicator Letters is On — matches the web app default — or 1 for the triangle alone when Off. Tactile indicator mode reserves none. Either narrower layout fits up to 14 text cells on the default cylinder)
@@ -193,6 +238,160 @@ dropdown still offers `Cone`):
 
 ---
 
+## 🧩 Double-Sided Cards
+
+Set `double_sided` to `On` to emboss braille on **both** faces of one card in a
+single pass between the two cylinders. The same two plates take on paired jobs,
+and each one then carries raised dots **and** recesses:
+
+- **Cylinder A** = the **Embossing Plate**. The front text as raised dots, plus
+  one recessed seat for every back dot the other cylinder raises.
+- **Cylinder B** = the **Counter Plate**. The back text as raised dots, plus one
+  recessed seat for every front dot Cylinder A raises.
+
+Two things change in this mode. There is **no universal recess grid** — every
+recess is the 1:1 partner of an actual dot, so a seat can never sit under this
+plate's own raised dot. And the row indicators are always **Tactile** (the
+raised seam arrows), because the paired seats occupy the ground the Visual
+marker columns would stand on, and a blind user needs the arrow to tell the two
+cylinders apart. Choosing Visual while `double_sided` is On is overridden, and
+the model says so on the console and in red text above the cylinder.
+
+### Workflow
+
+1. **Translate both sides** at
+   [Branah](https://www.branah.com/braille-translator) — same site, same
+   grade, **Unicode Braille** output (not ASCII). The back of the card is
+   translated exactly like the front; this version still has no automatic
+   translation.
+2. Paste the front braille into `Line_1`, `Line_2`, … as usual.
+3. Open the **`[Card Sides]`** tab, set `double_sided` to `On`,
+   and paste the back braille into `Back_Line_1` – `Back_Line_10`. **All ten
+   back-line fields are in that one tab** — there is no back-side counterpart to
+   the front's `[More Braille Lines (Advanced)]` tab.
+4. Check `paper_thickness_preset` matches the card stock you will emboss (see
+   the footprint table below).
+5. **Render.** One render builds both cylinders side by side; export it as
+   `Cylinder_Pair_<your name>.stl`. For separate files, set
+   `render_both_plates` to `Off` and render each `plate_type` once: export the
+   Embossing Plate as `Cylinder_A_<your name>.stl` and the Counter Plate as
+   `Cylinder_B_<your name>.stl`; the console prints the suggested name for
+   whichever plate you are rendering. Both plates must use identical settings —
+   they are a matched pair.
+
+Back lines obey the same rules as the front — pre-translated Unicode braille
+only, same cell capacity per row, same row limit — and the same
+`INVALID CHARACTERS`, `TEXT TOO LONG` and `TOO MANY LINES` warnings cover them,
+naming the `Back_Line` that overflowed.
+
+### Interpoint offsets
+
+The two faces are offset from each other so a dot on one side never lands on a
+dot on the other. `interpoint_offset_x_mm` and `interpoint_offset_y_mm` both
+default to **1.25 mm** and are adjustable over **1.15–1.35 mm**.
+
+Clearance between a raised dot and its neighbouring recess is **widest at
+1.25 mm and falls off symmetrically toward both ends** of that range — so if a
+guard complains, move both offsets *back toward 1.25 mm*. Increasing or
+decreasing is not the fix; 1.15 and 1.35 are equally tight.
+
+### Dot and recess footprints (fixed — no dials)
+
+The double-sided dot and recess sizes are **not adjustable**, and there are no
+Customizer dials for them. They are keyed to `paper_thickness_preset`, which is
+the thickness of the card stock being embossed:
+
+| `paper_thickness_preset` | raised dot | paired recess (nominal) | recess as printed |
+|---|---|---|---|
+| `0.3mm` | ⌀1.2 mm, 0.4 mm base + ⌀0.8 mm dome 0.4 mm high (total **0.8 mm**) | ⌀1.3 × 0.5 mm | ⌀1.345 × 0.6725 mm deep |
+| `0.4mm` (default) | ⌀1.2 mm, 0.5 mm base + ⌀1.0 mm dome 0.5 mm high (total **1.0 mm**) | ⌀1.4 × 0.5 mm | ⌀1.480 × 0.740 mm deep |
+
+Both packages were settled by physical embossing tests on a Bambu Lab X1C with
+a 0.4 mm nozzle during 2026-08, not by calculation. Total dot height is capped
+at 1.0 mm because taller dies scrape the embosser's cylinder-holder housing.
+
+The recess is cut as a hemisphere **centred on the shell surface**, which is why
+it prints wider and deeper than the nominal figures: `⌀1.4 × 0.5` describes the
+shape input, not the hole. The printability guard measures that printed mouth.
+On the `0.4mm` package this leaves a renderable offset band of **1.19–1.31 mm**
+rather than the slider's full range; the `0.3mm` package accepts all of it.
+
+### Status
+
+Double-sided cards are no longer a beta: the web app dropped the label on
+2026-09-20, and this version follows it. They have been printed and embossed
+successfully, and the geometry is cross-validated against the web app's
+generator. Report anything odd on the
+[issue tracker](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad/issues).
+
+---
+
+## ⚙️ Integrated Gears
+
+<!-- The hardware sentence is the web app's gear note (signed 2026-09-21,
+     replacing S9'), worded for Version 1 the way the Version 2 file words its
+     own. Reword only with Brennen's sign-off. -->
+
+> **Hardware compatibility, before anything else:** Version 1 fixed gears fit
+> only the Version 1 fixed-gear housing. The standard Version 1 housing takes
+> the standard cylinders.
+
+Set `integrated_gears` to `On` in the **[Gears]** tab and the
+cylinder is built as **one solid piece with its drive gears already attached**,
+instead of a bare barrel you push separately printed gears onto. Meshed gears
+are also what keeps a paired set turning together.
+
+**This build only.** The gear meshes are real files —
+`assets/gears_a.stl` and `assets/gears_b.stl` — which must sit in an `assets/`
+folder beside the `.scad`. That is why the MakerWorld single-file build does not
+offer this; see [`makerworld/README.md`](makerworld/README.md).
+
+Things worth knowing before you switch it on:
+
+- **The cylinder size is fixed while gears are on: 30.8 mm × 52 mm.** The gears
+  are a 1:1 replica of the reference set, baked at fixed heights, and they do
+  not move with the barrel. Any other size is **refused with an error** rather
+  than silently mis-built — a shorter barrel would export as three loose pieces
+  and a taller one would swallow the teeth. Both paper-thickness presets already
+  set this size, so the shipped defaults pass.
+- **The barrel prints solid.** The polygonal cutout is dropped while gears are
+  on, and the console says so if you had one set. A one-piece roller has no
+  through-path along its axis anyway — the gear bores are blind pockets — so
+  keeping the cutout would seal a cavity nothing can reach or drain.
+- The gears are **not adjustable**. They replicate the reference set exactly, so
+  that a roller printed here meshes with one printed from the web app.
+
+**Embosser Version 2 has its own fixed-gear option** (since 2026-09-21).
+`Braille_Cylinder_STL_Generator_EmbosserV2.scad` offers the same switch under
+**[Gears]**, and it fuses the **Version 2** gear set —
+`assets/v2_gears_a.stl` / `assets/v2_gears_b.stl` — to the 30.8 × 54 mm
+Version 2 barrel (any other size is refused). While it is On the barrel prints
+solid with **no keyed holes, nub or socket**: the gears' own pegs and pins are
+already inside the imported gears, and each top gear's anti-rotation notch is
+filled by hidden material so no void is sealed in. The seam channel is still
+cut. Version 2 fixed gears fit only the Version 2 fixed-gear housing; the
+standard Version 2 housing takes the standard keyed cylinders. The MakerWorld
+Version 2 upload hides the switch for the same reason as the Version 1 build.
+
+## 🔄 Rendering Both Plates At Once
+
+`render_both_plates` (in **[Cylinders to Generate]**) builds the **complete
+pair in one render** — Cylinder A, the embossing plate, on the left, and
+Cylinder B, the counter plate, on the right. It is **On by default** since
+v2.9.0, matching the web app, whose Generate builds both cylinders. Set it to
+`Off` to render one plate at a time, chosen with `plate_type`; `plate_type` is
+ignored while it is On.
+
+`pair_spacing_mm` (default 10) is the gap between the two barrel **surfaces**,
+for laying them out on one print plate. It is not the assembly distance: a
+meshed pair runs at a 32.0473 mm axis distance. With gears on, the teeth
+overhang the barrel, so a 10 mm barrel gap leaves about **8.58 mm tip to tip**.
+
+Rendering both plates is heavier than rendering one, which is normal — see
+Troubleshooting below if the preview feels slow.
+
+---
+
 ## 🖨️ 3D Printing Tips
 
 - **Material**: PLA works well; PETG is more durable
@@ -201,6 +400,8 @@ dropdown still offers `Cone`):
 - **Perimeters**: 3-4 for strength
 - **Orientation**: Print upright as oriented in preview
 - **Speed**: Slower outer walls (≤30mm/s) for smoother dots
+- **Seam**: leave the slicer's seam mode on *Aligned* — the seam channel
+  catches it. A profile set to *Back* / *Rear* ignores the groove; switch it once
 
 ---
 
@@ -269,6 +470,88 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
 
 ## 🐛 Troubleshooting
 
+### Embosser Version 2
+
+`Braille_Cylinder_STL_Generator_EmbosserV2.scad` at the repository root
+generates cylinders for **Embosser Version 2**, a new hardware design whose four
+drive gears each carry a differently shaped peg. The file cuts a matching keyed
+through-hole at each end of the cylinder, so a gear cannot be seated in the
+wrong place, plus a key nub on the Embossing Plate's top face.
+
+Its 30.8 × 54 mm barrel and R14 keyed cutouts were print-tested on 2026-09-01, and
+the tactile seam channel on 2026-09-21.
+
+**The gears must be re-cut to match.** The holes are family R14 — rounded
+rectangles of 14 x 14 mm (Cylinder A's top, the nub end), 18 x 10 (A's bottom),
+16 x 12 (B's top) and 20 x 8 (B's bottom), each with a 0.5 mm corner radius.
+None of the earlier star, hexagon or 15 x 15 mm square pegs will enter an R14
+hole, so a cylinder printed from this file pairs only with gears cut to the R14
+spec.
+
+One dial is new: **Key clearance (`key_clearance_mm`)**, 0.110 mm per side by
+default and adjustable from 0 to 0.5 mm in steps of 0.005. It grows every hole
+outward, and ONLY the holes - it has not touched the nub since 2026-08-29,
+because gear A1's notch is already cut and tightening the holes would have grown
+the nub into it. Raise it if the pegs bind; raising it also eats into the margin
+that stops a peg entering the wrong hole (0.890 mm at the default, 0.50 mm at
+the maximum).
+
+**Both cylinder ends key against their gear.** Each plate stands a 3 mm
+anti-rotation nub proud of its TOP face and sinks a matching socket into its
+BOTTOM one, all four on the tactile arrow column: Cylinder A carries the
+triangle that mates with gear A1's notch and gear A2's pin, Cylinder B a square
+for B1 and B2. Every one of these is a fixed fit against gears that are already
+cut, so none of them follows the clearance dial.
+
+The Version 1 files are untouched and remain the default. Use
+`Braille_Cylinder_STL_Generator.scad` unless you are building the Version 2
+embosser. The file is self-contained (preset tables inlined, no `include`), and
+since 2026-09-21 it also offers **[Gears]** — the fused Version 2
+roller, see [Integrated Gears](#️-integrated-gears). The MakerWorld
+Version 2 upload, `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`,
+is this file with that switch hidden, kept in step by
+`tests/test_makerworld_sync.py`.
+
+## Rendering feels very slow
+
+**First check which OpenSCAD you are in** (Help → About). This project needs
+the **Nightly** build with the Manifold engine; the stable **2021.01** release
+renders the counter plate through CGAL and takes the better part of an hour
+for what Nightly finishes in about **2 seconds** (measured 2026-08-25 on the
+same machine, same file: Nightly 1.8 s; 2021.01 was still rendering when it
+was stopped at 45 minutes). If a render sits at a progress bar for minutes,
+you are almost certainly in 2021.01 — open the file in Nightly instead.
+
+**Second check, if F6 takes minutes even in Nightly**: the GUI can be set to
+the old CGAL engine. Open **Edit → Preferences → Advanced** and make sure the
+3D rendering backend is **Manifold** (on the Features tab, anything named
+manifold should be enabled). The ~2-second numbers below are Manifold numbers;
+the same render through CGAL is the better part of an hour.
+
+Inside Nightly, the two speeds you experience are different things:
+
+- **Render / F6 / export** builds exact geometry once. Measured at the shipped
+  defaults: both cylinders together ≈ 2 s (the default since v2.9.0), the
+  embossing plate alone ≈ 0.3 s, the counter plate alone ≈ 2 s (its universal
+  grid subtracts 312 recess spheres no matter how much text there is), High
+  quality counter plate ≈ 10 s. This is the number that matters for the STL.
+- **Preview / F5** redraws the boolean tree on **every frame while you rotate
+  or zoom** (OpenCSG). A single frame of the counter plate costs roughly
+  0.5–1 s, so rotation can feel like 1–2 frames per second even though nothing
+  is wrong. The preview after a Customizer change pays the same price once.
+
+What helps:
+
+- Do design passes on the **embossing plate** alone (fast everywhere): set
+  `render_both_plates` to `Off` — it is On by default, so the counter plate
+  renders too — and turn it back On for the pair when you need it.
+- For a smoother preview while editing, set `render_quality = "Low"`
+  (Rendering Quality section) — **and set it back to your intended quality
+  before exporting**, because unlike a preview-only trick this genuinely
+  changes the exported dot tessellation.
+- Trust F6 for the real result: a slow, choppy preview does not make the
+  exported STL any worse.
+
 ### "INVALID CHARACTERS" Warning
 - You pasted regular text instead of Unicode braille
 - Solution: Translate at Branah.com and copy the braille output
@@ -334,7 +617,7 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
 
 ### Tactile Indicator Binds or Gets Crushed
 - The arrow should nest into the counter recess, never bottom out. At defaults
-  the arrow tip sits at radius 16.2 mm and the recess floor at 14.4 mm, leaving
+  the arrow tip sits at radius 15.9 mm and the recess floor at 14.7 mm, leaving
   0.2 mm of radial slack plus a 0.2 mm outline margin
 - If the plates bind, raise `tactile_recess_clearance` (outline) or
   `tactile_recess_extra_depth` (depth)
@@ -342,7 +625,34 @@ See [docs/QUICK_START_TESTING.md](docs/QUICK_START_TESTING.md) for detailed test
   `tactile_indicator_raise` — it must stay below the braille dot height so the
   dots carry the rolling pressure
 - Deep recesses thin the wall over the polygonal cutout. At defaults that wall
-  is ~0.93 mm; increasing `tactile_recess_extra_depth` eats into it directly
+  is 1.224 mm; increasing `tactile_recess_extra_depth` eats into it directly,
+  and the `TACTILE WALL TOO THIN` warning below reports when it goes under spec
+
+### "TACTILE WALL TOO THIN" Warning
+- Tactile indicator mode with a polygonal cutout only: the wall left between the
+  counter plate's arrow recess and the cutout has fallen below the **1.2 mm**
+  FDM printable minimum
+- A red `TACTILE WALL TOO THIN: <n> mm` extrusion renders above the cylinder,
+  and the console prints the measured thickness and the minimum
+- This one **warns without stopping the render** — an STL is still written, on
+  the same reasoning as `TACTILE GAP TOO SMALL`: an informed user may have a
+  reason to thin that wall. Print it and it may split along the cutout
+- At defaults the wall is 1.224 mm and clear. It is `tactile_indicator_raise`,
+  `tactile_recess_extra_depth` and `polygon_cutout_radius_mm` that eat into it
+- Solutions: lower `tactile_indicator_raise` or `tactile_recess_extra_depth`,
+  or reduce `polygon_cutout_radius_mm`
+
+### "DOUBLE-SIDED REQUIRES TACTILE" / "DOTS TOO CLOSE" Warnings
+- Double-sided only. The first says `indicator_mode` was left on Visual while
+  `double_sided` is On; the mode is overridden to Tactile and the render
+  continues, so this is a notice rather than a fault
+- `DOTS TOO CLOSE: <n> mm` reports the ridge left between a raised dot and its
+  neighbouring recess on the same surface. Move **both** interpoint offsets back
+  toward **1.25 mm**, where the clearance is widest — 1.15 and 1.35 are equally
+  tight, so raising or lowering is not in itself the fix
+- If instead the render **stops** with a message about the printable minimum,
+  the ridge is under 0.34 mm and no STL can be written. Same fix: back toward
+  1.25 mm on both offsets
 
 ---
 
@@ -382,11 +692,15 @@ For issues specific to this OpenSCAD version:
 1. [Open an issue](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad/issues) on this repository
 2. Check parameter values in Customizer
 3. Verify Unicode braille character validity
-4. Ensure OpenSCAD version 2024.x or newer (2026.01.03+ recommended)
+4. Use an OpenSCAD **Nightly** build with the Manifold engine (2026.01.03 is
+   what CI pins). This is stronger than a minimum-version note: the stable
+   2021.01 release renders the counter plate in tens of minutes where Nightly
+   takes about two seconds — see [Rendering feels very slow](#-troubleshooting)
+   if that is what you are seeing
 
 For general braille embossing questions, see the [web app](https://braille-cylinder-stl-generator.vercel.app).
 
 ---
 
-**Version**: 2.4.1  
-**Last Updated**: 2026-07-29
+**Version**: 2.9.1  
+**Last Updated**: 2026-09-23

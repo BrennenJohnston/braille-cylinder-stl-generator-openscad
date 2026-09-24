@@ -2,8 +2,8 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "OpenSCAD to Web API Parameter Mapping",
   "description": "Machine-readable mapping between OpenSCAD customizer variables and web API parameters. Source of truth for cross-platform validation.",
-  "version": "2.4.0",
-  "last_updated": "2026-08-01",
+  "version": "2.9.0",
+  "last_updated": "2026-09-23",
   "documentation": "See docs/PARAMETER_MAPPING.md for human-readable version",
   
   "ui_parameter_format": {
@@ -126,9 +126,146 @@
       "note": "OpenSCAD-only toggle; the web app validates cell counts before generation instead"
     },
     {
+      "openscad_name": "double_sided",
+      "web_api_name": "double_sided_enabled",
+      "web_ui_label": "Card sides (Double-sided)",
+      "type": "enum",
+      "default": "Off",
+      "values": ["Off", "On"],
+      "test_system_values": ["off", "on"],
+      "value_mapping": {
+        "off": "Off",
+        "on": "On",
+        "Off": "Off",
+        "On": "On"
+      },
+      "section": "Card Sides",
+      "description": "Emboss BOTH faces of one card in a single pass. On forces Tactile row indicators, replaces the counter plate's universal recess grid with 1:1 paired seats, and turns the two plates into Cylinder A (Embossing Plate) and Cylinder B (Counter Plate).",
+      "note": "Web schema home: double_sided.enabled; on the wire it is the flat integer double_sided_enabled (0/1), and it is never sent for cards. OpenSCAD normalizes both the Customizer's On/Off and the lowercase on/off the test system passes with -D."
+    },
+    {
+      "openscad_name": "Back_Line_1",
+      "web_api_name": "back_lines[0]",
+      "web_ui_label": "Back of Card, Line 1",
+      "type": "string",
+      "default": "",
+      "section": "Card Sides",
+      "description": "First line of BACK-of-card braille text (Unicode braille characters); read only while double_sided is On",
+      "note": "COMPOSITE MAPPING. OpenSCAD needs one fixed field per row because the Customizer cannot add fields on demand; the web app carries the whole back face as ONE top-level array, `back_lines`, sent beside `lines`. So Back_Line_1..Back_Line_10 map onto back_lines[0]..back_lines[9] as a group, exactly as Line_1..Line_10 map onto the front `lines` array. The settings-file spelling is text.back_lines and the Python keyword is back_lines=.",
+      "validation": {
+        "pattern": "^[\\u2800-\\u28FF]*$"
+      }
+    },
+    {
+      "openscad_name": "Back_Line_2",
+      "web_api_name": "back_lines[1]",
+      "web_ui_label": "Back of Card, Line 2",
+      "type": "string",
+      "default": "",
+      "section": "Card Sides",
+      "description": "Second line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "Back_Line_3",
+      "web_api_name": "back_lines[2]",
+      "web_ui_label": "Back of Card, Line 3",
+      "type": "string",
+      "default": "",
+      "section": "Card Sides",
+      "description": "Third line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "Back_Line_4",
+      "web_api_name": "back_lines[3]",
+      "web_ui_label": "Back of Card, Line 4",
+      "type": "string",
+      "default": "",
+      "section": "Card Sides",
+      "description": "Fourth line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "Back_Line_5",
+      "web_api_name": "back_lines[4]",
+      "web_ui_label": "Back of Card, Line 5",
+      "type": "string",
+      "default": "",
+      "section": "Card Sides",
+      "description": "Fifth line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "Back_Line_6",
+      "web_api_name": "back_lines[5]",
+      "web_ui_label": "Back of Card, Line 6",
+      "type": "string",
+      "default": "",
+      "section": "Card Sides",
+      "description": "Sixth line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "Back_Line_7",
+      "web_api_name": "back_lines[6]",
+      "web_ui_label": "Back of Card, Line 7",
+      "type": "string",
+      "default": "",
+      "section": "Card Sides",
+      "description": "Seventh line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "Back_Line_8",
+      "web_api_name": "back_lines[7]",
+      "web_ui_label": "Back of Card, Line 8",
+      "type": "string",
+      "default": "",
+      "section": "Card Sides",
+      "description": "Eighth line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "Back_Line_9",
+      "web_api_name": "back_lines[8]",
+      "web_ui_label": "Back of Card, Line 9",
+      "type": "string",
+      "default": "",
+      "section": "Card Sides",
+      "description": "Ninth line of back-of-card braille text",
+      "note": "All ten back rows stay in this one tab, unlike the front's Line_1-8 / Line_9-10 split. That split exists only to keep the always-visible main text tab at eight fields; this tab is opt-in, so splitting it would send a double-sided user to a second tab - one that also holds single-sided fields - to finish one job."
+    },
+    {
+      "openscad_name": "Back_Line_10",
+      "web_api_name": "back_lines[9]",
+      "web_ui_label": "Back of Card, Line 10",
+      "type": "string",
+      "default": "",
+      "section": "Card Sides",
+      "description": "Tenth line of back-of-card braille text"
+    },
+    {
+      "openscad_name": "interpoint_offset_x_mm",
+      "web_api_name": "interpoint_offset_x",
+      "web_ui_label": "Interpoint Offset (around the cylinder)",
+      "type": "float",
+      "default": 1.25,
+      "range": [1.15, 1.35],
+      "unit": "mm",
+      "section": "Card Sides",
+      "description": "Circumferential half of the diagonal shift between the front and back grids, measured around the cylinder",
+      "note": "Web schema home: double_sided.interpoint_offset_x_mm, flattened to the runtime name interpoint_offset_x. The 1.15-1.35 range is enforced by an assert in the .scad, so a value outside it stops the render rather than exporting an unprintable pair. A SECOND assert then checks the printed ridge between a raised dot and its neighbouring recess against the 0.34 mm floor, and clearance peaks at 1.25 mm and falls off symmetrically - so on the 0.4mm card-stock package the renderable band is effectively 1.19-1.31 mm (measured 2026-08-20), while the 0.3mm package accepts the whole range. The slider deliberately keeps the full 1.15-1.35 because that is the web schema's range and the 0.3 package uses all of it; the guard message names 1.25 as the fix."
+    },
+    {
+      "openscad_name": "interpoint_offset_y_mm",
+      "web_api_name": "interpoint_offset_y",
+      "web_ui_label": "Interpoint Offset (along the axis)",
+      "type": "float",
+      "default": 1.25,
+      "range": [1.15, 1.35],
+      "unit": "mm",
+      "section": "Card Sides",
+      "description": "Axial half of the same diagonal shift, measured along the cylinder: back rows sit this far above the front rows",
+      "note": "Web schema home: double_sided.interpoint_offset_y_mm, flattened to interpoint_offset_y; the web repo's app/geometry/interpoint.py calls this same number offset_z. Range enforced by the same assert as the X offset."
+    },
+    {
       "openscad_name": "plate_type",
       "web_api_name": "plate_type",
-      "web_ui_label": "Select Plate to Generate",
+      "web_ui_label": "Cylinders to Generate (Cylinder A / Cylinder B)",
       "type": "enum",
       "default": "Embossing Plate",
       "values": ["Embossing Plate", "Counter Plate"],
@@ -139,8 +276,9 @@
         "Embossing Plate": "Embossing Plate",
         "Counter Plate": "Counter Plate"
       },
-      "section": "Plate Selection",
-      "description": "Which plate to generate"
+      "section": "Cylinders to Generate",
+      "description": "Which plate to generate",
+      "note": "In double-sided mode the two labels take on the paired roles the web app uses: \"Embossing Plate\" IS Cylinder A and \"Counter Plate\" IS Cylinder B, exported as Cylinder_A_*.stl / Cylinder_B_*.stl. Single-sided labels and filenames are never renamed."
     },
     {
       "openscad_name": "indicator_mode",
@@ -149,7 +287,7 @@
       "type": "enum",
       "default": "Visual",
       "values": ["Visual", "Tactile"],
-      "section": "Indicator Mode",
+      "section": "Row Indicator Style",
       "description": "Visual = recessed triangle (plus optional letter square) in marker cells at the start of each row. Tactile = raised arrow on the embossing plate and matching recess on the counter plate, centred in the seam gap, with no marker cells.",
       "note": "Ported to the web app 2026-07-29; enum casing differs on the wire (visual/tactile). Schema home: indicators.indicator_mode"
     },
@@ -160,7 +298,7 @@
       "type": "float",
       "default": 4.0,
       "range": [2, 10],
-      "section": "Indicator Mode",
+      "section": "Row Indicator Style",
       "description": "Tactile indicator width measured around the cylinder (mm)",
       "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
     },
@@ -169,22 +307,22 @@
       "web_api_name": "tactile_indicator_length",
       "web_ui_label": "Tactile Indicator Length",
       "type": "float",
-      "default": 5.0,
+      "default": 10.0,
       "range": [2, 15],
-      "section": "Indicator Mode",
-      "description": "Tactile indicator length measured along the cylinder axis (mm); the default matches the 5 mm braille dot field height",
-      "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
+      "section": "Row Indicator Style",
+      "description": "Tactile indicator length measured along the cylinder axis (mm); long enough for a fingertip to read the direction of the point in one pass",
+      "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there. Aligned to the web value 2026-08-18 (was 5.0)"
     },
     {
       "openscad_name": "tactile_indicator_raise",
       "web_api_name": "tactile_indicator_raise",
       "web_ui_label": "Tactile Indicator Raise",
       "type": "float",
-      "default": 0.8,
+      "default": 0.5,
       "range": [0, 2],
-      "section": "Indicator Mode",
+      "section": "Row Indicator Style",
       "description": "How far the embossing plate's arrow stands proud of the surface (mm); kept below the braille dot height so the dots carry the rolling pressure",
-      "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
+      "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there. Aligned to the web value 2026-08-18 (was 0.8)"
     },
     {
       "openscad_name": "tactile_recess_clearance",
@@ -193,7 +331,7 @@
       "type": "float",
       "default": 0.2,
       "range": [0, 1],
-      "section": "Indicator Mode",
+      "section": "Row Indicator Style",
       "description": "Outline margin added around the counter plate's recess (mm) so the arrow enters even when slightly misaligned",
       "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
     },
@@ -204,7 +342,7 @@
       "type": "float",
       "default": 0.2,
       "range": [0, 1],
-      "section": "Indicator Mode",
+      "section": "Row Indicator Style",
       "description": "Counter recess depth added on top of the arrow raise (mm); 0 gives exact same-depth nesting",
       "note": "Tactile indicator mode; same name on the web app, defaults asserted equal there"
     },
@@ -215,7 +353,7 @@
       "type": "enum",
       "default": "0.4mm",
       "values": ["0.4mm", "0.3mm", "Custom"],
-      "section": "Paper Thickness Preset",
+      "section": "Card Thickness",
       "description": "Preset that controls multiple parameters (spacing, dot dimensions, cylinder settings)",
       "note": "Web UI label is 'Card Thickness' but this is NOT the removed card-geometry feature—it's a parametric memory system"
     },
@@ -310,6 +448,18 @@
       "description": "Seam offset (degrees) — Rotates starting position around cylinder"
     },
     {
+      "openscad_name": "seam_channel",
+      "web_api_name": "seam_channel_enabled",
+      "web_ui_label": "Slicer seam channel",
+      "type": "enum",
+      "default": "On",
+      "values": ["On", "Off"],
+      "test_system_values": ["on", "off"],
+      "section": "Expert Mode - Cylinder Dimensions",
+      "description": "A shallow V groove, 1.0 mm wide x 0.5 mm deep, the full height of the outer surface, in the seam gap beside the row markers, where a slicer's default aligned seam mode hides each layer's seam instead of in a dot. On by default on every cylinder, both plates; Off gives the plain surface. Left out - with a console NOTE and a red badge on the model - when the free window is under 1.5 mm or the wall under the groove would be under 1.2 mm.",
+      "note": "Web schema home seam_channel.enabled (default true); on the wire the flat integer seam_channel_enabled is sent ONLY as 0 (the Expert Mode switch turned off) - On adds nothing to the request. The groove's size is not a dial in either implementation: SEAM_CHANNEL_WIDTH_MM 1.0, DEPTH 0.5, MARGIN 0.25, OVERSHOOT 1.0, LIP 0.5, MIN_WALL 1.2 in app/geometry_spec.py and in both .scad files (tests/test_seam_channel_scad.py diffs them). The angle is the web spec's theta as a PHYSICAL angle here: emboss 180 + s/R, counter 180 - s/R, e.g. 181.67 / 178.33 degrees at 15 visual columns on 30.8 mm. Present in the Version 2 file too, under the same tab."
+    },
+    {
       "openscad_name": "grid_columns",
       "web_api_name": "grid_columns",
       "web_ui_label": "Number of Braille Cells",
@@ -317,7 +467,7 @@
       "default": 13,
       "range": [1, 20],
       "section": "Expert Mode - Braille Spacing",
-      "description": "Text capacity in braille cells per row (matches the web app default of 13 text cells). Visual indicator mode adds 2 marker cells when Indicator Letters are On, or 1 (the alignment triangle) when Off; Tactile mode adds none. Up to 14 text cells fit the default cylinder in either of the narrower layouts."
+      "description": "Text capacity in braille cells per row (matches the web app default of 13 text cells). Visual indicator mode adds 2 marker cells when Indicator Letters are On, or 1 (the alignment triangle) when Off; Tactile mode adds none. Up to 14 text cells fit the default cylinder in either of the narrower layouts, but a 90 mm card loaded at the tactile alignment arrow holds only 13 (the model says so, since 2026-09-21)."
     },
     {
       "openscad_name": "grid_rows",
@@ -548,8 +698,64 @@
       "section": "Rendering Quality",
       "description": "Number of segments for cone shapes",
       "note": "Affects mesh resolution, not geometry dimensions"
+    },
+    {
+      "openscad_name": "integrated_gears",
+      "web_api_name": "gear_rollers_enabled",
+      "web_ui_label": "Gears (Simplified: gears fixed to the cylinders)",
+      "type": "enum",
+      "values": ["Off", "On"],
+      "test_system_values": ["off", "on"],
+      "default": "Off",
+      "section": "Gears",
+      "description": "Build the cylinder as one solid piece with its drive gears already attached, instead of a bare barrel that separately printed gears push onto. The gears are a 1:1 replica of the reference set and are not adjustable, so the cylinder is locked to 30.8 x 52 mm while this is On and any other size is refused rather than mis-built. The barrel also prints solid: the polygonal cutout is dropped.",
+      "note": "DESKTOP BUILD ONLY. The gear meshes are real files (assets/gears_a.stl, assets/gears_b.stl) that must sit beside the .scad, so the MakerWorld single-file build declares this parameter in a [Hidden] tab and never offers it - MakerWorld's customizer has no way to accept a mesh at all (tested 2026-08-25). Schema home gear_rollers.enabled; on the wire it is the flat integer gear_rollers_enabled (0/1). Since 2026-09-21 the Version 2 file (Braille_Cylinder_STL_Generator_EmbosserV2.scad) offers the same switch under [Gears]: the fused Version 2 roller from assets/v2_gears_a.stl and assets/v2_gears_b.stl, the cylinder locked to 30.8 x 54 mm (refused otherwise, with the web generator's own sentence), the barrel solid with no keyed holes, nub or socket, and each top gear's notch filled by hidden material. On the web that is gear_rollers_enabled 1 together with embosser_version 2. The MakerWorld Version 2 upload hides the switch the same way."
+    },
+    {
+      "openscad_name": "render_both_plates",
+      "web_api_name": null,
+      "web_ui_label": "Cylinders to Generate (Both Cylinder A and B)",
+      "type": "enum",
+      "values": ["Off", "On"],
+      "test_system_values": ["off", "on"],
+      "default": "On",
+      "section": "Cylinders to Generate",
+      "description": "Render Cylinder A (embossing plate) and Cylinder B (counter plate) side by side in one pass instead of rendering each separately. plate_type is ignored while this is On.",
+      "note": "No wire equivalent: the web app reaches the same outcome by running its single-plate pipeline twice and concatenating the two STLs into one combined download, so there is no request field to map."
+    },
+    {
+      "openscad_name": "pair_spacing_mm",
+      "web_api_name": null,
+      "web_ui_label": null,
+      "type": "integer",
+      "default": 10,
+      "range": [2, 50],
+      "section": "Cylinders to Generate",
+      "description": "Gap between the two barrel SURFACES while render_both_plates is On, for laying the pair out on one print plate. Centre-to-centre is this plus one cylinder diameter.",
+      "note": "A print-layout figure, not the assembly distance: a meshed pair runs at a 32.0473 mm axis distance. With gears On the teeth overhang the barrel, so the default 10 mm barrel gap leaves about 8.58 mm tip to tip. The web app hard-codes the same 10 mm surface gap for its combined download and exposes no dial."
+    },
+    {
+      "openscad_name": "key_clearance_mm",
+      "web_api_name": "v2_key_clearance_mm",
+      "web_ui_label": "Key clearance (mm)",
+      "type": "number",
+      "default": 0.110,
+      "range": [0, 0.5],
+      "section": "Version 2 Keyed Cutouts",
+      "description": "Extra room around each gear peg, per side (mm). Grows every keyed hole outward and shrinks the key nub inward by the same amount.",
+      "note": "EMBOSSER VERSION 2 FILE ONLY (Braille_Cylinder_STL_Generator_EmbosserV2.scad); the Version 1 file has no such tab. Deliberately NOT preset-owned - a preset-owned key silently ignores -D, and this is the one dial tuned per printer. Schema home version_2.key_clearance_mm; on the wire it is the flat v2_key_clearance_mm, sent only when embosser_version is 2."
     }
   ],
+  
+  "version_2_file": {
+    "description": "Parameters the Embosser Version 2 file does not have. Braille_Cylinder_STL_Generator_EmbosserV2.scad is a separate self-contained file; the Version 1 files are unchanged and still the default.",
+    "not_present": [
+      "polygon_cutout_radius_mm",
+      "polygon_cutout_points",
+      "seam_offset_degrees"
+    ],
+    "reason": "The keyed cutout IS the bore, so there is no polygonal cutout to size; the keys sit on the tactile arrow column, so turning the seam would put them in the wrong place. integrated_gears IS present since 2026-09-21: the Version 2 file fuses the Version 2 gear set, see that parameter's note."
+  },
   
   "removed_parameters": {
     "description": "Parameters removed in version 2.0.0 (card support removed)",
@@ -603,6 +809,8 @@
     "Version 2.0.0: Card support removed, cylinder-only operation",
     "Version 2.1.0: Paper thickness preset system added, defaults updated to match web app 0.4mm preset",
     "Version 2.2.0: Aggressive customizer polish (file rename, preset routing extraction, magic-number naming, $fn policy doc), TEXT TOO LONG warning geometry, expanded test coverage (presets/backward-compat/text-too-long suites, 3 new cross-platform fixtures, slider-range schema validator), split-repo cleanup (Plug Puller + CAD-to-OpenSCAD methodology extracted to sibling repos)",
+    "Version 2.6.0: Double-sided (interpoint) BETA reaches the Customizer. New '[Double-Sided Card (BETA)]' tab with the double_sided gate, Back_Line_1 - Back_Line_10, and the two interpoint offset sliders (1.15-1.35 mm each, assert-enforced). The double-sided footprints are deliberately NOT exposed: they ship fixed and keyed to paper_thickness_preset. ds_self_check stays hidden - it is a test hook, not a user control",
+    "Version 2.5.0: Cross-repo parity audit (Phase 08). The only two numeric drifts in the 46-parameter surface were aligned to the web app: tactile_indicator_length 5.0 -> 10.0 mm and tactile_indicator_raise 0.8 -> 0.5 mm. The MakerWorld variant still carries the old pair until its own re-flatten phase",
     "Version 2.4.0: Line_5 - Line_10 added so the Customizer exposes every row grid_rows allows; Line_9 and Line_10 sit in the 'More Braille Lines (Advanced)' section because the Customizer cannot add fields on demand",
     "This mapping is the source of truth for cross-platform validation",
     "Human-readable documentation in docs/PARAMETER_MAPPING.md should be kept in sync",
@@ -614,6 +822,10 @@
     "Web UI label 'Card Thickness' is NOT card geometry—it's a parametric memory system for known-good values",
     "Rendering quality parameters affect mesh resolution, not actual geometry dimensions",
     "All spatial units are millimeters (mm)",
-    "All angular units are degrees (°)"
+    "All angular units are degrees (°)",
+    "Back_Line_1..Back_Line_10 are a COMPOSITE mapping onto the web app's single top-level back_lines array (settings-file spelling text.back_lines, Python keyword back_lines=), the same way Line_1..Line_10 map onto lines. OpenSCAD needs one fixed field per row because the Customizer cannot add fields on demand",
+    "Double-sided dot and bowl footprints have no Customizer entry ON PURPOSE. They are fixed and keyed to paper_thickness_preset: '0.3mm' renders Option B, anything else renders Q2 (research memory FD-8/FD-9, 2026-08-20). Keep them in lockstep with app/geometry/interpoint.py DS_FOOTPRINTS_BY_PRESET in the web repo",
+    "2026-09-21 (unreleased): seam_channel switch in both files (Expert Mode - Cylinder Dimensions, On by default; the groove size is a constant, not a dial); the Version 2 file gains its own [Integrated Gears] switch for the fused Version 2 roller (assets/v2_gears_a.stl, v2_gears_b.stl); the MakerWorld Version 2 upload follows the Version 1 build's three-layer sync model with the switch hidden.",
+    "2026-09-23 (v2.9.0): in line with the web app. The BETA labels are gone (the web took double-sided cards and integrated gears out of beta on 2026-09-20), render_both_plates defaults to On (the web's one Generate builds both cylinders), and five Customizer sections carry the web app's names: Card Sides, Gears, Cylinders to Generate, Row Indicator Style and Card Thickness. Parameter names and values are unchanged, so saved Customizer settings keep working."
   ]
 }

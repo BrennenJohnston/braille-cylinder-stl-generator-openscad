@@ -84,28 +84,28 @@ class ParameterSchemaValidator:
             section_match = re.match(r"/\*\s*\[([^\]]+)\]\s*\*/", line)
             if section_match:
                 section_name = section_match.group(1).strip()
-                
+
                 # Stop parsing if we hit [Hidden] section or calculated values
                 if section_name.lower() == "hidden":
                     break
-                
+
                 current_section = section_name
                 i += 1
                 continue
-            
+
             # Stop if we hit module/function/calculated sections
-            if (line.startswith("module ") or 
-                line.startswith("function ") or
-                "CALCULATED VALUES" in line or
-                "Do not modify" in line):
+            if (
+                line.startswith("module ")
+                or line.startswith("function ")
+                or "CALCULATED VALUES" in line
+                or "Do not modify" in line
+            ):
                 break
 
             # Check for parameter definition
             # Format: param_name = value; // comment
             # or: param_name = value; // [option1:Label 1, option2:Label 2]
-            param_match = re.match(
-                r"^(\w+)\s*=\s*([^;]+);(?:\s*//\s*(.*))?$", line
-            )
+            param_match = re.match(r"^(\w+)\s*=\s*([^;]+);(?:\s*//\s*(.*))?$", line)
             if param_match and current_section:
                 param_name = param_match.group(1)
                 param_value_str = param_match.group(2).strip()
@@ -123,9 +123,7 @@ class ParameterSchemaValidator:
                 enum_values = None
                 enum_labels = {}
                 slider_range = None  # (min, step, max) when present
-                enum_match = re.search(
-                    r"\[([^\]]+)\]", param_comment
-                )
+                enum_match = re.search(r"\[([^\]]+)\]", param_comment)
                 if enum_match:
                     enum_spec = enum_match.group(1).strip()
                     slider_match = re.match(
@@ -340,7 +338,10 @@ class ParameterSchemaValidator:
                         }
                     )
             # Allow integer/float interchangeability (OpenSCAD treats them the same)
-            elif expected_type in ["float", "integer"] and actual_param_type in ["float", "integer"]:
+            elif expected_type in ["float", "integer"] and actual_param_type in [
+                "float",
+                "integer",
+            ]:
                 # int and float are compatible for numeric parameters
                 pass
             elif expected_type != actual_param_type:
@@ -432,8 +433,9 @@ class ParameterSchemaValidator:
             checked += 1
             scad_min, _step, scad_max = slider_range
             try:
-                expected_min, expected_max = float(mapping_range[0]), float(
-                    mapping_range[1]
+                expected_min, expected_max = (
+                    float(mapping_range[0]),
+                    float(mapping_range[1]),
                 )
             except (TypeError, ValueError, IndexError):
                 results.append(
@@ -451,7 +453,10 @@ class ParameterSchemaValidator:
                 )
                 continue
 
-            if abs(scad_min - expected_min) > 1e-9 or abs(scad_max - expected_max) > 1e-9:
+            if (
+                abs(scad_min - expected_min) > 1e-9
+                or abs(scad_max - expected_max) > 1e-9
+            ):
                 results.append(
                     {
                         "check": "slider_ranges_match",
@@ -485,8 +490,7 @@ class ParameterSchemaValidator:
                 }
             )
         elif not any(
-            r["check"] == "slider_ranges_match" and not r["passed"]
-            for r in results
+            r["check"] == "slider_ranges_match" and not r["passed"] for r in results
         ):
             results.append(
                 {
@@ -536,9 +540,7 @@ class ParameterSchemaValidator:
     def _values_match(self, expected: Any, actual: Any) -> bool:
         """Check if two values match (with type flexibility)."""
         # Handle float/int equivalence
-        if isinstance(expected, (int, float)) and isinstance(
-            actual, (int, float)
-        ):
+        if isinstance(expected, (int, float)) and isinstance(actual, (int, float)):
             return abs(expected - actual) < 1e-9
 
         # Handle string comparison
@@ -577,9 +579,7 @@ def main():
         type=Path,
         help="Output validation results as JSON",
     )
-    parser.add_argument(
-        "--verbose", action="store_true", help="Enable verbose logging"
-    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
 
     args = parser.parse_args()
 
@@ -597,9 +597,7 @@ def main():
         )
 
         logger.info(f"Validating: {args.scad_file.name}")
-        logger.info(
-            f"Found {len(validator.openscad_params)} OpenSCAD parameters"
-        )
+        logger.info(f"Found {len(validator.openscad_params)} OpenSCAD parameters")
 
         # Run validation
         all_passed, results = validator.validate()

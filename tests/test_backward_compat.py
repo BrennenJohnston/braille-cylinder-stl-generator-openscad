@@ -111,9 +111,7 @@ class TestBackwardCompatHidden:
         """
         joined = "\n".join(scad_lines)
         for var_name in BACKWARD_COMPAT_VARS:
-            decl_re = re.compile(
-                rf'^\s*{re.escape(var_name)}\s*=\s*"";', re.MULTILINE
-            )
+            decl_re = re.compile(rf'^\s*{re.escape(var_name)}\s*=\s*"";', re.MULTILINE)
             assert decl_re.search(joined), (
                 f"Backward-compat variable `{var_name}` must default to "
                 f'`""` (empty string). Anything else would short-circuit '

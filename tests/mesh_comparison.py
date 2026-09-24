@@ -207,9 +207,7 @@ class MeshComparator:
             ]
         elif system == "Darwin":
             paths = [
-                Path(
-                    "/Applications/CloudCompare.app/Contents/MacOS/CloudCompare"
-                ),
+                Path("/Applications/CloudCompare.app/Contents/MacOS/CloudCompare"),
             ]
         elif system == "Linux":
             paths = [
@@ -348,7 +346,9 @@ class MeshComparator:
             )
 
         # Best-effort RMS parsing (stdout/stderr, then any text outputs)
-        rms = self._parse_icp_rms_mm((result.stdout or "") + "\n" + (result.stderr or ""))
+        rms = self._parse_icp_rms_mm(
+            (result.stdout or "") + "\n" + (result.stderr or "")
+        )
         if rms is None:
             for txt in sorted(work_dir.glob("*.txt")):
                 try:
@@ -427,7 +427,9 @@ class MeshComparator:
                 f"CloudCompare did not produce expected output cloud: {out_cloud}"
             )
 
-        max_d, mean_d, _count = _parse_cloudcompare_asc_distances(out_cloud, separator=",")
+        max_d, mean_d, _count = _parse_cloudcompare_asc_distances(
+            out_cloud, separator=","
+        )
         return max_d, mean_d
 
     def load_mesh(self, stl_path: Path) -> trimesh.Trimesh:
@@ -477,9 +479,7 @@ class MeshComparator:
             centroid=mesh.centroid,
         )
 
-    def compare(
-        self, reference_stl: Path, test_stl: Path
-    ) -> ComparisonResult:
+    def compare(self, reference_stl: Path, test_stl: Path) -> ComparisonResult:
         """
         Compare two STL files.
 
@@ -503,7 +503,9 @@ class MeshComparator:
         test_props = self.extract_properties(test_mesh)
 
         cloudcompare_available = self.cloudcompare_path is not None
-        cloudcompare_enabled = cloudcompare_available and self._cloudcompare_is_enabled()
+        cloudcompare_enabled = (
+            cloudcompare_available and self._cloudcompare_is_enabled()
+        )
 
         # Optional: ICP alignment (CloudCompare)
         icp_performed = False
@@ -530,7 +532,11 @@ class MeshComparator:
                 np.linalg.norm(ref_props.centroid - test_props.centroid)
             )
 
-            if cloudcompare_enabled and icp_enabled and centroid_distance > icp_threshold:
+            if (
+                cloudcompare_enabled
+                and icp_enabled
+                and centroid_distance > icp_threshold
+            ):
                 logger.info(
                     f"Centroid distance {centroid_distance:.3f}mm > {icp_threshold}mm; "
                     f"running ICP alignment with CloudCompare"
@@ -551,9 +557,7 @@ class MeshComparator:
 
             # Calculate differences (after optional alignment)
             volume_diff_pct = (
-                abs(ref_props.volume - test_props.volume)
-                / ref_props.volume
-                * 100.0
+                abs(ref_props.volume - test_props.volume) / ref_props.volume * 100.0
                 if ref_props.volume > 0
                 else 0.0
             )
@@ -728,7 +732,9 @@ class MeshComparator:
                     work_dir=Path(td),
                 )
 
-        both_directions = bool(self.cloudcompare_config.get("c2m_both_directions", True))
+        both_directions = bool(
+            self.cloudcompare_config.get("c2m_both_directions", True)
+        )
 
         # Test -> Reference
         dir_a = work_dir / "c2m_test_to_ref"
@@ -758,9 +764,7 @@ def main():
     """Example usage and testing."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Compare two STL meshes"
-    )
+    parser = argparse.ArgumentParser(description="Compare two STL meshes")
     parser.add_argument("reference", type=Path, help="Reference STL file")
     parser.add_argument("test", type=Path, help="Test STL file")
     parser.add_argument(
@@ -774,9 +778,7 @@ def main():
         type=Path,
         help="Output comparison result as JSON",
     )
-    parser.add_argument(
-        "--verbose", action="store_true", help="Enable verbose logging"
-    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
 
     args = parser.parse_args()
 
@@ -804,23 +806,15 @@ def main():
         print("=" * 70)
         print(f"Status: {'✓ PASS' if result.passed else '✗ FAIL'}")
         print(f"\nVolume difference: {result.volume_diff_percent:.2f}%")
-        print(
-            f"Surface area difference: {result.surface_area_diff_percent:.2f}%"
-        )
+        print(f"Surface area difference: {result.surface_area_diff_percent:.2f}%")
         print(f"Bounding box difference: {result.bounding_box_diff_mm:.3f} mm")
         print(f"Face count difference: {result.face_count_diff}")
         print(f"Vertex count difference: {result.vertex_count_diff}")
-        print(
-            f"Watertightness match: {'Yes' if result.watertightness_match else 'No'}"
-        )
+        print(f"Watertightness match: {'Yes' if result.watertightness_match else 'No'}")
 
         if result.max_surface_deviation_mm is not None:
-            print(
-                f"\nMax surface deviation: {result.max_surface_deviation_mm:.3f} mm"
-            )
-            print(
-                f"Mean surface deviation: {result.mean_surface_deviation_mm:.3f} mm"
-            )
+            print(f"\nMax surface deviation: {result.max_surface_deviation_mm:.3f} mm")
+            print(f"Mean surface deviation: {result.mean_surface_deviation_mm:.3f} mm")
         elif result.cloudcompare_available:
             print("\nNumeric deviation: Not computed (implementation pending)")
         else:
@@ -831,9 +825,7 @@ def main():
             for failure in result.failures:
                 print(f"  - {failure}")
 
-        print(
-            f"\nComparison time: {result.comparison_time_seconds:.2f} seconds"
-        )
+        print(f"\nComparison time: {result.comparison_time_seconds:.2f} seconds")
         print("=" * 70)
 
         # Save JSON output if requested

@@ -11,14 +11,16 @@ They cover the three things most likely to silently break the feature:
 
 1. The Customizer surface (dropdown + the five tactile sliders, in both the
    canonical desktop build and the MakerWorld single-file build).
-2. The geometry invariants the nesting fit depends on — the 180 deg placement,
-   the curvature-conforming shell band, and the recess clearance offset.
+2. The geometry invariants the nesting fit depends on — the seam-centre
+   placement, the curvature-conforming shell band, and the recess clearance
+   offset — and the tactile seam channel's path round the raised arrows.
 3. The Visual code path staying gated behind ``!tactile_on`` so the default
    mode is untouched.
 
 License: PolyForm Noncommercial 1.0.0
 """
 
+import math
 import re
 from pathlib import Path
 
@@ -27,17 +29,26 @@ import pytest
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL = PROJECT_ROOT / "Braille_Cylinder_STL_Generator.scad"
 MAKERWORLD = (
-    PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad"
+    PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad"
 )
 
 # The five Tactile-only sliders, with the exact `[min:step:max]` each ships with.
 TACTILE_SLIDERS = {
     "tactile_indicator_width": ("4.0", "[2:0.1:10]"),
-    "tactile_indicator_length": ("5.0", "[2:0.1:15]"),
-    "tactile_indicator_raise": ("0.8", "[0:0.1:2]"),
+    "tactile_indicator_length": ("10.0", "[2:0.1:15]"),
+    "tactile_indicator_raise": ("0.5", "[0:0.1:2]"),
     "tactile_recess_clearance": ("0.2", "[0:0.05:1]"),
     "tactile_recess_extra_depth": ("0.2", "[0:0.05:1]"),
 }
+
+# How many braille-cell walks read the shared column-shift expression: the two
+# plate modules, plus ds_back_placements(), which walks the back text through
+# the same expression for BOTH plates so the back layout cannot drift from the
+# front, and ds_front_recesses(), the counter plate's 1:1 front-bowl walk. One
+# number for both builds since the 2026-08-21 re-flatten; the geometry body is
+# byte-identical (tests/test_makerworld_sync.py), so the count cannot diverge
+# again without that guard failing first.
+COLUMN_SHIFT_WALKS = 4
 
 BOTH_BUILDS = pytest.mark.parametrize(
     "scad_path", [CANONICAL, MAKERWORLD], ids=["canonical", "makerworld"]
@@ -67,9 +78,9 @@ def test_indicator_mode_dropdown(scad_path):
         '`indicator_mode = "Visual"; // [Visual, Tactile]`. Visual is the '
         "default so existing models keep rendering unchanged."
     )
-    assert "/* [Indicator Mode] */" in scad, (
+    assert "/* [Row Indicator Style] */" in scad, (
         "Expected the tactile parameters grouped under their own "
-        "`/* [Indicator Mode] */` Customizer section."
+        "`/* [Row Indicator Style] */` Customizer section (the web app's name)."
     )
 
 
@@ -133,6 +144,58 @@ def test_tactile_modules_present(scad_path):
         assert module in scad, f"Missing `{module}` in {scad_path.name}"
 
 
+@pytest.mark.parametrize(
+    "scad_path",
+    [
+        CANONICAL,
+        MAKERWORLD,
+        PROJECT_ROOT / "Braille_Cylinder_STL_Generator_EmbosserV2.scad",
+    ],
+    ids=["canonical", "makerworld", "embosser_v2"],
+)
+def test_arrow_layout_follows_the_paper_thickness_preset(scad_path):
+    """
+    2026-09-20: the "0.3mm" preset marks its cylinders with three fixed arrows
+    (mid-height and 15 mm either side) instead of one per row, so a blind user
+    can tell the presets apart by touch and a 0.3 mm cylinder will not nest with
+    a 0.4 mm one. "0.4mm" and "Custom" keep one arrow per row. The pitch is
+    pinned against the web generator in tests/test_tactile_arrow_layout.py.
+    """
+    scad = _read(scad_path)
+    assert 'tactile_three_spaced = (paper_thickness_preset == "0.3mm");' in scad, (
+        "the three-arrow layout must be keyed to the 0.3mm preset and nothing else"
+    )
+    assert "TACTILE_THREE_SPACED_PITCH = 15;" in scad
+    assert "function tactile_arrow_y_positions() =" in scad
+    assert "[TACTILE_THREE_SPACED_PITCH, 0, -TACTILE_THREE_SPACED_PITCH]" in scad
+
+    # Both plates draw their heights from the ONE function, so the recesses can
+    # never sit at different heights from the arrows they nest.
+    for module in (
+        "module tactile_rows_raised() {",
+        "module tactile_rows_recessed() {",
+    ):
+        body = scad[scad.index(module) :]
+        body = body[: body.index("\n}")]
+        assert "for (y_pos = tactile_arrow_y_positions())" in body, module
+
+    # The barrel-fit guard is an assert (a refusal, like the web generator's),
+    # declared after everything it reads - a forward reference would be undef
+    # and the guard would silently never fire.
+    assert "assert(!(tactile_on && tactile_three_spaced)" in scad
+    declared = scad.index('tactile_three_spaced = (paper_thickness_preset == "0.3mm");')
+    for name in (
+        "tactile_on",
+        "active_cylinder_height_mm",
+        "tactile_indicator_length",
+        "tactile_recess_clearance",
+    ):
+        m = re.search(rf"^{re.escape(name)}\s*=", scad, re.MULTILINE)
+        assert m and m.start() < declared, (
+            f"`{name}` must be declared before the arrow-layout guard"
+        )
+
+
 @BOTH_BUILDS
 def test_arrow_apex_points_at_the_cylinder_top(scad_path):
     """Axial asymmetry is the whole point: the user feels which end is up.
@@ -150,18 +213,136 @@ def test_arrow_apex_points_at_the_cylinder_top(scad_path):
 
 
 @BOTH_BUILDS
-def test_indicator_sits_at_the_mirror_invariant_angle(scad_path):
-    """180 deg is the fixed point of the counter plate's mirror/angle negation.
-
-    Placing both the arrow and its recess there is what makes them self-align
-    without any extra bookkeeping, so the literal angle is load-bearing.
+def test_indicator_sits_at_the_seam_gap_centre(scad_path):
+    """
+    The arrow sits at 180 deg on both plates - the seam-gap centre, the
+    mirror's fixed point - with equal space either side of it (a fixed lead-in
+    before the first cell was tried and reverted the same day, 2026-09-21,
+    web decision D-T6). The card, not the arrow, bounds a tactile row: a NOTE
+    and a badge at stack slot 8 when a row would run off CARD_LENGTH_MM,
+    measured from the seam-gap centre, never a stop.
     """
     scad = _read(scad_path)
-    assert "place_cylinder_marker(180, y_pos, radius + span / 2, span, 0)" in scad, (
-        "Expected the tactile prism placed at 180 deg (the seam-gap centre and "
-        "the fixed point of the counter plate's mirror([0,1,0]) construction) "
-        "with the child origin landing exactly on the shell surface."
+    assert "CARD_LENGTH_MM = 90;" in scad
+    assert "module tactile_surface_prism(y_pos, span) {" in scad
+    assert "place_cylinder_marker(180, y_pos, radius + span / 2, span, 0)" in scad
+    assert scad.count("tactile_surface_prism(y_pos, TACTILE_PRISM_SPAN)") == 2
+    assert "tactile_arrow_theta" not in scad, (
+        "an arrow is placed off the seam-gap centre"
     )
+    assert "lead_in" not in scad and "LEAD_IN" not in scad
+    assert (
+        "tactile_card_need_mm = seam_gap_mm / 2 + grid_width + seam_channel_footprint_mm;"
+        in scad
+    )
+    assert (
+        "tactile_card_too_long = tactile_on && (tactile_card_need_mm > CARD_LENGTH_MM);"
+        in scad
+    )
+    assert 'echo(str("NOTE: this row needs "' in scad
+    assert "8 * INVALID_TEXT_STACK_GAP" in scad
+    assert scad.count("card_fit_warning();") == 2, "both plates carry the badge"
+
+
+@BOTH_BUILDS
+def test_tactile_seam_channel_steps_round_the_raised_arrows(scad_path):
+    """
+    D-T6 / D-T8: in tactile mode the groove is at 180 on both plates, the full
+    height, and on the emboss plate it steps round each raised arrow on the
+    first-cell side - one cut, from the bare barrel, along the path the web
+    generator's _tactile_detour_path() computes - so the arrows stay whole.
+    The D-T7 recut through them is gone. The counter plate's recesses are
+    deeper than the groove and keep the straight cut. Tactile mode now has a
+    room rule, and its own omission sentence (S-C5, signed 2026-09-23).
+    """
+    scad = _read(scad_path)
+    assert "SEAM_CHANNEL_DETOUR_SLANT_DEG    = 45;" in scad
+    assert "SEAM_CHANNEL_DETOUR_ARC_STEP_DEG = 7.5;" in scad
+    assert "SEAM_CHANNEL_DETOUR_STEP_MM      = 1.0;" in scad
+    assert "SEAM_CHANNEL_CONE_FN = 32;" in scad
+    assert "seam_channel_fits = seam_channel_free_mm >= seam_channel_need_mm;" in scad
+    assert (
+        "seam_channel_free_mm = tactile_on ? seam_gap_mm / 2 - seam_channel_footprint_mm"
+        in scad
+    )
+    assert (
+        "seam_channel_need_mm = (tactile_on ? tactile_indicator_width / 2 : 0)" in scad
+    )
+    assert (
+        "seam_channel_s_mm = tactile_on ? 0 : (seam_channel_lo_mm + seam_channel_hi_mm) / 2;"
+        in scad
+    )
+    for name in ("arc", "one", "x_at", "sort", "envelope", "kept", "subdivide"):
+        assert f"function seam_detour_{name}(" in scad
+    assert "seam_channel_detour_path = (tactile_on && seam_channel_present)" in scad
+    assert "[180 - asin(p[1] / radius), p[0]]" in scad, (
+        "the first-cell side is above 180"
+    )
+    assert "module seam_channel_path_cut(path) {" in scad
+    assert "$fn = SEAM_CHANNEL_CONE_FN);" in scad
+    # One cut, in the shell, before anything is unioned on; only the emboss
+    # plate hands the shell a path.
+    assert "seam_channel_path_cut(channel_path);" in scad
+    emboss = scad.split("module cylinder_emboss_plate()")[1].split(
+        "module cylinder_counter_plate()"
+    )[0]
+    counter = scad.split("module cylinder_counter_plate()")[1]
+    assert emboss.count("channel_path = seam_channel_detour_path") == 1
+    assert "channel_path" not in counter
+    for gone in (
+        "seam_channel_arrow_recut",
+        "tactile_recut_span",
+        "seam_channel_recut_span",
+        "seam_channel_recut_lip_mm",
+        "SEAM_CHANNEL_ARROW_MARGIN_MM",
+        "SEAM_CHANNEL_RECUT_INSET_MM",
+    ):
+        assert gone not in scad, f"{gone} survived"
+    assert "stretches" not in scad and "leave no room" not in scad
+    assert (
+        'echo("NOTE: The seam channel was left out: there is not enough room for it beside '
+        "the alignment arrows. Reduce the number of braille cells, increase the cylinder "
+        'diameter, or narrow the indicator.");'
+    ) in scad
+    # GEAR_ARROW_WELD_MM is read by the path at top level, so it is declared
+    # beside gears_on, ahead of it (OpenSCAD evaluates top-level assignments in
+    # source order).
+    assert scad.index("GEAR_ARROW_WELD_MM = 0.005;") < scad.index(
+        "seam_channel_detour_path = "
+    )
+
+
+@BOTH_BUILDS
+def test_seam_channel_detour_constants_mirror_the_web_generator(scad_path):
+    """
+    app/geometry_spec.py owns the detour's SEAM_CHANNEL_DETOUR_* constants and
+    static/workers/csg-worker-manifold.js the sweep cones' segment count; this
+    file mirrors them. Skipped when the web repository is not checked out
+    beside this one.
+    """
+    web_root = PROJECT_ROOT.parent / "braille-cylinder-stl-generator"
+    web = web_root / "app" / "geometry_spec.py"
+    if not web.exists():
+        pytest.skip(f"the web generator is not checked out at {web}")
+    web_text = web.read_text(encoding="utf-8")
+    scad = _read(scad_path)
+    for name in (
+        "SEAM_CHANNEL_DETOUR_SLANT_DEG",
+        "SEAM_CHANNEL_DETOUR_ARC_STEP_DEG",
+        "SEAM_CHANNEL_DETOUR_STEP_MM",
+    ):
+        web_match = re.search(rf"^{name} = ([0-9.]+)", web_text, re.MULTILINE)
+        assert web_match, f"{name} not found in the web generator"
+        scad_match = re.search(rf"^{name}\s*= ([0-9.]+);", scad, re.MULTILINE)
+        assert scad_match, f"{name} not found in the .scad"
+        assert float(scad_match.group(1)) == float(web_match.group(1))
+    worker = (web_root / "static" / "workers" / "csg-worker-manifold.js").read_text(
+        encoding="utf-8"
+    )
+    cones = re.search(
+        r"^const SEAM_CHANNEL_CONE_SEGMENTS = (\d+);", worker, re.MULTILINE
+    )
+    assert cones and int(cones.group(1)) == 32 and "SEAM_CHANNEL_CONE_FN = 32;" in scad
 
 
 @BOTH_BUILDS
@@ -233,6 +414,95 @@ def test_constants_are_declared_before_the_values_that_use_them(scad_path):
 
 
 # ---------------------------------------------------------------------------
+# Tactile seam-recess wall guard. Canonical only, and it stays that way: the
+# guard lives BELOW the MakerWorld sync marker, so the byte-identical body check
+# in tests/test_makerworld_sync.py already carries it into the variant.
+# ---------------------------------------------------------------------------
+
+
+def test_seam_wall_guard_is_declared_with_the_measured_geometry():
+    """
+    The counter plate's arrow recess cuts inward toward the polygonal cutout,
+    and nothing else stops the wall between them going below the 1.2 mm FDM
+    printable minimum. The guard must use the AS-PRINTED radii measured in
+    Phase 08: the recess floor dips by the 64-gon face sagitta, and the cutout
+    parameter is treated as the INSCRIBED radius, so its vertices reach
+    r / cos(180 / points).
+    """
+    scad = _read(CANONICAL)
+    assert "TACTILE_SEAM_WALL_MIN = 1.2;" in scad, (
+        "The 1.2 mm printable minimum wall constant is missing."
+    )
+    assert re.search(
+        r"tactile_seam_wall_mm\s*=\s*"
+        r"\(radius - tactile_indicator_raise - tactile_recess_extra_depth\)\s*"
+        r"\*\s*cos\(180 / CYLINDER_SHELL_FN\)\s*"
+        r"-\s*\(active_polygon_cutout_radius_mm / cos\(180 / active_polygon_cutout_points\)\)",
+        scad,
+    ), (
+        "The wall must be the recess floor's FACE radius (sagitta included) "
+        "minus the cutout's VERTEX radius - the two as-printed extremes."
+    )
+    assert re.search(
+        r"tactile_seam_wall_too_thin\s*=\s*tactile_on\s*&&\s*"
+        r"\(active_polygon_cutout_radius_mm > 0\)\s*"
+        r"&&\s*\(tactile_seam_wall_mm < TACTILE_SEAM_WALL_MIN\)",
+        scad,
+    ), "The guard must be gated on tactile mode and an actual cutout."
+    decl = scad.index("CYLINDER_SHELL_FN = ")
+    use = scad.index("tactile_seam_wall_mm =")
+    assert decl < use, (
+        "tactile_seam_wall_mm must be declared after CYLINDER_SHELL_FN - "
+        "top-level assignments evaluate in source order, and an early "
+        "reference is undef, so the guard would silently never fire."
+    )
+
+
+def test_seam_wall_guard_warns_on_console_and_in_3d():
+    """Same pattern as tactile_gap_warning: an echoed WARNING for desktop
+    users, red 3D text for the MakerWorld preview, and both plates render it -
+    the pair prints from one set of settings.
+
+    Both strings were SIGNED OFF by Brennen 2026-08-20 as part of the eight-item
+    batch; reword only with his sign-off, updating this guard in the same edit.
+    """
+    scad = _read(CANONICAL)
+    start = scad.index("tactile_seam_wall_too_thin =")
+    assert 'echo(str("WARNING: only "' in scad[start : start + 1200], (
+        "The wall guard must echo a WARNING line quoting the wall thickness."
+    )
+    assert '"TACTILE WALL TOO THIN: "' in scad
+    assert "INVALID_TEXT_Z_OFFSET + 6 * INVALID_TEXT_STACK_GAP" in scad, (
+        "The wall warning should stack one step above DOTS TOO CLOSE, "
+        "reusing the shared INVALID_TEXT_* placement constants."
+    )
+    assert scad.count("tactile_seam_wall_warning();") == 2, (
+        "Both plate modules must call tactile_seam_wall_warning()."
+    )
+
+
+def test_seam_wall_is_clear_at_the_shipped_defaults():
+    """
+    The numeric canary, hardcoded like the other signed-off physical numbers:
+    radius 15.4 mm, raise 0.5, extra depth 0.2, cutout 13.0 inscribed with 12
+    points, 64-segment shell. Phase 08 measured this wall at 1.224 mm - just
+    above the 1.2 mm minimum (the pre-2026-08-18 raise of 0.8 mm left
+    0.924 mm, already under spec). If a slider or preset change eats the
+    margin, this fails as a decision to make, not silently.
+    """
+    wall = (15.4 - 0.5 - 0.2) * math.cos(math.radians(180 / 64)) - 13.0 / math.cos(
+        math.radians(180 / 12)
+    )
+    assert abs(wall - 1.224) < 0.0005, (
+        f"The documented 1.224 mm default wall now computes to {wall:.4f} mm."
+    )
+    assert wall >= 1.2, (
+        f"The shipped defaults leave {wall:.3f} mm of wall - under the 1.2 mm "
+        "printable minimum."
+    )
+
+
+# ---------------------------------------------------------------------------
 # Visual mode must be untouched
 # ---------------------------------------------------------------------------
 
@@ -255,13 +525,9 @@ def test_visual_marker_columns_are_gated_off_in_tactile_mode(scad_path):
 def test_column_shift_drops_the_marker_cells_in_tactile_mode(scad_path):
     """Text starts at column 0 in Tactile mode, and the grid stops widening."""
     scad = _read(scad_path)
-    assert (
-        scad.count(
-            "actual_col = tactile_on ? col :\n"
-        )
-        == 2
-    ), (
-        "Both plate modules must shift braille cells with "
+    expected = COLUMN_SHIFT_WALKS
+    assert scad.count("actual_col = tactile_on ? col :\n") == expected, (
+        f"All {expected} braille-cell walks in {scad_path.name} must shift cells with "
         "`actual_col = tactile_on ? col : ...` so Tactile text starts at "
         "column 0 while Visual keeps its +1/+2 marker offset."
     )
