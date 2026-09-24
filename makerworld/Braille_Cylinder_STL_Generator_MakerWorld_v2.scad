@@ -355,7 +355,7 @@ polygon_cutout_points = 12;
 seam_offset_degrees = 0.0;
 
 // The desktop generator ships assets/v2_gears_a.stl and assets/v2_gears_b.stl
-// and offers this as a visible dropdown under [Integrated Gears]. This
+// and offers this as a visible dropdown under [Gears]. This
 // single-file build has no assets folder, so switching it on would render a
 // plate with NO gears and only a console warning to say why. It is declared -
 // because tests/test_makerworld_sync.py requires both builds to carry the same
