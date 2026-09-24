@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A comment in the MakerWorld Version 2 upload's hidden gear note still named
+  the retired `[Integrated Gears]` tab; it now says `[Gears]`. Comment only -
+  no geometry, dial or default changed.
+
 ## [2.9.1] - 2026-09-23
 
 Documentation only. **No `.scad` file changed**, so every model renders exactly
