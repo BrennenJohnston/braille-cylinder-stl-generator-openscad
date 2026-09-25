@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.10.0] - 2026-09-24
+
+Parity with the web generator's 2026-09-24 programme. **Only the Embosser
+Version 2 file and its MakerWorld copy change**; the Version 1 files render
+exactly as in 2.9.1.
+
+### Changed
+
+- **The fused Version 2 roller prints support-free, bottom gear down.** With
+  `integrated_gears` On, the barrel's bottom edge is chamfered 0.65 mm x 45
+  degrees (the gear face the barrel stands on reaches only r 14.61, so the
+  15.4 mm barrel overhung it by 0.79 mm all round and the slicer supported
+  that ring; 0.65 leaves 0.14 mm, inside one extrusion width, and spends 0.65
+  of the 1 mm card shelf at that end); a 2 mm vent runs the whole axis, so the
+  bottom gear's socket - a snug fit on the embosser's peg - breathes out
+  through the top gear's open mouth instead of holding a vacuum; and the
+  bottom socket's flat ceiling is replaced by a 45 degree cone up to that
+  vent, so the slicer lays nothing over air there and adds no support inside
+  the socket. The cuts come last, after the gears are unioned. Every number
+  mirrors `app/geometry/version2.py` in the web generator
+  (`V2_FUSED_BARREL_CHAMFER`, `V2_VENT_R`, the measured `V2_GEAR_SOCKET_A/B`
+  table, the cone's growth and overlap; `AXIS_CUT_FN` 48 is tessellation case
+  7) and `tests/test_embosser_v2_gears_scad.py` diffs them, probes the vent,
+  the chamfer and the cone on both plates, and still proves one body. The
+  `[Gears]` description says which end goes on the build plate. Gears Off is
+  untouched: the recorded pre-gears signature still matches.
+- **The Version 2 file defaults to the tactile seam arrow** (`indicator_mode =
+  "Tactile"`), as the web app does for Version 2 since 2026-09-24 - in the
+  canonical file and its MakerWorld copy alike. The Version 1 file and its
+  MakerWorld copy keep `Visual`. Two tests that assert visual-mode facts of the
+  Version 2 file (its keyed plates as one watertight body; the fused roller's
+  groove at the visual angles) now pin `indicator_mode = "Visual"` rather than
+  re-recording anything, and a new guard pins the four files' defaults. Known
+  and unchanged: a tactile emboss plate's chained raised arrows touch apex to
+  base exactly (one body, three non-manifold edges on the arrows' own outline),
+  the contact the web generator grows by 5 um in gear mode only.
+
 ### Fixed
 
 - A comment in the MakerWorld Version 2 upload's hidden gear note still named

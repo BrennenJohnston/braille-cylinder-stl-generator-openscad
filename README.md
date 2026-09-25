@@ -706,5 +706,5 @@ For general braille embossing questions, see the [web app](https://braille-cylin
 
 ---
 
-**Version**: 2.9.1  
-**Last Updated**: 2026-09-23
+**Version**: 2.10.0  
+**Last Updated**: 2026-09-24
