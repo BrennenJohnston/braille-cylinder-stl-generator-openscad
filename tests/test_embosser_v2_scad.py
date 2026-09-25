@@ -234,10 +234,16 @@ def test_version2_plate_renders_as_one_body(
     The emboss plate manages one body here - unlike the web export - because
     DOT_BASE_EMBED sinks each dot's base below the shell facet, which is the
     fix this repo already carries for the dome tangency.
+
+    Pinned to the Visual style since 2026-09-24, when the file's default became
+    Tactile: a tactile emboss plate's chained raised arrows touch apex to base
+    exactly (measured: one body, 3 non-manifold edges at z 17..37, r 15.40..15.90
+    - the arrows' own outline), the tangency the web generator grows by 5 um in
+    gear mode only. That is a tactile-mode property, not a keyed-cutout one.
     """
     name = "v2_" + plate.split()[0].lower()
     stl_path, output, _ = _render(
-        openscad_binary, tmp_path, name, {"plate_type": plate}
+        openscad_binary, tmp_path, name, {"plate_type": plate, "indicator_mode": "Visual"}
     )
     mesh = _load(trimesh_module, stl_path, output)
 
@@ -780,3 +786,25 @@ def test_the_scad_numbers_still_match_the_web_generator(source_text):
             float(entry.group(1)),
             float(entry.group(2)),
         ), f"{scad_name} has drifted from {web_key}"
+
+
+def test_the_version2_files_default_to_the_tactile_seam_arrow():
+    """
+    Since 2026-09-24 the web app defaults Version 2 to the tactile seam arrow
+    (its decision D-4), and the two Version 2 files follow; the two Version 1
+    files keep Visual, so existing Version 1 models render unchanged.
+    """
+    tactile = 'indicator_mode = "Tactile"; // [Visual, Tactile]'
+    visual = 'indicator_mode = "Visual"; // [Visual, Tactile]'
+    for path in (
+        V2_FILE,
+        PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad",
+    ):
+        source = path.read_text(encoding="utf-8")
+        assert tactile in source and visual not in source, path.name
+    for path in (
+        PROJECT_ROOT / "Braille_Cylinder_STL_Generator.scad",
+        PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad",
+    ):
+        source = path.read_text(encoding="utf-8")
+        assert visual in source and tactile not in source, path.name

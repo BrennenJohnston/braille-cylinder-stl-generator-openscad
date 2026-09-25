@@ -23,7 +23,10 @@ assets:
 
 - everything from the `// BACKWARD COMPATIBILITY` marker to EOF (the geometry
   body) is **byte-identical** to the canonical file;
-- every parameter default and slider range above the marker is the same;
+- every parameter default and slider range above the marker is the same —
+  including `indicator_mode = "Tactile"`, the Version 2 default since v2.10.0
+  (the web app defaults Version 2 to the tactile seam arrow); the Version 1
+  upload keeps `Visual`;
 - the **two** presentation differences, both above the marker: a MakerWorld
   header block, and `integrated_gears` declared in the first `[Hidden]` tab
   (with the reason beside it) instead of its own visible tab, so the Customizer
@@ -117,7 +120,8 @@ test run rather than by counting lines.)
    - Both cylinders render side by side by default. For one plate, set
      `render_both_plates` to `Off` and choose `plate_type`: *Embossing Plate*
      or *Counter Plate*.
-   - Choose `indicator_mode`: `Visual` (default) or `Tactile` — see below.
+   - Choose `indicator_mode`: `Visual` (the Version 1 default) or `Tactile`
+     (the Version 2 upload's default) — see below.
    - Choose `paper_thickness_preset`: `0.4mm`, `0.3mm`, or `Custom`.
    - `dot_shape` is already set to `Rounded`; switch to `Cone` if preferred.
 5. Generate / render and download the STL.

@@ -114,6 +114,10 @@ its canonical file, and every parameter default above it equal, by
 diameter, height, and the polygonal cutout are identical either way — only the
 surface features change.
 
+The Version 1 file defaults to Visual; the Version 2 file
+(`Braille_Cylinder_STL_Generator_EmbosserV2.scad`) defaults to Tactile since
+v2.10.0, as the web app does for Version 2.
+
 **Visual (default)** — marker cells at the start of every row:
 - The triangle alignment indicator is **always generated** — it is critical to
   the mechanical device the cylinder mounts into and has no user-facing toggle

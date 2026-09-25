@@ -247,8 +247,8 @@ render_both_plates = "On"; // [Off, On]
 pair_spacing_mm = 10; // [2:1:50]
 
 /* [Row Indicator Style] */
-// How each row is marked for alignment. Visual = today's recessed triangle (plus the optional letter square) in marker cells at the start of every row. Tactile = a raised arrow on the embossing plate and a matching recess on the counter plate, centred in the seam gap and pointing at the cylinder top, so a blind user can find the alignment point and tell which end is up by touch. Tactile removes the marker cells (freeing them for text) and ignores the Indicator Letters toggle.
-indicator_mode = "Visual"; // [Visual, Tactile]
+// How each row is marked for alignment. Visual = today's recessed triangle (plus the optional letter square) in marker cells at the start of every row. Tactile = a raised arrow on the embossing plate and a matching recess on the counter plate, centred in the seam gap and pointing at the cylinder top, so a blind user can find the alignment point and tell which end is up by touch. Tactile removes the marker cells (freeing them for text) and ignores the Indicator Letters toggle. Tactile is this Version 2 file's default, as it is the web app's for Version 2; the Version 1 file defaults to Visual.
+indicator_mode = "Tactile"; // [Visual, Tactile]
 // Tactile only: indicator width measured around the cylinder (mm)
 tactile_indicator_width = 4.0; // [2:0.1:10]
 // Tactile only: indicator length measured along the cylinder axis (mm). The default is long enough for a fingertip to read the direction of the point in one pass; at the 10 mm default line_spacing it also means each row's arrow meets the base of the one above.

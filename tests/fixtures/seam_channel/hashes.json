@@ -1,5 +1,5 @@
 {
-  "note": "Pre-seam-channel renders of the four default plates (O0 of the OpenSCAD parity plan, 2026-09-21), OpenSCAD 2026.01.03 Nightly, binary STL, rendered with the exact command tests/test_seam_channel_scad.py uses (flags + defines below). The STLs are NOT committed (1-8 MB each, *.stl is LFS here). The CONTRACT is the geometry signature - triangle count, unique vertex count, sha256 of the unique vertices rounded to 1e-5 mm, volume and area - which is invariant under the diagonal flips OpenSCAD makes on a few coplanar quads of the Version 2 countersink slivers when the command line changes (same vertices, different bytes). sha256/byte_size of the whole file are recorded for information only. Every render was made twice and matched itself.",
+  "note": "Pre-seam-channel renders of the four default plates (O0 of the OpenSCAD parity plan, 2026-09-21), OpenSCAD 2026.01.03 Nightly, binary STL, rendered with the exact command tests/test_seam_channel_scad.py uses (flags + defines below). The STLs are NOT committed (1-8 MB each, *.stl is LFS here). The CONTRACT is the geometry signature - triangle count, unique vertex count, sha256 of the unique vertices rounded to 1e-5 mm, volume and area - which is invariant under the diagonal flips OpenSCAD makes on a few coplanar quads of the Version 2 countersink slivers when the command line changes (same vertices, different bytes). sha256/byte_size of the whole file are recorded for information only. Every render was made twice and matched itself. Since 2026-09-24 the Version 2 file defaults to Tactile (the web app's Version 2 default), so its two records name indicator_mode Visual explicitly - the style every record was made in; their bytes are unchanged.",
   "openscad_version": "2026.01.03",
   "renders": {
     "v1_emboss": {
@@ -48,7 +48,8 @@
       "file": "Braille_Cylinder_STL_Generator_EmbosserV2.scad",
       "defines": {
         "plate_type": "Embossing Plate",
-        "seam_channel": "Off"
+        "seam_channel": "Off",
+        "indicator_mode": "Visual"
       },
       "flags": [
         "--hardwarnings",
@@ -69,7 +70,8 @@
       "file": "Braille_Cylinder_STL_Generator_EmbosserV2.scad",
       "defines": {
         "plate_type": "Counter Plate",
-        "seam_channel": "Off"
+        "seam_channel": "Off",
+        "indicator_mode": "Visual"
       },
       "flags": [
         "--hardwarnings",

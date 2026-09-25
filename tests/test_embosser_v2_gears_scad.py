@@ -294,8 +294,13 @@ def test_the_fused_roller_is_vented_chamfered_and_coned(
 def test_the_groove_survives_the_fused_roller(
     trimesh_module, openscad_binary, tmp_path, plate
 ):
-    """The channel is cut before the gears join, at the same physical angle."""
-    stl_path, output, _ = _fused(openscad_binary, tmp_path, plate)
+    """
+    The channel is cut before the gears join, at the same physical angle.
+    Pinned to the Visual style: GROOVE_DEG are the visual-mode angles, and
+    since 2026-09-24 the file defaults to Tactile (groove at 180 on both plates,
+    proved by test_tactile_seam_column_scad.py).
+    """
+    stl_path, output, _ = _fused(openscad_binary, tmp_path, plate, indicator_mode="Visual")
     _load(trimesh_module, stl_path, output)
     assert "NOTE: The seam channel" not in output
     angles = _groove_cap_angles_at(trimesh_module, stl_path, BARREL_H)
@@ -349,8 +354,16 @@ def test_gears_off_is_the_pre_gears_geometry(openscad_binary, tmp_path, plate):
     """
     recorded = json.loads(OFF_SIGNATURE.read_text(encoding="utf-8"))[plate]
     stl_path = tmp_path / "plate.stl"
+    # The signature was recorded while Visual was the file's default; since
+    # 2026-09-24 the Version 2 file defaults to Tactile (as the web app does),
+    # so the style is pinned here - the contract is about the gears, not the
+    # row markers.
     output = _render_binary(
-        openscad_binary, V2_FILE, stl_path, {"plate_type": plate}, flags=BASELINE_FLAGS
+        openscad_binary,
+        V2_FILE,
+        stl_path,
+        {"plate_type": plate, "indicator_mode": "Visual"},
+        flags=BASELINE_FLAGS,
     )
     assert "ERROR:" not in output and "WARNING:" not in output, output[:800]
     assert stl_path.exists()
