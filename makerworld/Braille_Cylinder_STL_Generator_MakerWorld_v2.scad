@@ -1538,6 +1538,10 @@ function get_dot_pattern(char) =
 //      groove, and a multiple of 4 so each cone has a vertex straight across
 //      the barrel and a straight run keeps the exact V of the straight cut.
 //
+//   7. AXIS_CUT_FN = 48 — the fused Version 2 roller's axis vent and its
+//      bottom-socket cone (2026-09-24). Fixed, like case 6, to the web
+//      worker's AXIS_CUT_SEGMENTS so both generators cut the same hole.
+//
 // If you add a new curved primitive, pick the case that matches and pass
 // its constant explicitly. Do not rely on the global $fn for any visible
 // curved surface or you will silently desync from the web preview.
@@ -1573,6 +1577,9 @@ CYLINDER_SHELL_FN = 64;
 
 // The tactile seam channel's sweep cones ($fn TESSELLATION POLICY case 6).
 SEAM_CHANNEL_CONE_FN = 32;
+
+// The fused roller's axis vent and socket cone ($fn TESSELLATION POLICY case 7).
+AXIS_CUT_FN = 48;
 
 // -----------------------------------------------------------------------------
 // RAISED-DOT BASE EMBED
@@ -1960,6 +1967,11 @@ module cylinder_shell_v2(emboss, channel_theta_deg = undef, channel_path = undef
             seam_channel_cut(channel_theta_deg);
         }
 
+        // The fused roller's bottom-edge chamfer, on the bare barrel like the
+        // channel (2026-09-24). Brace-less on purpose: the housing note below
+        // is the file's first `if (gears_on) {` block and a test reads it so.
+        if (gears_on) fused_barrel_chamfer();
+
         // The keyed hole, its mouths and the socket exist only for separately
         // printed gears; the fused roller keeps the barrel solid.
         if (!gears_on) {
@@ -2064,6 +2076,57 @@ assert(v2_notch_fill_reach(true) <= V2_NOTCH_FILL_MAX_RADIUS
        && v2_notch_fill_reach(false) <= V2_NOTCH_FILL_MAX_RADIUS,
        "a notch fill reaches past V2_NOTCH_FILL_MAX_RADIUS");
 
+// -----------------------------------------------------------------------------
+// The v9 update to the fused roller (2026-09-24; the web generator's decisions
+// D-1, D-2 and D-6). The roller prints standing on its BOTTOM gear, and three
+// things about that end were found by printing:
+//
+//   * The barrel's bottom face overhung the gear face. Every gear body's faces
+//     are chamfered 1.5 mm at 45 degrees from the 16.11 mm tips, so the face
+//     the barrel stands on reaches only r 14.61 while the barrel is r 15.4 - a
+//     0.79 mm ledge all round that the slicer supported. A 0.65 mm x 45 degree
+//     chamfer on the barrel's bottom edge leaves 0.14 mm, inside one extrusion
+//     width, and spends 0.65 of the 1 mm card shelf at that end.
+//   * The housing-peg socket in the bottom gear sealed a vacuum: the peg is a
+//     snug fit in the bore and the socket's ceiling was blind. The gear assets
+//     already carry a 2 mm hole from each socket's ceiling into their peg; the
+//     solid barrel sealed it. One 2 mm cut along the whole axis joins them, so
+//     the bottom socket breathes out through the top gear's open mouth. It is
+//     cut AFTER the gears are unioned: the assets' own holes sit 0.05 mm off
+//     the axis, and cutting the barrel first would let a peg refill a crescent.
+//   * The socket's flat ceiling was the overhang the auto-supports fought. The
+//     socket's own 45 degree taper now continues from its rim to the vent, a
+//     cone the slicer lays nothing over air for and puts no support under.
+//     Nothing to remove from the hole, so there is no support switch.
+//
+// Every number mirrors app/geometry/version2.py and gears.py in the web
+// generator (tests/test_embosser_v2_gears_scad.py diffs them); the socket
+// table is MEASURED off the v8 gear assets, like V2_ANTIROT_*.
+V2_FUSED_BARREL_CHAMFER = 0.65;   // the chamfer's size, 45 degrees
+V2_FUSED_CHAMFER_LIP = 1.0;       // the cutter overshoots outward and downward by this
+V2_VENT_R = 1.0;                  // the 2 mm vent
+V2_VENT_OVERSHOOT = 1.0;          // past both gear mouths
+V2_GEAR_BODY_T = 10.0;            // each gear body's thickness (the bed plane is h/2 + this below the barrel's centre)
+V2_CARD_SHELF = 1.0;              // the 54 mm barrel is the 52 mm card plus this at each end; the chamfer may not spend more
+V2_GEAR_ROOT_RADIUS = 13.6613;    // the gears' root circle: the chamfer may never stand the barrel's foot inside it
+// [bore radius, rim radius where the 45 degree taper met the old flat ceiling,
+//  ceiling depth below the barrel face, mouth chamfer at the bed]
+V2_GEAR_SOCKET_A = [7.0, 5.3, 1.5, 1.0];
+V2_GEAR_SOCKET_B = [5.0, 3.3, 1.5, 1.0];
+V2_SOCKET_CONE_GROWTH = 0.01;     // the cone is grown radially so it overlaps the socket's taper instead of sharing its surface
+V2_SOCKET_CONE_OVERLAP = 0.5;     // the cone starts this far below the old ceiling, inside the socket's air
+
+assert(V2_FUSED_BARREL_CHAMFER > 0 && V2_FUSED_BARREL_CHAMFER <= V2_CARD_SHELF,
+       "the barrel chamfer must lie within the card shelf");
+assert(V2_GEAR_BARREL_DIAMETER_MM / 2 - V2_FUSED_BARREL_CHAMFER > V2_GEAR_ROOT_RADIUS,
+       "the barrel chamfer would stand the barrel's foot inside the gear root circle");
+assert(V2_VENT_R > 0 && V2_VENT_R < GEAR_WELD_RING_R_IN, "the vent would reach the weld rings");
+assert(V2_GEAR_SOCKET_A[1] < V2_GEAR_SOCKET_A[0] && V2_GEAR_SOCKET_B[1] < V2_GEAR_SOCKET_B[0],
+       "a socket rim must be inside its bore");
+assert(V2_GEAR_SOCKET_A[1] + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH < GEAR_WELD_RING_R_IN
+       && V2_GEAR_SOCKET_B[1] + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH < GEAR_WELD_RING_R_IN,
+       "a socket cone would reach the weld rings");
+
 // The size gate, the web generator's own sentence for the Version 2 gears: a
 // HARD STOP covering both dimensions, judged by output text like the Version 1
 // file's. OpenSCAD cannot test whether an imported file exists, so this is the
@@ -2095,6 +2158,40 @@ module notch_fill(emboss) {
     translate([0, 0, half_h - V2_NOTCH_FILL_OVERLAP])
         linear_extrude(height = V2_GEAR_NOTCH_DEPTH + 2 * V2_NOTCH_FILL_OVERLAP)
             notch_fill_2d(emboss);
+}
+
+// The barrel's bottom-edge chamfer, cut from the bare barrel in
+// cylinder_shell_v2 right after the seam channel (fused mode only): a
+// revolved right triangle whose 45 degree edge passes through r = R - c at the
+// bottom face, with the lip overshooting outward and downward so no face of
+// it is coplanar with the barrel or with the gear unioned later.
+module fused_barrel_chamfer() {
+    r = active_cylinder_diameter_mm / 2;
+    half_h = active_cylinder_height_mm / 2;
+    c = V2_FUSED_BARREL_CHAMFER;
+    lip = V2_FUSED_CHAMFER_LIP;
+    rotate_extrude($fn = CYLINDER_SHELL_FN)
+        polygon([[r - c, -half_h], [r + lip, -half_h - lip], [r + lip, -half_h + c + lip]]);
+}
+
+// The two axis cuts, subtracted LAST in each plate module - after every
+// union, as the web worker does - in the plate modules' LOCAL frame (barrel
+// -h/2..+h/2): the vent the whole roller plus the overshoot out of each mouth,
+// and this plate's bottom-socket cone from V2_SOCKET_CONE_OVERLAP below the
+// old ceiling, at the rim grown by the overlap and the growth, up at 45
+// degrees to the vent radius. Its apex lands rim - vent above the old ceiling:
+// 4.3 mm on Cylinder A, 2.3 on B, inside the buried peg.
+module fused_axis_cuts(emboss) {
+    half_h = active_cylinder_height_mm / 2;
+    socket = emboss ? V2_GEAR_SOCKET_A : V2_GEAR_SOCKET_B;
+    rim = socket[1];
+    ceiling = -half_h - socket[2];
+    cylinder(h = 2 * (half_h + V2_GEAR_BODY_T + V2_VENT_OVERSHOOT), r = V2_VENT_R,
+             center = true, $fn = AXIS_CUT_FN);
+    translate([0, 0, ceiling - V2_SOCKET_CONE_OVERLAP])
+        cylinder(h = V2_SOCKET_CONE_OVERLAP + (rim - V2_VENT_R),
+                 r1 = rim + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH,
+                 r2 = V2_VENT_R + V2_SOCKET_CONE_GROWTH, $fn = AXIS_CUT_FN);
 }
 
 // Both gears, their two weld rings and the top notch fill, in the plate
@@ -2879,6 +2976,13 @@ module cylinder_emboss_plate() {
             if (ds_on) {
                 ds_back_recesses();
             }
+
+            // The fused roller's axis vent and bottom-socket cone, cut last of
+            // all (2026-09-24): the vent must pass through the buried pegs,
+            // which only exist once the gears are unioned in.
+            if (gears_on) {
+                fused_axis_cuts(true);
+            }
         }
     }
 }
@@ -2988,6 +3092,12 @@ module cylinder_counter_plate() {
             // the same reason ds_back_recesses() is on the emboss plate.
             if (ds_on) {
                 ds_front_recesses();
+            }
+
+            // The fused roller's axis vent and bottom-socket cone, cut last of
+            // all (2026-09-24), as on the Embossing Plate.
+            if (gears_on) {
+                fused_axis_cuts(false);
             }
         }
 
