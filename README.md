@@ -492,13 +492,18 @@ None of the earlier star, hexagon or 15 x 15 mm square pegs will enter an R14
 hole, so a cylinder printed from this file pairs only with gears cut to the R14
 spec.
 
-One dial is new: **Key clearance (`key_clearance_mm`)**, 0.110 mm per side by
-default and adjustable from 0 to 0.5 mm in steps of 0.005. It grows every hole
-outward, and ONLY the holes - it has not touched the nub since 2026-08-29,
-because gear A1's notch is already cut and tightening the holes would have grown
-the nub into it. Raise it if the pegs bind; raising it also eats into the margin
-that stops a peg entering the wrong hole (0.890 mm at the default, 0.50 mm at
-the maximum).
+Four dials are new, one per gear: **`key_clearance_a1_mm`, `_a2_mm`, `_b1_mm`
+and `_b2_mm`** (the shared `key_clearance_mm` they replaced in 2.11.0 is gone),
+each 0.095 mm per side by default and adjustable from 0 to 0.5 mm in steps of
+0.005. Each grows ITS gear's hole outward, and ONLY that hole, so one peg's fit
+can be tuned without moving the other three - none of them has touched the nub
+since 2026-08-29, because gear A1's notch is already cut and tightening the
+holes would have grown the nub into it. Raise a value if that peg binds, lower
+it if the peg is loose; raising one also eats into the margin that stops a peg
+entering the wrong hole (0.905 mm at the default, 0.50 mm at the maximum). The
+0.095 default is what a printed round confirmed for gears A2 and B2 with the
+cylinders on Bambu Studio's 0.12 mm Fine Detail preset and the gears on 0.2 mm
+Strength; the earlier 0.110 printed a touch loose there.
 
 **Both cylinder ends key against their gear.** Each plate stands a 3 mm
 anti-rotation nub proud of its TOP face and sinks a matching socket into its

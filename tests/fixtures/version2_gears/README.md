@@ -24,6 +24,16 @@ a changed command line causes; see `tests/fixtures/seam_channel/README.md`.
 openscad.com --hardwarnings --check-parameter-ranges=true --export-format binstl -o <out> -D plate_type="<plate>" Braille_Cylinder_STL_Generator_EmbosserV2.scad
 ```
 
+## What the test pins today
+
+The file's defaults have moved twice since the signature was taken, in ways that
+are not about the gears: `indicator_mode` defaults to Tactile since 2.10.0 and the
+single `key_clearance_mm` (0.110 when recorded) became four per-gear dials at
+0.095 in 2.11.0. The test therefore renders with `-D indicator_mode="Visual"` and
+the four `key_clearance_{a1,a2,b1,b2}_mm` at 0.11, as the fixture's `defines`
+record - reproducing the signature at the old value on four dials is also the
+proof that the per-key refactor moved nothing.
+
 ## Re-recording
 
 Only when the gears-Off Version 2 geometry is meant to change (and say why in

@@ -49,7 +49,11 @@
       "defines": {
         "plate_type": "Embossing Plate",
         "seam_channel": "Off",
-        "indicator_mode": "Visual"
+        "indicator_mode": "Visual",
+        "key_clearance_a1_mm": 0.11,
+        "key_clearance_a2_mm": 0.11,
+        "key_clearance_b1_mm": 0.11,
+        "key_clearance_b2_mm": 0.11
       },
       "flags": [
         "--hardwarnings",
@@ -71,7 +75,11 @@
       "defines": {
         "plate_type": "Counter Plate",
         "seam_channel": "Off",
-        "indicator_mode": "Visual"
+        "indicator_mode": "Visual",
+        "key_clearance_a1_mm": 0.11,
+        "key_clearance_a2_mm": 0.11,
+        "key_clearance_b1_mm": 0.11,
+        "key_clearance_b2_mm": 0.11
       },
       "flags": [
         "--hardwarnings",

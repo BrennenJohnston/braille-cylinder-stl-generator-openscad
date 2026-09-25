@@ -1,5 +1,5 @@
 {
-  "_note": "Geometry signature of the two default Version 2 plates (integrated_gears Off, seam_channel On) rendered from Braille_Cylinder_STL_Generator_EmbosserV2.scad as committed at 0f1dd48 on 2026-09-21, BEFORE the fixed-gear switch existed (OpenSCAD parity plan phase O5). Recorded with the exact command in README.md; tests/test_embosser_v2_gears_scad.py::test_gears_off_is_the_pre_gears_geometry must reproduce it.",
+  "_note": "Geometry signature of the two default Version 2 plates (integrated_gears Off, seam_channel On) rendered from Braille_Cylinder_STL_Generator_EmbosserV2.scad as committed at 0f1dd48 on 2026-09-21, BEFORE the fixed-gear switch existed (OpenSCAD parity plan phase O5). Recorded with the exact command in README.md; tests/test_embosser_v2_gears_scad.py::test_gears_off_is_the_pre_gears_geometry must reproduce it. The defines below are what reproduces it TODAY: the file defaulted to Visual and to one shared key_clearance_mm of 0.110 when the signature was taken, and has defaulted to Tactile since 2.10.0 and to four per-gear dials at 0.095 since 2.11.0, so those are pinned at the recorded values.",
   "recorded": "2026-09-21",
   "source_commit": "0f1dd48",
   "openscad": "2026.01.03 (Nightly, Manifold backend)",
@@ -11,7 +11,12 @@
   ],
   "Embossing Plate": {
     "defines": {
-      "plate_type": "Embossing Plate"
+      "plate_type": "Embossing Plate",
+      "indicator_mode": "Visual",
+      "key_clearance_a1_mm": 0.11,
+      "key_clearance_a2_mm": 0.11,
+      "key_clearance_b1_mm": 0.11,
+      "key_clearance_b2_mm": 0.11
     },
     "signature": {
       "tri_count": 26430,
@@ -23,7 +28,12 @@
   },
   "Counter Plate": {
     "defines": {
-      "plate_type": "Counter Plate"
+      "plate_type": "Counter Plate",
+      "indicator_mode": "Visual",
+      "key_clearance_a1_mm": 0.11,
+      "key_clearance_a2_mm": 0.11,
+      "key_clearance_b1_mm": 0.11,
+      "key_clearance_b2_mm": 0.11
     },
     "signature": {
       "tri_count": 163664,

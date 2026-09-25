@@ -354,15 +354,25 @@ def test_gears_off_is_the_pre_gears_geometry(openscad_binary, tmp_path, plate):
     """
     recorded = json.loads(OFF_SIGNATURE.read_text(encoding="utf-8"))[plate]
     stl_path = tmp_path / "plate.stl"
-    # The signature was recorded while Visual was the file's default; since
-    # 2026-09-24 the Version 2 file defaults to Tactile (as the web app does),
-    # so the style is pinned here - the contract is about the gears, not the
-    # row markers.
+    # The signature was recorded while Visual was the file's default and the
+    # one shared key clearance dial sat at 0.110; since 2026-09-24 the Version
+    # 2 file defaults to Tactile (as the web app does) and since 2.11.0 each
+    # gear has its own dial at 0.095, so the style and all four clearances are
+    # pinned here - the contract is about the gears, not the row markers or
+    # the key fit. Reproducing the signature at 0.110 on four dials also
+    # proves the per-key refactor moved nothing at the old number.
     output = _render_binary(
         openscad_binary,
         V2_FILE,
         stl_path,
-        {"plate_type": plate, "indicator_mode": "Visual"},
+        {
+            "plate_type": plate,
+            "indicator_mode": "Visual",
+            "key_clearance_a1_mm": 0.11,
+            "key_clearance_a2_mm": 0.11,
+            "key_clearance_b1_mm": 0.11,
+            "key_clearance_b2_mm": 0.11,
+        },
         flags=BASELINE_FLAGS,
     )
     assert "ERROR:" not in output and "WARNING:" not in output, output[:800]

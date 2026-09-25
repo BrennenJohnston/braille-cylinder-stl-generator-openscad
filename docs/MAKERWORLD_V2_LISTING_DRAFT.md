@@ -80,9 +80,11 @@ squares — will enter an R14 hole.
    `Back_Line_1`–`Back_Line_4`. Each cylinder then carries its own face's
    raised dots plus one recessed seat for every dot the other cylinder
    raises.
-6. If a printed gear peg binds in its hole, raise `key_clearance_mm`
-   (default 0.110 mm, steps of 0.005) and reprint the cylinder — the nub
-   and sockets deliberately do not move with it.
+6. If a printed gear peg binds in its hole, raise that gear's dial —
+   `key_clearance_a1_mm`, `_a2_mm`, `_b1_mm` or `_b2_mm` (default 0.095 mm,
+   steps of 0.005) — and reprint the cylinder; lower it if the peg is loose.
+   The other three holes, the nub and the sockets deliberately do not move
+   with it.
 
 **Print notes — DRAFT, CONFIRM BEFORE PUBLISHING:**
 

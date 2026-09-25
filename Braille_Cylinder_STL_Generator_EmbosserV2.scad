@@ -26,7 +26,9 @@
 //     taller than the 52 mm card at EACH end, so a slightly mis-rolled card
 //     rides the shelf instead of ruffling over the cylinder edges. Version 1
 //     stays 52: the height is what tells the two cylinders apart;
-//   • one new dial, key_clearance_mm, under [Version 2 Keyed Cutouts];
+//   • four dials under [Version 2 Keyed Cutouts], one key clearance per gear
+//     (key_clearance_a1_mm, _a2_mm, _b1_mm, _b2_mm), so one peg's fit can be
+//     tuned without moving the other three;
 //   • an Integrated Gears switch that fuses the VERSION 2 drive gears to the
 //     barrel (assets/v2_gears_a.stl and _b.stl, desktop build only): the
 //     barrel then prints solid with no keyed holes, nub or socket, and each
@@ -324,17 +326,30 @@ render_quality = "Medium"; // [Low, Medium, High]
 cone_segments = 16; // [8:1:64] Number of segments for cone shapes
 
 /* [Version 2 Keyed Cutouts] */
-// Extra room around each gear peg, per side (mm). 0.110 mm suits most printers;
-// raise it if pegs bind. It grows every keyed hole outward - the key nub does
-// not move with it - and raising it eats into the margin that stops a peg
-// entering the wrong hole: 0.890 mm at 0.110, 0.50 mm at the 0.5 maximum.
-key_clearance_mm = 0.110; // [0:0.005:0.5]
-// The two printed rounds bracketed the default: too loose at 0.15, too tight
-// at 0.075. The nub is pinned at V2_NUB_CLEARANCE because gear A1's notch is
-// already cut - re-coupling it to this dial would grow the nub into a notch
-// that cannot be recut. The step is 0.005: a default that is not a whole
-// number of steps above the minimum makes the Customizer refuse the input,
-// and 0.110 / 0.005 = 22.
+// One dial per gear, so one peg's fit can be tuned without moving the other
+// three. Each dial is the extra room around ITS gear's peg, per side (mm): it
+// grows that keyed hole outward - the key nub does not move with any dial -
+// and raising it eats into the margin that stops a peg entering the wrong
+// hole: 0.905 mm at 0.095, 0.50 mm at the 0.5 maximum. 0.095 mm suits most
+// printers; raise a value if that peg binds, lower it if the peg is loose.
+
+// Gear A1, the top of Cylinder A: extra room around its peg, per side (mm).
+key_clearance_a1_mm = 0.095; // [0:0.005:0.5]
+// Gear A2, the bottom of Cylinder A: extra room around its peg, per side (mm).
+key_clearance_a2_mm = 0.095; // [0:0.005:0.5]
+// Gear B1, the top of Cylinder B: extra room around its peg, per side (mm).
+key_clearance_b1_mm = 0.095; // [0:0.005:0.5]
+// Gear B2, the bottom of Cylinder B: extra room around its peg, per side (mm).
+key_clearance_b2_mm = 0.095; // [0:0.005:0.5]
+
+// History: two printed rounds bracketed the one shared dial these replace -
+// too loose at 0.15, too tight at 0.075 - and it sat at 0.110 until a round
+// with the cylinders on 0.12 mm layers found the larger pegs a bit loose;
+// 0.095 was then confirmed in print for A2 and B2. The nub is pinned at
+// V2_NUB_CLEARANCE because gear A1's notch is already cut - re-coupling it to
+// a dial would grow the nub into a notch that cannot be recut. The step is
+// 0.005: a default that is not a whole number of steps above the minimum
+// makes the Customizer refuse the input, and 0.095 / 0.005 = 19.
 
 /* [Hidden] */
 $fn = 32; // Resolution for curved surfaces
@@ -374,9 +389,9 @@ PI = 3.14159265359;
 //   * polygon_cutout_radius_mm, polygon_cutout_points and seam_offset_degrees
 //     are ABSENT. preset_value() falls back to the file-scope constants for a
 //     missing key, and Version 2 fixes those three in the Hidden section.
-// key_clearance_mm is deliberately NOT preset-owned: a preset-owned key
-// silently ignores -D, and the clearance is the one dial a user tunes per
-// printer.
+// The four key_clearance_*_mm dials are deliberately NOT preset-owned: a
+// preset-owned key silently ignores -D, and the clearances are the dials a
+// user tunes per printer.
 //
 // NOTE: grid_columns and grid_rows are deliberately ABSENT here too, exactly as
 // in the Version 1 tables, so the sliders always govern text capacity.
@@ -1691,7 +1706,7 @@ V2_GEAR_TRIANGLE_INSET = 0.15;
 V2_ANTIROT_B1_NOTCH = [9.80, 13.10, 1.65];
 V2_ANTIROT_B2_PIN   = [10.05, 13.05, 1.50];
 
-// The nub's inset, which key_clearance_mm deliberately does NOT control
+// The nub's inset, which the key_clearance_*_mm dials deliberately do NOT control
 // (revised 2026-08-29). Gear A1's notch is a fixed negative that is already
 // cut, and when the dial also drove the nub, lowering it to tighten the holes
 // GREW the nub into that notch. Change this only alongside a matching gear A1.
@@ -1714,13 +1729,28 @@ V2_SOCKET_MAX_RADIUS = 14.0;
 // bottom out before the two faces meet.
 V2_SOCKET_DEPTH = V2_NUB_HEIGHT + V2_ANTIROT_CLEARANCE;
 
-// The dial is bounded in the Customizer; this catches a -D that is not.
-assert(key_clearance_mm >= 0 && key_clearance_mm <= 0.5,
-       "key_clearance_mm must be between 0 and 0.5 mm.");
+// The dials are bounded in the Customizer; these catch a -D that is not.
+assert(key_clearance_a1_mm >= 0 && key_clearance_a1_mm <= 0.5,
+       "key_clearance_a1_mm must be between 0 and 0.5 mm.");
+assert(key_clearance_a2_mm >= 0 && key_clearance_a2_mm <= 0.5,
+       "key_clearance_a2_mm must be between 0 and 0.5 mm.");
+assert(key_clearance_b1_mm >= 0 && key_clearance_b1_mm <= 0.5,
+       "key_clearance_b1_mm must be between 0 and 0.5 mm.");
+assert(key_clearance_b2_mm >= 0 && key_clearance_b2_mm <= 0.5,
+       "key_clearance_b2_mm must be between 0 and 0.5 mm.");
 
 // Which key sits at which end of which plate.
 function v2_bottom_key(emboss) = emboss ? V2_KEY_A2 : V2_KEY_B2;
 function v2_top_key(emboss)    = emboss ? V2_KEY_A1 : V2_KEY_B1;
+
+// Which dial grows which key: one clearance per gear, and a key this file
+// does not know stops the render rather than borrowing a neighbour's number.
+function v2_key_clearance(key) =
+    key == V2_KEY_A1 ? key_clearance_a1_mm :
+    key == V2_KEY_A2 ? key_clearance_a2_mm :
+    key == V2_KEY_B1 ? key_clearance_b1_mm :
+    key == V2_KEY_B2 ? key_clearance_b2_mm :
+    assert(false, str("no key clearance dial for key ", key)) 0;
 
 // One key outline, grown by `clearance` as an EXACT parallel curve: the sides
 // grow by 2*clearance and the corner radius by clearance, so the corner comes
@@ -1814,7 +1844,7 @@ module bottom_key_socket(bottom_face_z, emboss) {
 module keyed_half_cutout(key, z0, z1) {
     translate([0, 0, z0 - V2_OVERLAP])
         linear_extrude(height = (z1 - z0) + 2 * V2_OVERLAP)
-            key_profile_2d(key, key_clearance_mm);
+            key_profile_2d(key, v2_key_clearance(key));
 }
 
 // One mouth chamfer: the hull of the flared outline at the face and the hole
@@ -1834,10 +1864,10 @@ module mouth_countersink(key, face_z, into_plus_z) {
     hull() {
         translate([0, 0, face_lo])
             linear_extrude(height = V2_SLAB)
-                key_profile_2d(key, key_clearance_mm + V2_COUNTERSINK_OFFSET);
+                key_profile_2d(key, v2_key_clearance(key) + V2_COUNTERSINK_OFFSET);
         translate([0, 0, inner_lo])
             linear_extrude(height = V2_SLAB)
-                key_profile_2d(key, key_clearance_mm);
+                key_profile_2d(key, v2_key_clearance(key));
     }
 }
 
@@ -2211,9 +2241,10 @@ function v2_key_max_radius(key, clearance) =
     sqrt(pow(key[0] / 2 - V2_KEY_CORNER_R, 2) + pow(key[1] / 2 - V2_KEY_CORNER_R, 2))
     + V2_KEY_CORNER_R + clearance;
 
-function v2_widest_key_radius(clearance) =
-    max(v2_key_max_radius(V2_KEY_A1, clearance), v2_key_max_radius(V2_KEY_A2, clearance),
-        v2_key_max_radius(V2_KEY_B1, clearance), v2_key_max_radius(V2_KEY_B2, clearance));
+// Each key at ITS OWN dial: the guard follows whichever dial is raised.
+function v2_widest_key_radius() =
+    max(v2_key_max_radius(V2_KEY_A1, key_clearance_a1_mm), v2_key_max_radius(V2_KEY_A2, key_clearance_a2_mm),
+        v2_key_max_radius(V2_KEY_B1, key_clearance_b1_mm), v2_key_max_radius(V2_KEY_B2, key_clearance_b2_mm));
 
 if (active_cylinder_diameter_mm != 30.8 || active_cylinder_height_mm != 54) {
     echo(str("NOTE: The Version 2 embosser expects a 30.8 mm x 54 mm cylinder. Received ",
@@ -2228,7 +2259,7 @@ TACTILE_SEAM_WALL_MIN = 1.2;   // FDM minimum printable wall, mm
 tactile_seam_wall_mm =
     (radius - tactile_indicator_raise - tactile_recess_extra_depth)
         * cos(180 / CYLINDER_SHELL_FN)
-    - v2_widest_key_radius(key_clearance_mm);
+    - v2_widest_key_radius();
 
 // Gear mode has no keyed hole, so there is no wall for this guard to protect.
 tactile_seam_wall_too_thin = tactile_on && !gears_on
@@ -2241,7 +2272,7 @@ if (tactile_seam_wall_too_thin)
              " mm of wall is left between the tactile arrow recess and the ",
              "keyed cutout; the printable minimum is ", TACTILE_SEAM_WALL_MIN,
              " mm. Lower tactile_indicator_raise or tactile_recess_extra_depth, ",
-             "or lower key_clearance_mm."));
+             "or lower the key clearance dials."));
 
 module indicator_triangle_2d(rotate_180 = false) {
     // Isosceles triangle with vertical base on LEFT, apex RIGHT (default).

@@ -56,7 +56,7 @@ KEYS = {  # plate -> (bottom key, top key), each [length (on 90/270), width (on 
     "Embossing Plate": ((18.0, 10.0), (14.0, 14.0)),
     "Counter Plate": ((20.0, 8.0), (16.0, 12.0)),
 }
-DEFAULT_CLEARANCE = 0.110
+DEFAULT_CLEARANCE = 0.095  # every dial's default since 2.11.0
 COUNTERSINK_OFFSET = 2.0
 COUNTERSINK_DEPTH = 2.0
 
@@ -469,43 +469,54 @@ def test_each_plate_sinks_its_own_socket_into_the_bottom_face(
 
 @pytest.mark.requires_openscad
 @pytest.mark.slow
-def test_the_clearance_dial_reaches_the_geometry(
+def test_each_clearance_dial_reaches_only_its_own_key(
     trimesh_module, openscad_binary, tmp_path
 ):
     """
-    -D key_clearance_mm=0.3 must actually change the pocket. It would not if
-    the parameter were preset-owned: a preset-owned key silently ignores -D.
+    -D key_clearance_a2_mm=0.3 must change the BOTTOM pocket of the embossing
+    plate (gear A2's) and leave the top one (gear A1's) at its own default. It
+    would not move at all if the parameter were preset-owned: a preset-owned
+    key silently ignores -D.
     """
     import numpy as np
 
     stl_path, output, _ = _render(
         openscad_binary,
         tmp_path,
-        "v2_c030",
-        {"plate_type": "Embossing Plate", "key_clearance_mm": 0.3},
+        "v2_a2_c030",
+        {"plate_type": "Embossing Plate", "key_clearance_a2_mm": 0.3},
     )
     mesh = _load(trimesh_module, stl_path, output)
 
-    length, width = KEYS["Embossing Plate"][0]
+    (bottom_length, bottom_width), (top_length, top_width) = KEYS["Embossing Plate"]
     loop = _hole_loop(mesh, BOTTOM_PROBE_Z)
-    assert np.abs(loop[:, 0]).max() == pytest.approx((width + 2 * 0.3) / 2, abs=0.02)
+    assert np.abs(loop[:, 0]).max() == pytest.approx(
+        (bottom_width + 2 * 0.3) / 2, abs=0.02
+    )
     assert _polygon_area(loop) == pytest.approx(
-        _rounded_rect_area(length, width, 0.3), abs=0.5
+        _rounded_rect_area(bottom_length, bottom_width, 0.3), abs=0.5
+    )
+    untouched = _hole_loop(mesh, TOP_PROBE_Z)
+    assert np.abs(untouched[:, 0]).max() == pytest.approx(
+        (top_width + 2 * DEFAULT_CLEARANCE) / 2, abs=0.02
+    )
+    assert _polygon_area(untouched) == pytest.approx(
+        _rounded_rect_area(top_length, top_width, DEFAULT_CLEARANCE), abs=0.5
     )
 
 
 @pytest.mark.requires_openscad
 @pytest.mark.slow
 def test_an_out_of_range_clearance_stops_the_render(openscad_binary, tmp_path):
-    """0.6 is past the 0.5 maximum: the assert fires and no STL is written."""
+    """0.6 is past the 0.5 maximum: the assert fires, names the dial, and no STL is written."""
     stl_path, output, _ = _render(
         openscad_binary,
         tmp_path,
-        "v2_c060",
-        {"plate_type": "Embossing Plate", "key_clearance_mm": 0.6},
+        "v2_b1_c060",
+        {"plate_type": "Counter Plate", "key_clearance_b1_mm": 0.6},
     )
     assert not stl_path.exists(), "an out-of-range clearance still wrote an STL"
-    assert "key_clearance_mm must be between 0 and 0.5 mm." in output
+    assert "key_clearance_b1_mm must be between 0 and 0.5 mm." in output
 
 
 # ---------------------------------------------------------------------------
@@ -577,7 +588,10 @@ def test_the_version2_tab_sits_above_the_first_hidden_tab(source_text):
     tab = source_text.index("/* [Version 2 Keyed Cutouts] */")
     hidden = source_text.index("/* [Hidden] */")
     assert tab < hidden, "the Version 2 tab is hidden from the Customizer"
-    assert "key_clearance_mm = 0.110; // [0:0.005:0.5]" in source_text
+    # One dial per gear since 2.11.0; the shared dial is gone.
+    for gear in ("a1", "a2", "b1", "b2"):
+        assert f"key_clearance_{gear}_mm = 0.095; // [0:0.005:0.5]" in source_text
+    assert "key_clearance_mm =" not in source_text
 
 
 def test_the_clearance_is_never_preset_owned(source_text):
@@ -589,7 +603,7 @@ def test_the_clearance_is_never_preset_owned(source_text):
         start = source_text.index(f"{table} = [")
         end = source_text.index("];", start)
         body = source_text[start:end]
-        assert "key_clearance_mm" not in body, f"{table} must not own the clearance"
+        assert "key_clearance" not in body, f"{table} must not own a clearance"
         assert '["cylinder_diameter_mm",            30.8]' in body.replace("  ", "  ")
         for dropped in (
             "polygon_cutout_radius_mm",

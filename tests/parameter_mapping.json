@@ -735,15 +735,48 @@
       "note": "A print-layout figure, not the assembly distance: a meshed pair runs at a 32.0473 mm axis distance. With gears On the teeth overhang the barrel, so the default 10 mm barrel gap leaves about 8.58 mm tip to tip. The web app hard-codes the same 10 mm surface gap for its combined download and exposes no dial."
     },
     {
-      "openscad_name": "key_clearance_mm",
-      "web_api_name": "v2_key_clearance_mm",
-      "web_ui_label": "Key clearance (mm)",
+      "openscad_name": "key_clearance_a1_mm",
+      "web_api_name": "v2_key_clearance_a1_mm",
+      "web_ui_label": "Gear A1 (top of Cylinder A) key clearance (mm)",
       "type": "number",
-      "default": 0.110,
+      "default": 0.095,
       "range": [0, 0.5],
       "section": "Version 2 Keyed Cutouts",
-      "description": "Extra room around each gear peg, per side (mm). Grows every keyed hole outward and shrinks the key nub inward by the same amount.",
-      "note": "EMBOSSER VERSION 2 FILE ONLY (Braille_Cylinder_STL_Generator_EmbosserV2.scad); the Version 1 file has no such tab. Deliberately NOT preset-owned - a preset-owned key silently ignores -D, and this is the one dial tuned per printer. Schema home version_2.key_clearance_mm; on the wire it is the flat v2_key_clearance_mm, sent only when embosser_version is 2."
+      "description": "Extra room around gear A1's peg, per side (mm): grows the 14 x 14 keyed hole in the top of Cylinder A outward. The key nub does not move with it.",
+      "note": "EMBOSSER VERSION 2 FILE ONLY (Braille_Cylinder_STL_Generator_EmbosserV2.scad); the Version 1 file has no such tab. One dial per gear since 2.11.0 (2026-09-25), replacing the shared key_clearance_mm, so one peg's fit can be tuned without moving the other three. Deliberately NOT preset-owned - a preset-owned key silently ignores -D, and these are the dials tuned per printer. Schema home version_2.key_clearance_a1_mm; on the wire it is the flat v2_key_clearance_a1_mm, sent only when embosser_version is 2. The web app still honours a saved request's shared v2_key_clearance_mm as the value of any per-key field it leaves out."
+    },
+    {
+      "openscad_name": "key_clearance_a2_mm",
+      "web_api_name": "v2_key_clearance_a2_mm",
+      "web_ui_label": "Gear A2 (bottom of Cylinder A) key clearance (mm)",
+      "type": "number",
+      "default": 0.095,
+      "range": [0, 0.5],
+      "section": "Version 2 Keyed Cutouts",
+      "description": "Extra room around gear A2's peg, per side (mm): grows the 18 x 10 keyed hole in the bottom of Cylinder A outward.",
+      "note": "As key_clearance_a1_mm. 0.095 confirmed in print for A2 on 2026-09-25 (cylinders on Bambu Studio's 0.12 mm Fine Detail preset, gears on 0.2 mm Strength)."
+    },
+    {
+      "openscad_name": "key_clearance_b1_mm",
+      "web_api_name": "v2_key_clearance_b1_mm",
+      "web_ui_label": "Gear B1 (top of Cylinder B) key clearance (mm)",
+      "type": "number",
+      "default": 0.095,
+      "range": [0, 0.5],
+      "section": "Version 2 Keyed Cutouts",
+      "description": "Extra room around gear B1's peg, per side (mm): grows the 16 x 12 keyed hole in the top of Cylinder B outward.",
+      "note": "As key_clearance_a1_mm."
+    },
+    {
+      "openscad_name": "key_clearance_b2_mm",
+      "web_api_name": "v2_key_clearance_b2_mm",
+      "web_ui_label": "Gear B2 (bottom of Cylinder B) key clearance (mm)",
+      "type": "number",
+      "default": 0.095,
+      "range": [0, 0.5],
+      "section": "Version 2 Keyed Cutouts",
+      "description": "Extra room around gear B2's peg, per side (mm): grows the 20 x 8 keyed hole in the bottom of Cylinder B outward.",
+      "note": "As key_clearance_a1_mm. 0.095 confirmed in print for B2 on 2026-09-25."
     }
   ],
   
