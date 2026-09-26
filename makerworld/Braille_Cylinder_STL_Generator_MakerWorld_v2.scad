@@ -54,6 +54,9 @@
 //     barrel (assets/v2_gears_a.stl and _b.stl, desktop build only): the
 //     barrel then prints solid with no keyed holes, nub or socket, and each
 //     top gear's notch is filled by hidden material so no void is sealed in;
+//     it prints support-free with the bottom gear on the build plate (the
+//     barrel's foot is chamfered, a vent runs the axis, both gear sockets
+//     end in a cone to it);
 //   • no polygonal cutout, and no seam offset: the keyed hole IS the bore, and
 //     the keys sit on the arrow column, so turning the seam would break them.
 //  Everything else — the braille, the dot shapes, the presets, the indicators

@@ -33,6 +33,9 @@
 //     barrel (assets/v2_gears_a.stl and _b.stl, desktop build only): the
 //     barrel then prints solid with no keyed holes, nub or socket, and each
 //     top gear's notch is filled by hidden material so no void is sealed in;
+//     it prints support-free with the bottom gear on the build plate (the
+//     barrel's foot is chamfered, a vent runs the axis, both gear sockets
+//     end in a cone to it);
 //   • no polygonal cutout, and no seam offset: the keyed hole IS the bore, and
 //     the keys sit on the arrow column, so turning the seam would break them.
 //  Everything else — the braille, the dot shapes, the presets, the indicators
@@ -215,7 +218,7 @@ interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
 // 54 mm. Needs assets/v2_gears_a.stl and assets/v2_gears_b.stl, which ship
 // with the desktop build.
 // Print it with the bottom gear on the build plate: its barrel edge is
-// chamfered and its gear socket is vented and self-supporting, so it needs
+// chamfered and its gear sockets are vented and self-supporting, so it needs
 // no supports.
 // COMPATIBILITY: Version 2 fixed gears fit only the Version 2 fixed-gear
 // housing. The standard Version 2 housing takes the standard keyed cylinders.

@@ -373,8 +373,14 @@ Version 2 barrel (any other size is refused). While it is On the barrel prints
 solid with **no keyed holes, nub or socket**: the gears' own pegs and pins are
 already inside the imported gears, and each top gear's anti-rotation notch is
 filled by hidden material so no void is sealed in. The seam channel is still
-cut. Version 2 fixed gears fit only the Version 2 fixed-gear housing; the
-standard Version 2 housing takes the standard keyed cylinders. The MakerWorld
+cut. Since 2.10.0 the fused roller prints support-free with its **bottom gear
+on the build plate**: the barrel's bottom edge is chamfered 0.65 mm so it no
+longer overhangs the gear face, a 2 mm vent runs the whole axis so the roller
+lifts off the embosser's peg without a vacuum, and each gear socket ends in a
+45° cone to that vent instead of a flat ceiling (the bottom sockets since
+2.10.0, the top ones since 2.11.0). Version 2 fixed gears fit only the Version 2
+fixed-gear housing; the standard Version 2 housing takes the standard keyed
+cylinders. The MakerWorld
 Version 2 upload hides the switch for the same reason as the Version 1 build.
 
 ## 🔄 Rendering Both Plates At Once
