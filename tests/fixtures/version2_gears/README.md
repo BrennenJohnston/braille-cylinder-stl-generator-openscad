@@ -29,7 +29,7 @@ openscad.com --hardwarnings --check-parameter-ranges=true --export-format binstl
 The file's defaults have moved twice since the signature was taken, in ways that
 are not about the gears: `indicator_mode` defaults to Tactile since 2.10.0 and the
 single `key_clearance_mm` (0.110 when recorded) became four per-gear dials at
-0.075 / 0.085 in 2.11.0. The test therefore renders with `-D indicator_mode="Visual"` and
+0.075 in 2.11.0. The test therefore renders with `-D indicator_mode="Visual"` and
 the four `key_clearance_{a1,a2,b1,b2}_mm` at 0.11, as the fixture's `defines`
 record - reproducing the signature at the old value on four dials is also the
 proof that the per-key refactor moved nothing.

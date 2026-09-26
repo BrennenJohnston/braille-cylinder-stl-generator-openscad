@@ -20,18 +20,16 @@ files render exactly as in 2.10.0.
   measured off the gear assets: bore 7.0 / 5.0, rim 5.2 / 3.2), so both ends
   match and the roller prints support-free either way up. Bottom gear down is
   still the advice.
-- **One key clearance dial per gear: 0.075 mm for the top gears A1 and B1,
-  0.085 mm for the bottom gears A2 and B2.** The `[Version 2 Keyed Cutouts]`
-  tab's single `key_clearance_mm` is replaced by `key_clearance_a1_mm`,
-  `key_clearance_a2_mm`, `key_clearance_b1_mm` and `key_clearance_b2_mm`
-  (`0.075` / `0.085` / `0.075` / `0.085; // [0:0.005:0.5]`), so one peg's fit can
+- **One key clearance dial per gear, each 0.075 mm.** The `[Version 2 Keyed
+  Cutouts]` tab's single `key_clearance_mm` is replaced by
+  `key_clearance_a1_mm`, `key_clearance_a2_mm`, `key_clearance_b1_mm` and
+  `key_clearance_b2_mm` (each `0.075; // [0:0.005:0.5]`), so one peg's fit can
   be tuned without moving the other three: each half of the keyed
   through-hole and its mouth chamfer take the dial of the gear that seats
   there, and the tactile-recess wall guard reads every key at its own dial.
-  The defaults are what three printed rounds settled on (cylinders on Bambu
+  The default is what four printed rounds settled on (cylinders on Bambu
   Studio's 0.12 mm Fine Detail preset, gears on 0.2 mm Strength); the old
-  shared 0.110 printed a touch loose there and one value could not fit all
-  four gears. The nub and sockets still follow no
+  shared 0.110 printed a touch loose there. The nub and sockets still follow no
   dial. A saved Customizer preset that names `key_clearance_mm` is ignored
   for that key (OpenSCAD drops unknown names); set the four dials instead.
 

@@ -30,9 +30,9 @@ Version 1 file has no such tab.
 | OpenSCAD | Web API | Web UI Label | Default | Range |
 |----------|---------|--------------|---------|-------|
 | `key_clearance_a1_mm` | `v2_key_clearance_a1_mm` | Gear A1 (top of Cylinder A) key clearance (mm) | 0.075 | 0–0.5 |
-| `key_clearance_a2_mm` | `v2_key_clearance_a2_mm` | Gear A2 (bottom of Cylinder A) key clearance (mm) | 0.085 | 0–0.5 |
+| `key_clearance_a2_mm` | `v2_key_clearance_a2_mm` | Gear A2 (bottom of Cylinder A) key clearance (mm) | 0.075 | 0–0.5 |
 | `key_clearance_b1_mm` | `v2_key_clearance_b1_mm` | Gear B1 (top of Cylinder B) key clearance (mm) | 0.075 | 0–0.5 |
-| `key_clearance_b2_mm` | `v2_key_clearance_b2_mm` | Gear B2 (bottom of Cylinder B) key clearance (mm) | 0.085 | 0–0.5 |
+| `key_clearance_b2_mm` | `v2_key_clearance_b2_mm` | Gear B2 (bottom of Cylinder B) key clearance (mm) | 0.075 | 0–0.5 |
 
 Three Version 1 parameters are **not present in the Version 2 file** and have no
 Version 2 equivalent to map:

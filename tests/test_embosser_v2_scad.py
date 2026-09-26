@@ -56,10 +56,10 @@ KEYS = {  # plate -> (bottom key, top key), each [length (on 90/270), width (on 
     "Embossing Plate": ((18.0, 10.0), (14.0, 14.0)),
     "Counter Plate": ((20.0, 8.0), (16.0, 12.0)),
 }
-# Each dial's default since 2.11.0 (web decision D-K4): plate -> (bottom key, top key).
+# Each dial's default since 2.11.0 (web decision D-K6): plate -> (bottom key, top key).
 DEFAULT_CLEARANCES = {
-    "Embossing Plate": (0.085, 0.075),  # A2, A1
-    "Counter Plate": (0.085, 0.075),  # B2, B1
+    "Embossing Plate": (0.075, 0.075),  # A2, A1
+    "Counter Plate": (0.075, 0.075),  # B2, B1
 }
 COUNTERSINK_OFFSET = 2.0
 COUNTERSINK_DEPTH = 2.0
@@ -598,9 +598,9 @@ def test_the_version2_tab_sits_above_the_first_hidden_tab(source_text):
     tab = source_text.index("/* [Version 2 Keyed Cutouts] */")
     hidden = source_text.index("/* [Hidden] */")
     assert tab < hidden, "the Version 2 tab is hidden from the Customizer"
-    # One dial per gear since 2.11.0 (web decision D-K4: top gears 0.075,
-    # bottom gears 0.085); the shared dial is gone.
-    for gear, default in (("a1", "0.075"), ("a2", "0.085"), ("b1", "0.075"), ("b2", "0.085")):
+    # One dial per gear since 2.11.0 (web decision D-K6: 0.075 on all four);
+    # the shared dial is gone.
+    for gear, default in (("a1", "0.075"), ("a2", "0.075"), ("b1", "0.075"), ("b2", "0.075")):
         assert f"key_clearance_{gear}_mm = {default}; // [0:0.005:0.5]" in source_text
     assert "key_clearance_mm =" not in source_text
 

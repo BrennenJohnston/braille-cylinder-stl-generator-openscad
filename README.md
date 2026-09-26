@@ -500,17 +500,16 @@ spec.
 
 Four dials are new, one per gear: **`key_clearance_a1_mm`, `_a2_mm`, `_b1_mm`
 and `_b2_mm`** (the shared `key_clearance_mm` they replaced in 2.11.0 is gone),
-0.075 mm per side by default on the top gears (A1, B1) and 0.085 on the bottom
-gears (A2, B2), each adjustable from 0 to 0.5 mm in steps of 0.005. Each grows ITS gear's hole outward, and ONLY that hole, so one peg's fit
+each 0.075 mm per side by default and adjustable from 0 to 0.5 mm in steps of
+0.005. Each grows ITS gear's hole outward, and ONLY that hole, so one peg's fit
 can be tuned without moving the other three - none of them has touched the nub
 since 2026-08-29, because gear A1's notch is already cut and tightening the
 holes would have grown the nub into it. Raise a value if that peg binds, lower
 it if the peg is loose; raising one also eats into the margin that stops a peg
-entering the wrong hole (0.925 / 0.915 mm at the defaults, 0.50 mm at the
-maximum). The defaults are what three printed rounds settled on with the
-cylinders on Bambu Studio's 0.12 mm Fine Detail preset and the gears on 0.2 mm
-Strength; the earlier shared 0.110 printed a touch loose there and one value
-could not fit all four gears.
+entering the wrong hole (0.925 mm at the default, 0.50 mm at the maximum).
+The default is what four printed rounds settled on with the cylinders on Bambu
+Studio's 0.12 mm Fine Detail preset and the gears on 0.2 mm Strength; the
+earlier shared 0.110 printed a touch loose there.
 
 **Both cylinder ends key against their gear.** Each plate stands a 3 mm
 anti-rotation nub proud of its TOP face and sinks a matching socket into its

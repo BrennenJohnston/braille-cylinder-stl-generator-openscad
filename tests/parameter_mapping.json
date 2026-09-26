@@ -750,11 +750,11 @@
       "web_api_name": "v2_key_clearance_a2_mm",
       "web_ui_label": "Gear A2 (bottom of Cylinder A) key clearance (mm)",
       "type": "number",
-      "default": 0.085,
+      "default": 0.075,
       "range": [0, 0.5],
       "section": "Version 2 Keyed Cutouts",
       "description": "Extra room around gear A2's peg, per side (mm): grows the 18 x 10 keyed hole in the bottom of Cylinder A outward.",
-      "note": "As key_clearance_a1_mm. 0.085 for the bottom gears after the 2026-09-25 rounds (cylinders on Bambu Studio's 0.12 mm Fine Detail preset, gears on 0.2 mm Strength)."
+      "note": "As key_clearance_a1_mm. 0.075 since the 2026-09-26 print (cylinders on Bambu Studio's 0.12 mm Fine Detail preset, gears on 0.2 mm Strength)."
     },
     {
       "openscad_name": "key_clearance_b1_mm",
@@ -772,11 +772,11 @@
       "web_api_name": "v2_key_clearance_b2_mm",
       "web_ui_label": "Gear B2 (bottom of Cylinder B) key clearance (mm)",
       "type": "number",
-      "default": 0.085,
+      "default": 0.075,
       "range": [0, 0.5],
       "section": "Version 2 Keyed Cutouts",
       "description": "Extra room around gear B2's peg, per side (mm): grows the 20 x 8 keyed hole in the bottom of Cylinder B outward.",
-      "note": "As key_clearance_a1_mm. 0.085 for the bottom gears after the 2026-09-25 rounds."
+      "note": "As key_clearance_a1_mm. 0.075 since the 2026-09-26 print."
     }
   ],
   

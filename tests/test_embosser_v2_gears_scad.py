@@ -374,7 +374,7 @@ def test_gears_off_is_the_pre_gears_geometry(openscad_binary, tmp_path, plate):
     # The signature was recorded while Visual was the file's default and the
     # one shared key clearance dial sat at 0.110; since 2026-09-24 the Version
     # 2 file defaults to Tactile (as the web app does) and since 2.11.0 each
-    # gear has its own dial (0.075 / 0.085), so the style and all four clearances are
+    # gear has its own dial at 0.075, so the style and all four clearances are
     # pinned here - the contract is about the gears, not the row markers or
     # the key fit. Reproducing the signature at 0.110 on four dials also
     # proves the per-key refactor moved nothing at the old number.
