@@ -56,7 +56,11 @@ KEYS = {  # plate -> (bottom key, top key), each [length (on 90/270), width (on 
     "Embossing Plate": ((18.0, 10.0), (14.0, 14.0)),
     "Counter Plate": ((20.0, 8.0), (16.0, 12.0)),
 }
-DEFAULT_CLEARANCE = 0.095  # every dial's default since 2.11.0
+# Each dial's default since 2.11.0 (web decision D-K4): plate -> (bottom key, top key).
+DEFAULT_CLEARANCES = {
+    "Embossing Plate": (0.085, 0.075),  # A2, A1
+    "Counter Plate": (0.085, 0.075),  # B2, B1
+}
 COUNTERSINK_OFFSET = 2.0
 COUNTERSINK_DEPTH = 2.0
 
@@ -301,10 +305,14 @@ def test_each_pocket_is_its_own_r14_key(
     mesh = _load(trimesh_module, stl_path, output)
 
     bottom_key, top_key = KEYS[plate]
-    for z, (length, width) in ((BOTTOM_PROBE_Z, bottom_key), (TOP_PROBE_Z, top_key)):
+    bottom_clearance, top_clearance = DEFAULT_CLEARANCES[plate]
+    for z, (length, width), clearance in (
+        (BOTTOM_PROBE_Z, bottom_key, bottom_clearance),
+        (TOP_PROBE_Z, top_key, top_clearance),
+    ):
         loop = _hole_loop(mesh, z)
-        half_w = (width + 2 * DEFAULT_CLEARANCE) / 2
-        half_l = (length + 2 * DEFAULT_CLEARANCE) / 2
+        half_w = (width + 2 * clearance) / 2
+        half_l = (length + 2 * clearance) / 2
 
         assert np.abs(loop[:, 0]).max() == pytest.approx(half_w, abs=0.02), (
             f"x extent at z={z}"
@@ -313,7 +321,7 @@ def test_each_pocket_is_its_own_r14_key(
             f"y extent at z={z}"
         )
         assert _polygon_area(loop) == pytest.approx(
-            _rounded_rect_area(length, width, DEFAULT_CLEARANCE), abs=0.5
+            _rounded_rect_area(length, width, clearance), abs=0.5
         ), f"section area at z={z}"
 
         # The flat on the arrow column. Interpolated along the edge that
@@ -354,12 +362,13 @@ def test_all_four_mouths_carry_the_same_45_degree_countersink(
     mesh = _load(trimesh_module, stl_path, output)
 
     bottom_key, top_key = KEYS[plate]
-    for face_z, sign, (length, width) in (
-        (0.0, +1, bottom_key),
-        (BARREL_H, -1, top_key),
+    bottom_clearance, top_clearance = DEFAULT_CLEARANCES[plate]
+    for face_z, sign, (length, width), clearance in (
+        (0.0, +1, bottom_key, bottom_clearance),
+        (BARREL_H, -1, top_key, top_clearance),
     ):
         for depth in (0.1, 1.0, 1.9):
-            grown = DEFAULT_CLEARANCE + (COUNTERSINK_OFFSET - depth)
+            grown = clearance + (COUNTERSINK_OFFSET - depth)
             loop = _hole_loop(mesh, face_z + sign * depth)
             assert np.abs(loop[:, 0]).max() == pytest.approx(
                 (width + 2 * grown) / 2, abs=0.02
@@ -496,12 +505,13 @@ def test_each_clearance_dial_reaches_only_its_own_key(
     assert _polygon_area(loop) == pytest.approx(
         _rounded_rect_area(bottom_length, bottom_width, 0.3), abs=0.5
     )
+    _bottom_default, top_default = DEFAULT_CLEARANCES["Embossing Plate"]
     untouched = _hole_loop(mesh, TOP_PROBE_Z)
     assert np.abs(untouched[:, 0]).max() == pytest.approx(
-        (top_width + 2 * DEFAULT_CLEARANCE) / 2, abs=0.02
+        (top_width + 2 * top_default) / 2, abs=0.02
     )
     assert _polygon_area(untouched) == pytest.approx(
-        _rounded_rect_area(top_length, top_width, DEFAULT_CLEARANCE), abs=0.5
+        _rounded_rect_area(top_length, top_width, top_default), abs=0.5
     )
 
 
@@ -588,9 +598,10 @@ def test_the_version2_tab_sits_above_the_first_hidden_tab(source_text):
     tab = source_text.index("/* [Version 2 Keyed Cutouts] */")
     hidden = source_text.index("/* [Hidden] */")
     assert tab < hidden, "the Version 2 tab is hidden from the Customizer"
-    # One dial per gear since 2.11.0; the shared dial is gone.
-    for gear in ("a1", "a2", "b1", "b2"):
-        assert f"key_clearance_{gear}_mm = 0.095; // [0:0.005:0.5]" in source_text
+    # One dial per gear since 2.11.0 (web decision D-K4: top gears 0.075,
+    # bottom gears 0.085); the shared dial is gone.
+    for gear, default in (("a1", "0.075"), ("a2", "0.085"), ("b1", "0.075"), ("b2", "0.085")):
+        assert f"key_clearance_{gear}_mm = {default}; // [0:0.005:0.5]" in source_text
     assert "key_clearance_mm =" not in source_text
 
 

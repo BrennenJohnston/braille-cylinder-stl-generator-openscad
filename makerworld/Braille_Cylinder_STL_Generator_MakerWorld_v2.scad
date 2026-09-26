@@ -338,26 +338,28 @@ cone_segments = 16; // [8:1:64] Number of segments for cone shapes
 // three. Each dial is the extra room around ITS gear's peg, per side (mm): it
 // grows that keyed hole outward - the key nub does not move with any dial -
 // and raising it eats into the margin that stops a peg entering the wrong
-// hole: 0.905 mm at 0.095, 0.50 mm at the 0.5 maximum. 0.095 mm suits most
-// printers; raise a value if that peg binds, lower it if the peg is loose.
+// hole: 0.925 mm at 0.075, 0.915 at 0.085, 0.50 mm at the 0.5 maximum. The
+// defaults suit most printers; raise a value if that peg binds, lower it if
+// the peg is loose.
 
 // Gear A1, the top of Cylinder A: extra room around its peg, per side (mm).
-key_clearance_a1_mm = 0.095; // [0:0.005:0.5]
+key_clearance_a1_mm = 0.075; // [0:0.005:0.5]
 // Gear A2, the bottom of Cylinder A: extra room around its peg, per side (mm).
-key_clearance_a2_mm = 0.095; // [0:0.005:0.5]
+key_clearance_a2_mm = 0.085; // [0:0.005:0.5]
 // Gear B1, the top of Cylinder B: extra room around its peg, per side (mm).
-key_clearance_b1_mm = 0.095; // [0:0.005:0.5]
+key_clearance_b1_mm = 0.075; // [0:0.005:0.5]
 // Gear B2, the bottom of Cylinder B: extra room around its peg, per side (mm).
-key_clearance_b2_mm = 0.095; // [0:0.005:0.5]
+key_clearance_b2_mm = 0.085; // [0:0.005:0.5]
 
 // History: two printed rounds bracketed the one shared dial these replace -
-// too loose at 0.15, too tight at 0.075 - and it sat at 0.110 until a round
-// with the cylinders on 0.12 mm layers found the larger pegs a bit loose;
-// 0.095 was then confirmed in print for A2 and B2. The nub is pinned at
-// V2_NUB_CLEARANCE because gear A1's notch is already cut - re-coupling it to
-// a dial would grow the nub into a notch that cannot be recut. The step is
-// 0.005: a default that is not a whole number of steps above the minimum
-// makes the Customizer refuse the input, and 0.095 / 0.005 = 19.
+// too loose at 0.15, too tight at 0.075 - and it sat at 0.110 until rounds
+// with the cylinders on 0.12 mm layers found the larger pegs loose there:
+// 0.095 fitted only the bottom gears, and the top gears settled at 0.075 with
+// the bottom gears at 0.085. The nub is pinned at V2_NUB_CLEARANCE because
+// gear A1's notch is already cut - re-coupling it to a dial would grow the
+// nub into a notch that cannot be recut. The step is 0.005: a default that is
+// not a whole number of steps above the minimum makes the Customizer refuse
+// the input, and 0.075 / 0.005 = 15, 0.085 / 0.005 = 17.
 
 /* [Hidden] */
 $fn = 32; // Resolution for curved surfaces
@@ -2143,6 +2145,14 @@ V2_GEAR_ROOT_RADIUS = 13.6613;    // the gears' root circle: the chamfer may nev
 //  ceiling depth below the barrel face, mouth chamfer at the bed]
 V2_GEAR_SOCKET_A = [7.0, 5.3, 1.5, 1.0];
 V2_GEAR_SOCKET_B = [5.0, 3.3, 1.5, 1.0];
+// The TOP gear sockets (A1 / B1), measured off the same assets: [bore radius,
+// rim radius at the floor vertex, floor height above the barrel's top face].
+// Printed bottom gear down that floor faces up and never needed support; the
+// cone mirrors the bottom one so both ends match and the roller prints
+// support-free either way up. The bottom table's rim was read 0.1 up the
+// taper and stays as printed - recorded per gear, never averaged.
+V2_TOP_GEAR_SOCKET_A = [7.0, 5.2, 1.5];
+V2_TOP_GEAR_SOCKET_B = [5.0, 3.2, 1.5];
 V2_SOCKET_CONE_GROWTH = 0.01;     // the cone is grown radially so it overlaps the socket's taper instead of sharing its surface
 V2_SOCKET_CONE_OVERLAP = 0.5;     // the cone starts this far below the old ceiling, inside the socket's air
 
@@ -2156,6 +2166,11 @@ assert(V2_GEAR_SOCKET_A[1] < V2_GEAR_SOCKET_A[0] && V2_GEAR_SOCKET_B[1] < V2_GEA
 assert(V2_GEAR_SOCKET_A[1] + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH < GEAR_WELD_RING_R_IN
        && V2_GEAR_SOCKET_B[1] + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH < GEAR_WELD_RING_R_IN,
        "a socket cone would reach the weld rings");
+assert(V2_TOP_GEAR_SOCKET_A[1] < V2_TOP_GEAR_SOCKET_A[0] && V2_TOP_GEAR_SOCKET_B[1] < V2_TOP_GEAR_SOCKET_B[0],
+       "a top socket rim must be inside its bore");
+assert(V2_TOP_GEAR_SOCKET_A[1] + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH < GEAR_WELD_RING_R_IN
+       && V2_TOP_GEAR_SOCKET_B[1] + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH < GEAR_WELD_RING_R_IN,
+       "a top socket cone would reach the weld rings");
 
 // The size gate, the web generator's own sentence for the Version 2 gears: a
 // HARD STOP covering both dimensions, judged by output text like the Version 1
@@ -2222,6 +2237,15 @@ module fused_axis_cuts(emboss) {
         cylinder(h = V2_SOCKET_CONE_OVERLAP + (rim - V2_VENT_R),
                  r1 = rim + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH,
                  r2 = V2_VENT_R + V2_SOCKET_CONE_GROWTH, $fn = AXIS_CUT_FN);
+    // The top socket's mirror cone: apex rim - vent below the floor, mouth
+    // V2_SOCKET_CONE_OVERLAP above it, the web generator's third axis cut.
+    top = emboss ? V2_TOP_GEAR_SOCKET_A : V2_TOP_GEAR_SOCKET_B;
+    top_rim = top[1];
+    floor_z = half_h + top[2];
+    translate([0, 0, floor_z - (top_rim - V2_VENT_R)])
+        cylinder(h = (top_rim - V2_VENT_R) + V2_SOCKET_CONE_OVERLAP,
+                 r1 = V2_VENT_R + V2_SOCKET_CONE_GROWTH,
+                 r2 = top_rim + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH, $fn = AXIS_CUT_FN);
 }
 
 // Both gears, their two weld rings and the top notch fill, in the plate
