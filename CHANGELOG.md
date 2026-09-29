@@ -9,7 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Parity with the web generator's per-key clearance dials (2026-09-25). **Only
 the Embosser Version 2 file and its MakerWorld copy change**; the Version 1
-files render exactly as in 2.10.0.
+files render exactly as in 2.10.0 with gears off, and with gears on they carry
+the corrected Version 1 gear assets (Fixed, below).
+
+### Fixed
+
+- **The Version 1 fixed gears are the Version 1 embosser's gears (2026-09-28,
+  found by Brennen's print).** `assets/gears_a.stl` and `gears_b.stl` are
+  regenerated from the web repo's new `gears_{a,b}.bin`: the gear rings of his
+  Version 1 gear holders, cut free of the boss and seated on the barrel end,
+  instead of the 2026-08-24 sample gears whose Cylinder B gears carry the newer
+  design's smaller hub (a 9 mm bore where the Version 1 housing pin needs the
+  14 mm pocket). Teeth, meshing, the 72 mm roller and the `[Gears]` switch are
+  unchanged; `tests/test_gear_assets.py` and `tests/test_gear_rollers_scad.py`
+  count teeth at the chevron apex.
 
 ### Changed
 

@@ -119,16 +119,18 @@ def _load_roller(trimesh_module, stl_path, output):
 
 
 def _tooth_clusters(mesh, z_low, z_high):
+    """Teeth in the band, counted in a 1 mm slice at its mid-plane (the chevron apex)."""
     import numpy as np
 
-    band = mesh.vertices[(mesh.vertices[:, 2] > z_low) & (mesh.vertices[:, 2] < z_high)]
+    z_mid = (z_low + z_high) / 2.0
+    band = mesh.vertices[np.abs(mesh.vertices[:, 2] - z_mid) <= 0.5]
     radius = np.hypot(band[:, 0], band[:, 1])
     tips = band[radius > (TIP_RADIUS_MM - 0.05)]
     if len(tips) == 0:
         return 0
     angles = np.sort(np.degrees(np.arctan2(tips[:, 1], tips[:, 0])) % 360.0)
     gaps = np.diff(np.concatenate([angles, [angles[0] + 360.0]]))
-    return max(1, int((gaps > 2.0).sum()))
+    return max(1, int((gaps > 5.0).sum()))
 
 
 @pytest.mark.requires_openscad

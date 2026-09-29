@@ -1,11 +1,13 @@
 """
 Gear assets — the vendored one-piece roller gears, in this repo's frame.
 
-The gears are a 1:1 replication of Brennen's reference set. They are DERIVED,
+The gears are a 1:1 replication of the gear rings of Brennen's Version 1 gear
+holders (since 2026-09-28; the 2026-08-24 sample set before that, whose B gears
+carry a 9 mm bore the Version 1 housing pin cannot enter). They are DERIVED,
 never authored: the web repo (braille-cylinder-stl-generator) owns the
-derivation in ``scripts/derive_gear_assets.py``, which reads the four reference
-STLs and bakes the canonical sample-to-program transform into packed binaries at
-``static/assets/gears/gears_{a,b}.bin``.
+derivation in ``scripts/derive_gear_assets.py``, which cuts each holder down to
+its ring, seats it on the barrel end and bakes the canonical assembly-to-program
+transform into packed binaries at ``static/assets/gears/gears_{a,b}.bin``.
 
 This repo needs the same geometry as STL, because ``.scad`` can only
 ``import()`` a mesh file — and in THIS generator's frame, which differs from the
@@ -82,7 +84,11 @@ TOOTH_COUNT = 24
 TIP_RADIUS_MM = 16.1093702290795
 TIP_RADIUS_TOL_MM = 0.001
 TIP_BAND_DEPTH_MM = 0.05
-TOOTH_GAP_DEG = 2.0
+# Teeth are counted in a thin slice at the ring's mid-plane - the chevron apex of
+# the herringbone teeth. Over the whole band each tooth's tip vertices sweep
+# several degrees, and the Version 1 holders' tessellation splits them in two.
+TOOTH_MID_PLANE_HALF_MM = 0.5
+TOOTH_MID_GAP_DEG = 5.0
 
 # In this frame: a 10 mm gear below the barrel and another above it.
 EXPECTED_Z_BANDS = ((-10.000, 0.000), (52.000, 62.000))
@@ -158,11 +164,11 @@ def regenerate():
     ASSETS_DIR.mkdir(parents=True, exist_ok=True)
     provenance = {
         "note": (
-            "Derived 1:1 from Brennen's reference STLs; never edit; regenerate via the web "
-            "repo's scripts/derive_gear_assets.py, then this repo's "
-            "python -m tests.test_gear_assets"
+            "Derived 1:1 from Brennen's Version 1 gear holders (each holder's gear ring only, "
+            "seated on the barrel end); never edit; regenerate via the web repo's "
+            "scripts/derive_gear_assets.py, then this repo's python -m tests.test_gear_assets"
         ),
-        "derived": "2026-08-24",
+        "derived": "2026-09-28",
         "frame": (
             "This generator's frame: cylinder axis at the origin, barrel base at z=0 "
             "(barrel z 0..52), gears at z -10..0 and 52..62. That is the web repo's "
@@ -278,16 +284,18 @@ def _tooth_clusters(vertices, z_low, z_high):
 
     These meshes carry vertices only on feature edges, so a mid-band slice finds
     nothing: the tip band is the one radius where every tooth is guaranteed to
-    have vertices.
+    have vertices, and the band's mid-plane (the chevron apex) is where each
+    tooth is one tight cluster.
     """
-    in_band = vertices[(vertices[:, 2] > z_low) & (vertices[:, 2] < z_high)]
+    z_mid = (z_low + z_high) / 2.0
+    in_band = vertices[np.abs(vertices[:, 2] - z_mid) <= TOOTH_MID_PLANE_HALF_MM]
     radius = np.hypot(in_band[:, 0], in_band[:, 1])
     tips = in_band[radius > (TIP_RADIUS_MM - TIP_BAND_DEPTH_MM)]
     if len(tips) == 0:
         return 0
     angles = np.sort(np.degrees(np.arctan2(tips[:, 1], tips[:, 0])) % 360.0)
     gaps = np.diff(np.concatenate([angles, [angles[0] + 360.0]]))
-    return max(1, int((gaps > TOOTH_GAP_DEG).sum()))
+    return max(1, int((gaps > TOOTH_MID_GAP_DEG).sum()))
 
 
 @pytest.mark.parametrize("asset_name", ALL_ASSET_NAMES)
