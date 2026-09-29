@@ -13,6 +13,14 @@ files render exactly as in 2.10.0.
 
 ### Changed
 
+- **Customizer wording signed off by Brennen (2026-09-28).** The `[Gears]` tab
+  now says "Print bottom gear down with supports off."; the `indicator_mode`
+  description ends "Tactile arrows are the default for Version 2, as in the web
+  app. Choose Visual for letter and triangle markers."; each key clearance
+  dial reads, for example, "Gear A1, the top of Cylinder A: room around its peg,
+  per side. Raise if it binds, lower if loose."; and the tactile-recess wall
+  warning ends "or lower a clearance dial." Both Version 2 files; no geometry
+  changes.
 - **The fused roller's top gear socket is coned like its bottom one.** With
   `integrated_gears` On, the socket in gears A1 / B1 (a flat floor 1.5 mm
   above the barrel's top face) is now the same 45 degree cone down to the 2 mm

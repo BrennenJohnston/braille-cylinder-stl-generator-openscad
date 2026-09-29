@@ -252,7 +252,7 @@ render_both_plates = "On"; // [Off, On]
 pair_spacing_mm = 10; // [2:1:50]
 
 /* [Row Indicator Style] */
-// How each row is marked for alignment. Visual = today's recessed triangle (plus the optional letter square) in marker cells at the start of every row. Tactile = a raised arrow on the embossing plate and a matching recess on the counter plate, centred in the seam gap and pointing at the cylinder top, so a blind user can find the alignment point and tell which end is up by touch. Tactile removes the marker cells (freeing them for text) and ignores the Indicator Letters toggle. Tactile is this Version 2 file's default, as it is the web app's for Version 2; the Version 1 file defaults to Visual.
+// How each row is marked for alignment. Visual = today's recessed triangle (plus the optional letter square) in marker cells at the start of every row. Tactile = a raised arrow on the embossing plate and a matching recess on the counter plate, centred in the seam gap and pointing at the cylinder top, so a blind user can find the alignment point and tell which end is up by touch. Tactile removes the marker cells (freeing them for text) and ignores the Indicator Letters toggle. Tactile arrows are the default for Version 2, as in the web app. Choose Visual for letter and triangle markers.
 indicator_mode = "Tactile"; // [Visual, Tactile]
 // Tactile only: indicator width measured around the cylinder (mm)
 tactile_indicator_width = 4.0; // [2:0.1:10]
@@ -345,13 +345,13 @@ cone_segments = 16; // [8:1:64] Number of segments for cone shapes
 // most printers; raise a value if that peg binds, lower it if the peg is
 // loose.
 
-// Gear A1, the top of Cylinder A: extra room around its peg, per side (mm).
+// Gear A1, the top of Cylinder A: room around its peg, per side. Raise if it binds, lower if loose.
 key_clearance_a1_mm = 0.075; // [0:0.005:0.5]
-// Gear A2, the bottom of Cylinder A: extra room around its peg, per side (mm).
+// Gear A2, the bottom of Cylinder A: room around its peg, per side. Raise if it binds, lower if loose.
 key_clearance_a2_mm = 0.075; // [0:0.005:0.5]
-// Gear B1, the top of Cylinder B: extra room around its peg, per side (mm).
+// Gear B1, the top of Cylinder B: room around its peg, per side. Raise if it binds, lower if loose.
 key_clearance_b1_mm = 0.075; // [0:0.005:0.5]
-// Gear B2, the bottom of Cylinder B: extra room around its peg, per side (mm).
+// Gear B2, the bottom of Cylinder B: room around its peg, per side. Raise if it binds, lower if loose.
 key_clearance_b2_mm = 0.075; // [0:0.005:0.5]
 
 // History: two printed rounds bracketed the one shared dial these replace -
@@ -2319,7 +2319,7 @@ if (tactile_seam_wall_too_thin)
              " mm of wall is left between the tactile arrow recess and the ",
              "keyed cutout; the printable minimum is ", TACTILE_SEAM_WALL_MIN,
              " mm. Lower tactile_indicator_raise or tactile_recess_extra_depth, ",
-             "or lower the key clearance dials."));
+             "or lower a clearance dial."));
 
 module indicator_triangle_2d(rotate_180 = false) {
     // Isosceles triangle with vertical base on LEFT, apex RIGHT (default).
