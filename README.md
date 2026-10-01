@@ -359,9 +359,14 @@ Things worth knowing before you switch it on:
   and a taller one would swallow the teeth. Both paper-thickness presets already
   set this size, so the shipped defaults pass.
 - **The barrel prints solid.** The polygonal cutout is dropped while gears are
-  on, and the console says so if you had one set. A one-piece roller has no
-  through-path along its axis anyway — the gear bores are blind pockets — so
-  keeping the cutout would seal a cavity nothing can reach or drain.
+  on, and the console says so if you had one set. The gears close both ends of
+  the barrel, so keeping the cutout would seal a cavity nothing can reach or
+  drain.
+- **It prints support-free with its bottom gear on the build plate** (since
+  2026-09-30). A 2 mm vent runs the whole axis, so the roller lifts off the
+  embosser's pin without a vacuum, and each gear socket ends in a 45° cone to
+  that vent instead of a flat roof. The cone stays clear of the pin's 14 mm
+  bore and taper, which are exactly as before.
 - The gears are **not adjustable**. They replicate the reference set exactly, so
   that a roller printed here meshes with one printed from the web app.
 

@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Parity with the web generator's per-key clearance dials (2026-09-25). **Only
 the Embosser Version 2 file and its MakerWorld copy change**; the Version 1
 files render exactly as in 2.10.0 with gears off, and with gears on they carry
-the corrected Version 1 gear assets (Fixed, below).
+the corrected Version 1 gear assets (Fixed, below) and, since 2026-09-30, the
+vent and self-supporting gear sockets (Changed, below).
 
 ### Fixed
 
@@ -26,6 +27,19 @@ the corrected Version 1 gear assets (Fixed, below).
 
 ### Changed
 
+- **The Version 1 fixed-gear roller prints without support inside its gear
+  sockets (2026-09-30, Brennen's approved plan; the web generator's change of
+  the same day).** With `integrated_gears` On, each gear's housing-pin socket
+  used to end in a flat roof 8.5 mm in, which a roller printed bottom gear down
+  could only make over support. Both sockets now end in a 45 degree cone that
+  continues the socket's own taper to a 2 mm vent along the whole axis, so the
+  roller also comes off the embosser's pin without a vacuum: Version 2's v9
+  change, ported. The pin's fit is untouched: each cone runs 0.02 mm inside the
+  taper, so the mouth chamfer, the 14 mm key bore and the taper are exactly as
+  the assets have them (`tests/test_gear_rollers_scad.py` samples them on the
+  render). New constants mirror `app/geometry/gears.py`; `$fn` policy case 7,
+  `AXIS_CUT_FN` 48, joins the Version 1 file. No barrel chamfer on Version 1.
+  The MakerWorld copy carries the same body, with the switch still hidden.
 - **Customizer wording signed off by Brennen (2026-09-28).** The `[Gears]` tab
   now says "Print bottom gear down with supports off."; the `indicator_mode`
   description ends "Tactile arrows are the default for Version 2, as in the web
