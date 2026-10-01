@@ -624,7 +624,7 @@ What helps:
   `tactile_indicator_width`
 
 ### Dots Don't Align
-- Check `braille_y_adjust` for vertical offset, or `seam_offset_degrees` for angular offset around the cylinder
+- Check `braille_y_adjust` for vertical offset (`seam_offset_degrees` turns only the polygonal cutout; it never moves the dots)
 - Ensure spacing settings match between emboss and counter plates
 
 ### Plates Don't Fit Together

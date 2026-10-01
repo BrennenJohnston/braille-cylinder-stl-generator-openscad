@@ -445,7 +445,7 @@
       "range": [0, 360],
       "unit": "degrees",
       "section": "Expert Mode - Cylinder Dimensions",
-      "description": "Seam offset (degrees) — Rotates starting position around cylinder"
+      "description": "Seam offset (degrees) — Turns the polygonal cutout around the cylinder's axis. The braille does not move."
     },
     {
       "openscad_name": "seam_channel",

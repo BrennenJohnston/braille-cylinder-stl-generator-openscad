@@ -294,9 +294,7 @@ dot_spacing = 2.5; // [1:0.1:5] Spacing between dots within a cell (mm)
 
 // --- Braille Positioning ---
 // Note: on a cylinder, X = angular wrap around the seam — a linear "X adjust"
-// has no useful meaning, so only the vertical adjust is exposed. Use
-// `seam_offset_degrees` (Expert Mode - Cylinder Dimensions) to rotate the
-// braille pattern around the cylinder axis.
+// has no useful meaning, so only the vertical adjust is exposed.
 braille_y_adjust = 0.0; // [-10:0.1:10] Vertical adjustment of braille pattern (mm)
 
 /* [Expert Mode - Braille Dot Adjustments] */

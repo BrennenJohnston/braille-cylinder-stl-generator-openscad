@@ -259,7 +259,7 @@ cylinder_diameter_mm = 30.8; // [10:0.1:100] Cylinder outer diameter in mm
 cylinder_height_mm = 52; // [20:1:150] Cylinder height in mm
 polygon_cutout_radius_mm = 13.0; // [0:0.1:50] Polygonal cutout circumscribed radius (0 = no cutout)
 polygon_cutout_points = 12; // [3:1:24] Number of sides/points for polygonal cutout
-seam_offset_degrees = 0.0; // [0:1:360] Seam offset (degrees) — Rotates starting position around cylinder
+seam_offset_degrees = 0.0; // [0:1:360] Seam offset (degrees) — Turns the polygonal cutout around the cylinder's axis. The braille does not move.
 
 // Slicer seam channel (OpenSCAD parity plan phase O1, 2026-09-21; web decisions
 // D-1, D-2, D-13..D-15). Size is not a dial: the six SEAM_CHANNEL_* constants
@@ -280,9 +280,7 @@ dot_spacing = 2.5; // [1:0.1:5] Spacing between dots within a cell (mm)
 
 // --- Braille Positioning ---
 // Note: on a cylinder, X = angular wrap around the seam — a linear "X adjust"
-// has no useful meaning, so only the vertical adjust is exposed. Use
-// `seam_offset_degrees` (Expert Mode - Cylinder Dimensions) to rotate the
-// braille pattern around the cylinder axis.
+// has no useful meaning, so only the vertical adjust is exposed.
 braille_y_adjust = 0.0; // [-10:0.1:10] Vertical adjustment of braille pattern (mm)
 
 /* [Expert Mode - Braille Dot Adjustments] */

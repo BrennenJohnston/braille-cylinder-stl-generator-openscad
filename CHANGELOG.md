@@ -15,6 +15,16 @@ vent and self-supporting gear sockets (Changed, below).
 
 ### Fixed
 
+- **The Seam Offset description says what the dial does (2026-10-01).**
+  `seam_offset_degrees` turns only the polygonal cutout, so its Customizer
+  text now reads "Turns the polygonal cutout around the cylinder's axis. The
+  braille does not move." - the web app's wording, S-SO1, signed by Brennen
+  on 2026-10-01 - instead of "Rotates starting position around cylinder", and
+  the note above Y Adjust no longer tells users to turn the braille with it.
+  The dial text changes in both Version 1 files and the note in all four model
+  files; `tests/parameter_mapping.json` follows, and the README's "Dots Don't
+  Align" tip, `docs/PARAMETER_MAPPING.md` and the coordinate-system document
+  stop saying it moves the pattern. No geometry changes.
 - **The Version 1 fixed gears are the Version 1 embosser's gears (2026-09-28,
   found by Brennen's print).** `assets/gears_a.stl` and `gears_b.stl` are
   regenerated from the web repo's new `gears_{a,b}.bin`: the gear rings of his
@@ -54,7 +64,9 @@ vent and self-supporting gear sockets (Changed, below).
   vent that the bottom sockets got in 2.10.0 (`V2_TOP_GEAR_SOCKET_A/_B`,
   measured off the gear assets: bore 7.0 / 5.0, rim 5.2 / 3.2), so both ends
   match and the roller prints support-free either way up. Bottom gear down is
-  still the advice.
+  still the advice. Brennen's print testing of 2026-09-30 printed it and found
+  it fits; it also found the housing peg does not reach the cone and the
+  0.14 mm ledge under the barrel needs no support.
 - **One key clearance dial per gear, each 0.075 mm.** The `[Version 2 Keyed
   Cutouts]` tab's single `key_clearance_mm` is replaced by
   `key_clearance_a1_mm`, `key_clearance_a2_mm`, `key_clearance_b1_mm` and
@@ -67,6 +79,15 @@ vent and self-supporting gear sockets (Changed, below).
   shared 0.110 printed a touch loose there. The nub and sockets still follow no
   dial. A saved Customizer preset that names `key_clearance_mm` is ignored
   for that key (OpenSCAD drops unknown names); set the four dials instead.
+
+- **The MakerWorld quick start describes the embosser's rollers (2026-10-01,
+  Brennen's call, matching the web app's help).** The spice jar, medicine
+  bottle and water bottle examples, the advice to measure a container for the
+  diameter, and the tip to raise the diameter "for a larger container" are
+  gone: the card-stock presets set the size the embosser was built for. The
+  sizing section also says that `seam_offset_degrees` turns only the
+  cutout. `docs/MakerWorld_Quick_Start_Guide.pdf` is regenerated from the
+  markdown with `scripts/generate_quick_start_pdf.py`.
 
 ### Removed
 

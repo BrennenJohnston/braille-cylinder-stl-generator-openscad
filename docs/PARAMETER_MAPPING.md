@@ -249,8 +249,9 @@ on the 30.8 mm cylinder); see
 | `braille_y_adjust` | Y Adjust | 0.0 mm | -10 to 10 mm |
 
 > Removed in v2.2.0: `braille_x_adjust`. On a cylinder the X axis is the angular
-> wrap around the seam, so a linear "X adjust" had no useful meaning. Use
-> `seam_offset_degrees` (Cylinder Dimensions) for angular pattern offset.
+> wrap around the seam, so a linear "X adjust" had no useful meaning.
+> `seam_offset_degrees` (Cylinder Dimensions) turns only the polygonal cutout;
+> it does not move the pattern.
 
 ### Expert Mode - Emboss Dot Dimensions (Rounded Shape)
 | OpenSCAD Parameter | Web App Equivalent | Default | Range |
@@ -396,7 +397,7 @@ and the polygonal cutout are unchanged — only surface features differ.
 
 ### 6. **Cylinder Support**
 - Full parametric control over diameter, height, and polygonal cutout
-- Seam offset allows rotation adjustment
+- Seam offset turns the polygonal cutout (the braille does not move)
 - Supports both rounded and cone dot shapes on curved surfaces
 
 ## Default Values Alignment
