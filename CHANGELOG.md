@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Parity with the web generator's per-key clearance dials (2026-09-25). **Only
-the Embosser Version 2 file and its MakerWorld copy change**; the Version 1
-files render exactly as in 2.10.0 with gears off, and with gears on they carry
-the corrected Version 1 gear assets (Fixed, below) and, since 2026-09-30, the
-vent and self-supporting gear sockets (Changed, below).
+## [2.11.0] - 2026-10-01
+
+Parity with the web generator through 2026-10-01. With gears off the Version 1
+files render exactly as in 2.10.0 (only the Seam Offset and Y Adjust
+descriptions changed); with gears on they carry the corrected Version 1 gear
+assets (Fixed, below) and the vent and self-supporting gear sockets (Changed,
+below). The Version 2 files gain one key clearance dial per gear and the coned
+top gear socket, and the MakerWorld quick start describes the cylinders as the
+card embosser's rollers.
 
 ### Fixed
 
