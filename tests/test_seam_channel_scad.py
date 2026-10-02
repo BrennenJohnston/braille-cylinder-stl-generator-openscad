@@ -468,9 +468,16 @@ def _groove_cap_angles_at(trimesh_module, stl_path, height):
 def test_v2_groove_sits_at_the_web_angle(
     openscad_binary, trimesh_module, tmp_path, plate, expected
 ):
-    """Same physical angles on the 54 mm barrel; the keyed bore never reaches the floor."""
+    """
+    Same physical angles on the 54 mm barrel; the keyed bore never reaches the
+    floor. Pinned to the Visual style: these are the visual-mode angles, and
+    since 2026-09-24 the Version 2 file defaults to Tactile (groove at 180 on
+    both plates, proved by test_tactile_seam_column_scad.py).
+    """
     stl_path = tmp_path / "plate.stl"
-    output = _render(openscad_binary, V2_FILE, stl_path, {"plate_type": plate})
+    output = _render(
+        openscad_binary, V2_FILE, stl_path, {"plate_type": plate, "indicator_mode": "Visual"}
+    )
     assert "ERROR:" not in output and "WARNING:" not in output, output[:800]
     assert "NOTE: The seam channel" not in output
     angles = _groove_cap_angles_at(trimesh_module, stl_path, V2_HEIGHT)

@@ -56,7 +56,11 @@ KEYS = {  # plate -> (bottom key, top key), each [length (on 90/270), width (on 
     "Embossing Plate": ((18.0, 10.0), (14.0, 14.0)),
     "Counter Plate": ((20.0, 8.0), (16.0, 12.0)),
 }
-DEFAULT_CLEARANCE = 0.110
+# Each dial's default since 2.11.0 (web decision D-K6): plate -> (bottom key, top key).
+DEFAULT_CLEARANCES = {
+    "Embossing Plate": (0.075, 0.075),  # A2, A1
+    "Counter Plate": (0.075, 0.075),  # B2, B1
+}
 COUNTERSINK_OFFSET = 2.0
 COUNTERSINK_DEPTH = 2.0
 
@@ -234,10 +238,16 @@ def test_version2_plate_renders_as_one_body(
     The emboss plate manages one body here - unlike the web export - because
     DOT_BASE_EMBED sinks each dot's base below the shell facet, which is the
     fix this repo already carries for the dome tangency.
+
+    Pinned to the Visual style since 2026-09-24, when the file's default became
+    Tactile: a tactile emboss plate's chained raised arrows touch apex to base
+    exactly (measured: one body, 3 non-manifold edges at z 17..37, r 15.40..15.90
+    - the arrows' own outline), the tangency the web generator grows by 5 um in
+    gear mode only. That is a tactile-mode property, not a keyed-cutout one.
     """
     name = "v2_" + plate.split()[0].lower()
     stl_path, output, _ = _render(
-        openscad_binary, tmp_path, name, {"plate_type": plate}
+        openscad_binary, tmp_path, name, {"plate_type": plate, "indicator_mode": "Visual"}
     )
     mesh = _load(trimesh_module, stl_path, output)
 
@@ -295,10 +305,14 @@ def test_each_pocket_is_its_own_r14_key(
     mesh = _load(trimesh_module, stl_path, output)
 
     bottom_key, top_key = KEYS[plate]
-    for z, (length, width) in ((BOTTOM_PROBE_Z, bottom_key), (TOP_PROBE_Z, top_key)):
+    bottom_clearance, top_clearance = DEFAULT_CLEARANCES[plate]
+    for z, (length, width), clearance in (
+        (BOTTOM_PROBE_Z, bottom_key, bottom_clearance),
+        (TOP_PROBE_Z, top_key, top_clearance),
+    ):
         loop = _hole_loop(mesh, z)
-        half_w = (width + 2 * DEFAULT_CLEARANCE) / 2
-        half_l = (length + 2 * DEFAULT_CLEARANCE) / 2
+        half_w = (width + 2 * clearance) / 2
+        half_l = (length + 2 * clearance) / 2
 
         assert np.abs(loop[:, 0]).max() == pytest.approx(half_w, abs=0.02), (
             f"x extent at z={z}"
@@ -307,7 +321,7 @@ def test_each_pocket_is_its_own_r14_key(
             f"y extent at z={z}"
         )
         assert _polygon_area(loop) == pytest.approx(
-            _rounded_rect_area(length, width, DEFAULT_CLEARANCE), abs=0.5
+            _rounded_rect_area(length, width, clearance), abs=0.5
         ), f"section area at z={z}"
 
         # The flat on the arrow column. Interpolated along the edge that
@@ -348,12 +362,13 @@ def test_all_four_mouths_carry_the_same_45_degree_countersink(
     mesh = _load(trimesh_module, stl_path, output)
 
     bottom_key, top_key = KEYS[plate]
-    for face_z, sign, (length, width) in (
-        (0.0, +1, bottom_key),
-        (BARREL_H, -1, top_key),
+    bottom_clearance, top_clearance = DEFAULT_CLEARANCES[plate]
+    for face_z, sign, (length, width), clearance in (
+        (0.0, +1, bottom_key, bottom_clearance),
+        (BARREL_H, -1, top_key, top_clearance),
     ):
         for depth in (0.1, 1.0, 1.9):
-            grown = DEFAULT_CLEARANCE + (COUNTERSINK_OFFSET - depth)
+            grown = clearance + (COUNTERSINK_OFFSET - depth)
             loop = _hole_loop(mesh, face_z + sign * depth)
             assert np.abs(loop[:, 0]).max() == pytest.approx(
                 (width + 2 * grown) / 2, abs=0.02
@@ -463,43 +478,55 @@ def test_each_plate_sinks_its_own_socket_into_the_bottom_face(
 
 @pytest.mark.requires_openscad
 @pytest.mark.slow
-def test_the_clearance_dial_reaches_the_geometry(
+def test_each_clearance_dial_reaches_only_its_own_key(
     trimesh_module, openscad_binary, tmp_path
 ):
     """
-    -D key_clearance_mm=0.3 must actually change the pocket. It would not if
-    the parameter were preset-owned: a preset-owned key silently ignores -D.
+    -D key_clearance_a2_mm=0.3 must change the BOTTOM pocket of the embossing
+    plate (gear A2's) and leave the top one (gear A1's) at its own default. It
+    would not move at all if the parameter were preset-owned: a preset-owned
+    key silently ignores -D.
     """
     import numpy as np
 
     stl_path, output, _ = _render(
         openscad_binary,
         tmp_path,
-        "v2_c030",
-        {"plate_type": "Embossing Plate", "key_clearance_mm": 0.3},
+        "v2_a2_c030",
+        {"plate_type": "Embossing Plate", "key_clearance_a2_mm": 0.3},
     )
     mesh = _load(trimesh_module, stl_path, output)
 
-    length, width = KEYS["Embossing Plate"][0]
+    (bottom_length, bottom_width), (top_length, top_width) = KEYS["Embossing Plate"]
     loop = _hole_loop(mesh, BOTTOM_PROBE_Z)
-    assert np.abs(loop[:, 0]).max() == pytest.approx((width + 2 * 0.3) / 2, abs=0.02)
+    assert np.abs(loop[:, 0]).max() == pytest.approx(
+        (bottom_width + 2 * 0.3) / 2, abs=0.02
+    )
     assert _polygon_area(loop) == pytest.approx(
-        _rounded_rect_area(length, width, 0.3), abs=0.5
+        _rounded_rect_area(bottom_length, bottom_width, 0.3), abs=0.5
+    )
+    _bottom_default, top_default = DEFAULT_CLEARANCES["Embossing Plate"]
+    untouched = _hole_loop(mesh, TOP_PROBE_Z)
+    assert np.abs(untouched[:, 0]).max() == pytest.approx(
+        (top_width + 2 * top_default) / 2, abs=0.02
+    )
+    assert _polygon_area(untouched) == pytest.approx(
+        _rounded_rect_area(top_length, top_width, top_default), abs=0.5
     )
 
 
 @pytest.mark.requires_openscad
 @pytest.mark.slow
 def test_an_out_of_range_clearance_stops_the_render(openscad_binary, tmp_path):
-    """0.6 is past the 0.5 maximum: the assert fires and no STL is written."""
+    """0.6 is past the 0.5 maximum: the assert fires, names the dial, and no STL is written."""
     stl_path, output, _ = _render(
         openscad_binary,
         tmp_path,
-        "v2_c060",
-        {"plate_type": "Embossing Plate", "key_clearance_mm": 0.6},
+        "v2_b1_c060",
+        {"plate_type": "Counter Plate", "key_clearance_b1_mm": 0.6},
     )
     assert not stl_path.exists(), "an out-of-range clearance still wrote an STL"
-    assert "key_clearance_mm must be between 0 and 0.5 mm." in output
+    assert "key_clearance_b1_mm must be between 0 and 0.5 mm." in output
 
 
 # ---------------------------------------------------------------------------
@@ -571,7 +598,11 @@ def test_the_version2_tab_sits_above_the_first_hidden_tab(source_text):
     tab = source_text.index("/* [Version 2 Keyed Cutouts] */")
     hidden = source_text.index("/* [Hidden] */")
     assert tab < hidden, "the Version 2 tab is hidden from the Customizer"
-    assert "key_clearance_mm = 0.110; // [0:0.005:0.5]" in source_text
+    # One dial per gear since 2.11.0 (web decision D-K6: 0.075 on all four);
+    # the shared dial is gone.
+    for gear, default in (("a1", "0.075"), ("a2", "0.075"), ("b1", "0.075"), ("b2", "0.075")):
+        assert f"key_clearance_{gear}_mm = {default}; // [0:0.005:0.5]" in source_text
+    assert "key_clearance_mm =" not in source_text
 
 
 def test_the_clearance_is_never_preset_owned(source_text):
@@ -583,7 +614,7 @@ def test_the_clearance_is_never_preset_owned(source_text):
         start = source_text.index(f"{table} = [")
         end = source_text.index("];", start)
         body = source_text[start:end]
-        assert "key_clearance_mm" not in body, f"{table} must not own the clearance"
+        assert "key_clearance" not in body, f"{table} must not own a clearance"
         assert '["cylinder_diameter_mm",            30.8]' in body.replace("  ", "  ")
         for dropped in (
             "polygon_cutout_radius_mm",
@@ -780,3 +811,25 @@ def test_the_scad_numbers_still_match_the_web_generator(source_text):
             float(entry.group(1)),
             float(entry.group(2)),
         ), f"{scad_name} has drifted from {web_key}"
+
+
+def test_the_version2_files_default_to_the_tactile_seam_arrow():
+    """
+    Since 2026-09-24 the web app defaults Version 2 to the tactile seam arrow
+    (its decision D-4), and the two Version 2 files follow; the two Version 1
+    files keep Visual, so existing Version 1 models render unchanged.
+    """
+    tactile = 'indicator_mode = "Tactile"; // [Visual, Tactile]'
+    visual = 'indicator_mode = "Visual"; // [Visual, Tactile]'
+    for path in (
+        V2_FILE,
+        PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad",
+    ):
+        source = path.read_text(encoding="utf-8")
+        assert tactile in source and visual not in source, path.name
+    for path in (
+        PROJECT_ROOT / "Braille_Cylinder_STL_Generator.scad",
+        PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad",
+    ):
+        source = path.read_text(encoding="utf-8")
+        assert visual in source and tactile not in source, path.name

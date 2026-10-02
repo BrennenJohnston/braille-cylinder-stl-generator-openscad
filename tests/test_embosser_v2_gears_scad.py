@@ -13,7 +13,10 @@ What this proves about the file the user actually renders:
   * a barrel the gears cannot fit is REFUSED with the web generator's sentence;
   * with integrated_gears Off the geometry is exactly the pre-gears file's
     (a recorded signature, see tests/fixtures/version2_gears/README.md);
-  * every gear number in the .scad still equals the web generator's.
+  * every gear number in the .scad still equals the web generator's;
+  * since 2026-09-24 (the v9 update) the barrel's bottom edge is chamfered
+    0.65 mm, a 2 mm vent runs the whole axis, and each bottom socket's ceiling
+    is a 45 degree cone to that vent - so the axis is AIR from mouth to mouth.
 
 Judged by OUTPUT TEXT and FILE EXISTENCE, never by an exit code - the rule
 test_gear_rollers_scad.py follows, because one test asserts on a render that
@@ -106,17 +109,63 @@ NOTCH_PROBES = [
 ]
 # The old keyed hole (r <= 10.7 at every height) and the socket (bottom 3.15 mm)
 # and the nub (above the top face) - every one must be solid material now.
+# Off the axis only: since 2026-09-24 the axis itself is the 2 mm vent.
 SOLID_PROBES = [
-    [0.0, 0.0, 27.0],
     [10.0, 0.0, 27.0],
     [-10.0, 0.0, 27.0],
     [0.0, 10.0, 27.0],
     [0.0, -10.0, 27.0],
-    [0.0, 0.0, 8.0],
-    [0.0, 0.0, 46.0],
+    [1.5, 0.0, 8.0],
+    [1.5, 0.0, 46.0],
     [-7.0, 0.0, 8.0],
     [-7.0, 0.0, 46.0],
 ]
+
+# The v9 update (2026-09-24; web decisions D-1, D-2): app/geometry/version2.py
+# V2_FUSED_BARREL_CHAMFER_MM, V2_VENT_RADIUS_MM, V2_GEAR_SOCKET and the cone
+# constants, in the base-at-zero frame (barrel 0..54, gears -10..0 / 54..64).
+V9_CHAMFER = 0.65
+V9_LIP = 1.0
+V9_VENT_R = 1.0
+V9_VENT_OVERSHOOT = 1.0
+V9_GEAR_BODY_T = 10.0
+V9_CARD_SHELF = 1.0
+V9_GEAR_ROOT_RADIUS = 13.6613
+V9_CONE_GROWTH = 0.01
+V9_CONE_OVERLAP = 0.5
+V9_SOCKET = {  # bore r, rim r, ceiling below the barrel face, mouth chamfer
+    "Embossing Plate": (7.0, 5.3, 1.5, 1.0),
+    "Counter Plate": (5.0, 3.3, 1.5, 1.0),
+}
+# The top sockets (web D-K5, 2026-09-25): bore r, rim r at the floor vertex, floor above the top face.
+TOP_SOCKET = {
+    "Embossing Plate": (7.0, 5.2, 1.5),
+    "Counter Plate": (5.0, 3.2, 1.5),
+}
+# Air on the axis from the bottom gear's mouth to the top gear's.
+VENT_PROBES = [[0.0, 0.0, z] for z in (-9.0, -5.0, -1.0, 1.0, 8.0, 27.0, 46.0, 53.0, 55.0, 59.0, 63.0)]
+# Solid barrel beside the vent, above the cone (its radius passes 1.5 at z 2.3 on A).
+BESIDE_VENT_PROBES = [[1.5, 0.0, z] for z in (4.0, 8.0, 27.0, 46.0, 50.0)]
+# The chamfer: air just outside the foot at the bottom face, solid 0.65 up and on the rim.
+CHAMFER_AIR = [[15.30, 0.0, 0.1], [15.35, 0.0, 0.05]]
+CHAMFER_SOLID = [[15.35, 0.0, 0.7], [15.39, 0.0, 27.0]]
+# The socket cone (A: r 4.81 at z -1.0, apex z 2.8; B: r 2.81 at z -1.0, apex z 0.8).
+CONE_AIR = [[2.0, 0.0, -1.0], [1.5, 0.0, 0.0]]
+CONE_SOLID = {
+    "Embossing Plate": [[5.0, 0.0, -1.0], [4.0, 0.0, 0.0], [3.0, 0.0, 3.5]],
+    "Counter Plate": [[3.0, 0.0, -1.0], [2.0, 0.0, 0.0], [3.0, 0.0, 1.5]],
+}
+# The socket bore below the cone is still the open peg socket.
+BORE_AIR = {"Embossing Plate": [[6.5, 0.0, -6.0]], "Counter Plate": [[4.5, 0.0, -6.0]]}
+# The top socket cone (web D-K5): floor at z 55.5, apex 51.3 (A) / 53.3 (B),
+# r 4.71 at z 55.0 on A (2.71 on B): air on the axis side, solid outside and
+# below the apex, the bore above still open.
+TOP_CONE_AIR = [[2.0, 0.0, 55.0], [1.5, 0.0, 54.0]]
+TOP_CONE_SOLID = {
+    "Embossing Plate": [[5.0, 0.0, 55.0], [4.0, 0.0, 54.0], [3.0, 0.0, 50.5]],
+    "Counter Plate": [[3.0, 0.0, 55.0], [2.0, 0.0, 54.0], [3.0, 0.0, 52.5]],
+}
+TOP_BORE_AIR = {"Embossing Plate": [[6.5, 0.0, 60.0]], "Counter Plate": [[4.5, 0.0, 60.0]]}
 
 
 @pytest.fixture(scope="module")
@@ -214,8 +263,8 @@ def test_the_barrel_is_solid_and_the_notch_is_filled(
     trimesh_module, openscad_binary, tmp_path, plate
 ):
     """
-    No keyed hole, no socket (the axis is solid material at every height), and
-    the top gear's notch window on the arrow column is solid too - the fill
+    No keyed hole, no socket (solid material beside the axis at every height),
+    and the top gear's notch window on the arrow column is solid too - the fill
     that stops a solid barrel face sealing the notch into an undrainable void.
     """
     import numpy as np
@@ -231,11 +280,44 @@ def test_the_barrel_is_solid_and_the_notch_is_filled(
 @pytest.mark.requires_openscad
 @pytest.mark.slow
 @pytest.mark.parametrize("plate", ["Embossing Plate", "Counter Plate"])
+def test_the_fused_roller_is_vented_chamfered_and_coned(
+    trimesh_module, openscad_binary, tmp_path, plate
+):
+    """
+    The v9 update (2026-09-24): air on the axis from mouth to mouth (the vent),
+    solid barrel beside it, the 0.65 mm chamfer at the barrel's foot, and the
+    bottom socket's ceiling replaced by a 45 degree cone - still ONE body.
+    """
+    import numpy as np
+
+    stl_path, output, _ = _fused(openscad_binary, tmp_path, plate)
+    mesh = _load(trimesh_module, stl_path, output)
+    assert len(mesh.split(only_watertight=False)) == 1
+    assert not mesh.contains(np.array(VENT_PROBES)).any(), "the vent is blocked"
+    assert mesh.contains(np.array(BESIDE_VENT_PROBES)).all(), "the barrel beside the vent is gone"
+    assert not mesh.contains(np.array(CHAMFER_AIR)).any(), "the barrel foot is not chamfered"
+    assert mesh.contains(np.array(CHAMFER_SOLID)).all(), "the chamfer cut too much"
+    assert not mesh.contains(np.array(CONE_AIR)).any(), "the socket ceiling is still flat"
+    assert mesh.contains(np.array(CONE_SOLID[plate])).all(), "the socket cone cut too much"
+    assert not mesh.contains(np.array(BORE_AIR[plate])).any(), "the socket bore is filled"
+    assert not mesh.contains(np.array(TOP_CONE_AIR)).any(), "the top socket floor is still flat"
+    assert mesh.contains(np.array(TOP_CONE_SOLID[plate])).all(), "the top socket cone cut too much"
+    assert not mesh.contains(np.array(TOP_BORE_AIR[plate])).any(), "the top socket bore is filled"
+
+
+@pytest.mark.requires_openscad
+@pytest.mark.slow
+@pytest.mark.parametrize("plate", ["Embossing Plate", "Counter Plate"])
 def test_the_groove_survives_the_fused_roller(
     trimesh_module, openscad_binary, tmp_path, plate
 ):
-    """The channel is cut before the gears join, at the same physical angle."""
-    stl_path, output, _ = _fused(openscad_binary, tmp_path, plate)
+    """
+    The channel is cut before the gears join, at the same physical angle.
+    Pinned to the Visual style: GROOVE_DEG are the visual-mode angles, and
+    since 2026-09-24 the file defaults to Tactile (groove at 180 on both plates,
+    proved by test_tactile_seam_column_scad.py).
+    """
+    stl_path, output, _ = _fused(openscad_binary, tmp_path, plate, indicator_mode="Visual")
     _load(trimesh_module, stl_path, output)
     assert "NOTE: The seam channel" not in output
     angles = _groove_cap_angles_at(trimesh_module, stl_path, BARREL_H)
@@ -289,8 +371,26 @@ def test_gears_off_is_the_pre_gears_geometry(openscad_binary, tmp_path, plate):
     """
     recorded = json.loads(OFF_SIGNATURE.read_text(encoding="utf-8"))[plate]
     stl_path = tmp_path / "plate.stl"
+    # The signature was recorded while Visual was the file's default and the
+    # one shared key clearance dial sat at 0.110; since 2026-09-24 the Version
+    # 2 file defaults to Tactile (as the web app does) and since 2.11.0 each
+    # gear has its own dial at 0.075, so the style and all four clearances are
+    # pinned here - the contract is about the gears, not the row markers or
+    # the key fit. Reproducing the signature at 0.110 on four dials also
+    # proves the per-key refactor moved nothing at the old number.
     output = _render_binary(
-        openscad_binary, V2_FILE, stl_path, {"plate_type": plate}, flags=BASELINE_FLAGS
+        openscad_binary,
+        V2_FILE,
+        stl_path,
+        {
+            "plate_type": plate,
+            "indicator_mode": "Visual",
+            "key_clearance_a1_mm": 0.11,
+            "key_clearance_a2_mm": 0.11,
+            "key_clearance_b1_mm": 0.11,
+            "key_clearance_b2_mm": 0.11,
+        },
+        flags=BASELINE_FLAGS,
     )
     assert "ERROR:" not in output and "WARNING:" not in output, output[:800]
     assert stl_path.exists()
@@ -482,6 +582,14 @@ def test_the_gear_numbers_still_match_the_web_generator(source_text):
         ("GEAR_TIP_RADIUS_MM", "GEAR_TIP_RADIUS_MM"),
         ("V2_GEAR_BARREL_DIAMETER_MM", "V2_BARREL_DIAMETER_MM"),
         ("V2_GEAR_BARREL_HEIGHT_MM", "V2_BARREL_HEIGHT_MM"),
+        ("V2_FUSED_BARREL_CHAMFER", "V2_FUSED_BARREL_CHAMFER_MM"),
+        ("V2_FUSED_CHAMFER_LIP", "V2_FUSED_CHAMFER_LIP_MM"),
+        ("V2_VENT_R", "V2_VENT_RADIUS_MM"),
+        ("V2_VENT_OVERSHOOT", "V2_VENT_OVERSHOOT_MM"),
+        ("V2_CARD_SHELF", "V2_CARD_SHELF_MM"),
+        ("V2_GEAR_ROOT_RADIUS", "V2_GEAR_ROOT_RADIUS_MM"),
+        ("V2_SOCKET_CONE_GROWTH", "V2_SOCKET_CONE_GROWTH_MM"),
+        ("V2_SOCKET_CONE_OVERLAP", "V2_SOCKET_CONE_OVERLAP_MM"),
     ):
         assert _scad_number(source_text, scad_name) == web_number(web_name), (
             f"{scad_name} = {_scad_number(source_text, scad_name)} in the .scad, "
@@ -493,6 +601,28 @@ def test_the_gear_numbers_still_match_the_web_generator(source_text):
     assert _scad_number(source_text, "V2_GEAR_NOTCH_DEPTH") == web_notch(
         "b1_notch", "depth"
     )
+    gear_t = re.search(r"^GEAR_BODY_THICKNESS_MM\s*=\s*([0-9.]+)", gears, re.MULTILINE)
+    assert gear_t, "GEAR_BODY_THICKNESS_MM not found in gears.py"
+    assert _scad_number(source_text, "V2_GEAR_BODY_T") == float(gear_t.group(1))
+    for scad_name, key in (("V2_GEAR_SOCKET_A", "positive"), ("V2_GEAR_SOCKET_B", "negative")):
+        vector = re.search(rf"^{scad_name} = \[([0-9., ]+)\];", source_text, re.MULTILINE)
+        assert vector, f"{scad_name} not found in the .scad"
+        block = web.split(f"'{key}': {{'gear'")[1].split("}")[0]
+        expected = tuple(
+            float(re.search(rf"'{field}':\s*([0-9.]+)", block).group(1))
+            for field in ("bore_radius", "rim_radius", "ceiling_below_face", "mouth_chamfer")
+        )
+        assert tuple(float(v) for v in vector.group(1).split(",")) == expected, scad_name
+    for scad_name, key in (("V2_TOP_GEAR_SOCKET_A", "positive"), ("V2_TOP_GEAR_SOCKET_B", "negative")):
+        vector = re.search(rf"^{scad_name} = \[([0-9., ]+)\];", source_text, re.MULTILINE)
+        assert vector, f"{scad_name} not found in the .scad"
+        table = web.split("V2_TOP_GEAR_SOCKET = {")[1].split("\n}")[0]
+        block = table.split(f"'{key}': {{'gear'")[1].split("}")[0]
+        expected = tuple(
+            float(re.search(rf"'{field}':\s*([0-9.]+)", block).group(1))
+            for field in ("bore_radius", "rim_radius", "floor_above_face")
+        )
+        assert tuple(float(v) for v in vector.group(1).split(",")) == expected, scad_name
     b1 = re.search(
         r"^V2_ANTIROT_B1_NOTCH = \[([0-9., ]+)\];", source_text, re.MULTILINE
     )
@@ -513,3 +643,33 @@ def test_the_gear_numbers_still_match_the_web_generator(source_text):
         web_notch("a1_notch", "inner_radius"), abs=A1_DERIVED_TOL
     )
     assert "'Fixed gears for the Version 2 embosser fit only a '" in gears
+
+
+def test_the_fused_shell_chamfers_the_foot_after_the_channel_and_only_with_gears(source_text):
+    """The chamfer is a bare-barrel cut like the channel, gated on gears_on, cut before the keyed halves."""
+    code = _strip_comments(source_text)
+    shell = code.split("module cylinder_shell_v2(")[1].split("\nmodule ")[0]
+    chamfer = shell.index("fused_barrel_chamfer();")
+    assert shell.index("seam_channel_cut(channel_theta_deg)") < chamfer < shell.index("if (!gears_on) {")
+    assert "if (gears_on) fused_barrel_chamfer();" in shell
+    module = code.split("module fused_barrel_chamfer()")[1].split("\nmodule ")[0]
+    assert "rotate_extrude($fn = CYLINDER_SHELL_FN)" in module
+    assert "[r - c, -half_h], [r + lip, -half_h - lip], [r + lip, -half_h + c + lip]" in module
+
+
+def test_the_axis_cuts_are_the_last_subtraction_on_both_plates(source_text):
+    """Vent and cone after every union and every recess - the web worker's order - and only with gears."""
+    code = _strip_comments(source_text)
+    for module, flag, last_recess in (
+        ("cylinder_emboss_plate", "true", "ds_back_recesses();"),
+        ("cylinder_counter_plate", "false", "ds_front_recesses();"),
+    ):
+        body = code.split(f"module {module}()")[1].split("\nmodule ")[0]
+        cut = body.index(f"fused_axis_cuts({flag});")
+        assert body.index(f"gear_set_v2(emboss = {flag});") < body.index(last_recess) < cut
+        assert "if (gears_on) {" in body[body.index(last_recess):cut]
+    cuts = code.split("module fused_axis_cuts(emboss)")[1].split("\nmodule ")[0]
+    assert "$fn = AXIS_CUT_FN" in cuts
+    assert "r1 = rim + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH" in cuts
+    assert "r2 = V2_VENT_R + V2_SOCKET_CONE_GROWTH" in cuts
+    assert _scad_number(source_text, "AXIS_CUT_FN") == 48

@@ -119,16 +119,18 @@ def _load_roller(trimesh_module, stl_path, output):
 
 
 def _tooth_clusters(mesh, z_low, z_high):
+    """Teeth in the band, counted in a 1 mm slice at its mid-plane (the chevron apex)."""
     import numpy as np
 
-    band = mesh.vertices[(mesh.vertices[:, 2] > z_low) & (mesh.vertices[:, 2] < z_high)]
+    z_mid = (z_low + z_high) / 2.0
+    band = mesh.vertices[np.abs(mesh.vertices[:, 2] - z_mid) <= 0.5]
     radius = np.hypot(band[:, 0], band[:, 1])
     tips = band[radius > (TIP_RADIUS_MM - 0.05)]
     if len(tips) == 0:
         return 0
     angles = np.sort(np.degrees(np.arctan2(tips[:, 1], tips[:, 0])) % 360.0)
     gaps = np.diff(np.concatenate([angles, [angles[0] + 360.0]]))
-    return max(1, int((gaps > 2.0).sum()))
+    return max(1, int((gaps > 5.0).sum()))
 
 
 @pytest.mark.requires_openscad
@@ -309,3 +311,184 @@ def test_the_makerworld_build_hides_the_gear_switch():
 
     assert tab_above(makerworld) == "/* [Hidden] */"
     assert tab_above(canonical) == "/* [Gears] */"
+
+
+# ---------------------------------------------------------------------------
+# The vent and self-supporting sockets (2026-09-30, Brennen's approved plan;
+# the web generator's gears.axis_cut_blocks). Render frame: barrel 0..52, the
+# bottom gear's mouth at -10 and its old blind end at -1.5, the top's blind
+# end at 53.5 and mouth at 62. The bottom cone's wall is r = 3.68 - z, the
+# top's r = 1.01 + (z - 49.33).
+# ---------------------------------------------------------------------------
+
+WEB_GEARS = (
+    PROJECT_ROOT.parent
+    / "braille-cylinder-stl-generator"
+    / "app"
+    / "geometry"
+    / "gears.py"
+)
+GEAR_ASSETS = {"Embossing Plate": "gears_a.stl", "Counter Plate": "gears_b.stl"}
+SOCKET_DEPTH_MM = 8.5
+SOCKET_MOUTH_R_MM = 8.0
+
+
+@pytest.mark.requires_openscad
+@pytest.mark.slow
+@pytest.mark.parametrize("plate", ["Embossing Plate", "Counter Plate"])
+def test_the_geared_roller_is_vented_with_self_supporting_sockets(
+    trimesh_module, openscad_binary, tmp_path, plate
+):
+    """Air on the axis mouth to mouth, both cones' 45 degree walls, the pin socket still open - one body."""
+    import numpy as np
+
+    name = "vented_" + plate.split()[0].lower()
+    stl_path, output, _ = _render(
+        openscad_binary, tmp_path, name, {"integrated_gears": "On", "plate_type": plate}
+    )
+    mesh = _load_roller(trimesh_module, stl_path, output)
+    assert len(mesh.split(only_watertight=False)) == 1
+
+    axis = np.array([[0.0, 0.0, float(z)] for z in range(-9, 62)])
+    beside = np.array([[1.5, 0.0, float(z)] for z in range(3, 49)])
+    assert not mesh.contains(axis).any(), "the vent is blocked"
+    assert mesh.contains(beside).all(), "the barrel beside the vent is gone"
+    bottom_air = np.array([[4.7, 0.0, -1.2], [3.5, 0.0, 0.0], [2.0, 0.0, 1.5]])
+    bottom_solid = np.array([[5.1, 0.0, -1.2], [3.9, 0.0, 0.0], [2.0, 0.0, 2.5]])
+    top_air = np.array([[4.7, 0.0, 53.2], [3.5, 0.0, 52.0], [2.0, 0.0, 50.5]])
+    top_solid = np.array([[5.1, 0.0, 53.2], [3.9, 0.0, 52.0], [2.0, 0.0, 49.5]])
+    assert not mesh.contains(bottom_air).any(), "the bottom socket still ends flat"
+    assert mesh.contains(bottom_solid).all(), "the bottom cone cut too much"
+    assert not mesh.contains(top_air).any(), "the top socket still ends flat"
+    assert mesh.contains(top_solid).all(), "the top cone cut too much"
+    # The pin socket: air just inside the r 7.0 key bore and the taper, solid
+    # just outside (the top gear probed below A1's handle-connector slot).
+    socket_air = np.array(
+        [[6.9, 0.0, -6.0], [5.95, 0.0, -2.4], [6.9, 0.0, 56.0], [5.95, 0.0, 54.4]]
+    )
+    socket_wall = np.array(
+        [[7.1, 0.0, -6.0], [6.25, 0.0, -2.4], [7.1, 0.0, 56.0], [6.25, 0.0, 54.4]]
+    )
+    assert not mesh.contains(socket_air).any(), "the pin socket is filled"
+    assert mesh.contains(socket_wall).all(), "the pin socket's wall moved"
+
+
+@pytest.mark.requires_openscad
+@pytest.mark.slow
+@pytest.mark.parametrize("plate", ["Embossing Plate", "Counter Plate"])
+def test_the_cut_leaves_the_pin_socket_exactly(
+    trimesh_module, openscad_binary, tmp_path, plate
+):
+    """
+    Brennen's requirement: the key bore and the taper stay EXACTLY as the
+    asset has them, because the Version 1 housing pin is a close fit. Points
+    sampled on both sockets' mouth chamfer, key bore and taper - everything
+    but the flat blind end the cone removes - lie on the render's surface.
+    """
+    import numpy as np
+
+    name = "pin_socket_" + plate.split()[0].lower()
+    stl_path, output, _ = _render(
+        openscad_binary, tmp_path, name, {"integrated_gears": "On", "plate_type": plate}
+    )
+    mesh = _load_roller(trimesh_module, stl_path, output)
+    asset = trimesh_module.load(
+        str(PROJECT_ROOT / "assets" / GEAR_ASSETS[plate]), file_type="stl", force="mesh"
+    )
+    centres = asset.triangles_center
+    radial = np.hypot(centres[:, 0], centres[:, 1])
+    points = []
+    for mouth, sign in ((ROLLER_Z_MIN, 1.0), (ROLLER_Z_MAX, -1.0)):
+        depth = (centres[:, 2] - mouth) * sign
+        socket = (
+            (radial < SOCKET_MOUTH_R_MM + 0.05)
+            & (depth > 0.0)
+            & (depth < SOCKET_DEPTH_MM - 1e-4)
+        )
+        faces = np.where(socket)[0]
+        sampled, _ = trimesh_module.sample.sample_surface_even(
+            asset.submesh([faces], append=True), 20000, seed=11
+        )
+        points.append(sampled)
+    points = np.vstack(points)
+    assert len(points) > 20000
+    _, distances, _ = trimesh_module.proximity.closest_point(mesh, points)
+    assert float(distances.max()) < 1e-4
+
+
+def test_the_axis_cuts_are_the_last_subtraction_on_both_plates():
+    """Vent and cones after every union and every recess - the web worker's order - and only with gears."""
+    import re
+
+    source = SCAD_FILE.read_text(encoding="utf-8")
+    code = re.sub(r"//[^\n]*", "", re.sub(r"/\*.*?\*/", "", source, flags=re.DOTALL))
+    for module, flag, last_recess in (
+        ("cylinder_emboss_plate", "true", "ds_back_recesses();"),
+        ("cylinder_counter_plate", "false", "ds_front_recesses();"),
+    ):
+        body = code.split(f"module {module}()")[1].split("\nmodule ")[0]
+        cut = body.index(f"v1_axis_cuts({flag});")
+        assert body.index(f"gear_set(emboss = {flag});") < body.index(last_recess) < cut
+        assert "if (gears_on) {" in body[body.index(last_recess) : cut]
+    cuts = code.split("module v1_axis_cuts(emboss)")[1].split("\nmodule ")[0]
+    assert cuts.count("$fn = AXIS_CUT_FN") == 3
+    assert "AXIS_CUT_FN = 48;" in code
+
+
+def test_the_axis_cut_numbers_match_the_web_generator():
+    """
+    app/geometry/gears.py owns every number; the .scad mirrors them. Skipped
+    when the web repository is not checked out beside this one.
+    """
+    import re
+
+    if not WEB_GEARS.exists():
+        pytest.skip(f"the web generator is not checked out at {WEB_GEARS.parent}")
+    web = WEB_GEARS.read_text(encoding="utf-8")
+    source = SCAD_FILE.read_text(encoding="utf-8")
+
+    def scad_number(name):
+        match = re.search(rf"^{name}\s*=\s*([0-9.]+);", source, re.MULTILINE)
+        assert match, f"{name} not found in the .scad"
+        return float(match.group(1))
+
+    def web_number(name):
+        match = re.search(rf"^{name}\s*=\s*([0-9.]+)", web, re.MULTILINE)
+        assert match, f"{name} not found in gears.py"
+        return float(match.group(1))
+
+    for scad_name, web_name in (
+        ("V1_GEAR_BODY_T", "GEAR_BODY_THICKNESS_MM"),
+        ("V1_VENT_R", "V1_VENT_RADIUS_MM"),
+        ("V1_VENT_OVERSHOOT", "V1_VENT_OVERSHOOT_MM"),
+        ("V1_SOCKET_CONE_OVERLAP", "V1_SOCKET_CONE_OVERLAP_MM"),
+        ("V1_SOCKET_TAPER_FACET_DIP", "V1_SOCKET_TAPER_FACET_DIP_MM"),
+        ("V1_SOCKET_CONE_INSET", "V1_SOCKET_CONE_INSET_MM"),
+        ("V1_SOCKET_CONE_VENT_GROWTH", "V1_SOCKET_CONE_VENT_GROWTH_MM"),
+    ):
+        assert scad_number(scad_name) == web_number(web_name), scad_name
+
+    fields = (
+        "mouth_chamfer",
+        "bore_radius",
+        "taper_start_depth",
+        "rim_radius",
+        "depth",
+    )
+    for scad_name, table, key in (
+        ("V1_GEAR_SOCKET_A", "V1_GEAR_SOCKET", "positive"),
+        ("V1_GEAR_SOCKET_B", "V1_GEAR_SOCKET", "negative"),
+        ("V1_TOP_GEAR_SOCKET_A", "V1_TOP_GEAR_SOCKET", "positive"),
+        ("V1_TOP_GEAR_SOCKET_B", "V1_TOP_GEAR_SOCKET", "negative"),
+    ):
+        vector = re.search(rf"^{scad_name} = \[([0-9., ]+)\];", source, re.MULTILINE)
+        assert vector, f"{scad_name} not found in the .scad"
+        table_text = web.split(f"\n{table} = {{")[1].split("\n}")[0]
+        block = table_text.split(f"'{key}': {{")[1].split("}")[0]
+        expected = tuple(
+            float(re.search(rf"'{field}':\s*([0-9.]+)", block).group(1))
+            for field in fields
+        )
+        assert tuple(float(v) for v in vector.group(1).split(",")) == expected, (
+            scad_name
+        )

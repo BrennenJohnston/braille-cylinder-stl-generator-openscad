@@ -114,6 +114,10 @@ its canonical file, and every parameter default above it equal, by
 diameter, height, and the polygonal cutout are identical either way — only the
 surface features change.
 
+The Version 1 file defaults to Visual; the Version 2 file
+(`Braille_Cylinder_STL_Generator_EmbosserV2.scad`) defaults to Tactile since
+v2.10.0, as the web app does for Version 2.
+
 **Visual (default)** — marker cells at the start of every row:
 - The triangle alignment indicator is **always generated** — it is critical to
   the mechanical device the cylinder mounts into and has no user-facing toggle
@@ -355,9 +359,14 @@ Things worth knowing before you switch it on:
   and a taller one would swallow the teeth. Both paper-thickness presets already
   set this size, so the shipped defaults pass.
 - **The barrel prints solid.** The polygonal cutout is dropped while gears are
-  on, and the console says so if you had one set. A one-piece roller has no
-  through-path along its axis anyway — the gear bores are blind pockets — so
-  keeping the cutout would seal a cavity nothing can reach or drain.
+  on, and the console says so if you had one set. The gears close both ends of
+  the barrel, so keeping the cutout would seal a cavity nothing can reach or
+  drain.
+- **It prints support-free with its bottom gear on the build plate** (since
+  2026-09-30). A 2 mm vent runs the whole axis, so the roller lifts off the
+  embosser's pin without a vacuum, and each gear socket ends in a 45° cone to
+  that vent instead of a flat roof. The cone stays clear of the pin's 14 mm
+  bore and taper, which are exactly as before.
 - The gears are **not adjustable**. They replicate the reference set exactly, so
   that a roller printed here meshes with one printed from the web app.
 
@@ -369,8 +378,14 @@ Version 2 barrel (any other size is refused). While it is On the barrel prints
 solid with **no keyed holes, nub or socket**: the gears' own pegs and pins are
 already inside the imported gears, and each top gear's anti-rotation notch is
 filled by hidden material so no void is sealed in. The seam channel is still
-cut. Version 2 fixed gears fit only the Version 2 fixed-gear housing; the
-standard Version 2 housing takes the standard keyed cylinders. The MakerWorld
+cut. Since 2.10.0 the fused roller prints support-free with its **bottom gear
+on the build plate**: the barrel's bottom edge is chamfered 0.65 mm so it no
+longer overhangs the gear face, a 2 mm vent runs the whole axis so the roller
+lifts off the embosser's peg without a vacuum, and each gear socket ends in a
+45° cone to that vent instead of a flat ceiling (the bottom sockets since
+2.10.0, the top ones since 2.11.0). Version 2 fixed gears fit only the Version 2
+fixed-gear housing; the standard Version 2 housing takes the standard keyed
+cylinders. The MakerWorld
 Version 2 upload hides the switch for the same reason as the Version 1 build.
 
 ## 🔄 Rendering Both Plates At Once
@@ -488,13 +503,18 @@ None of the earlier star, hexagon or 15 x 15 mm square pegs will enter an R14
 hole, so a cylinder printed from this file pairs only with gears cut to the R14
 spec.
 
-One dial is new: **Key clearance (`key_clearance_mm`)**, 0.110 mm per side by
-default and adjustable from 0 to 0.5 mm in steps of 0.005. It grows every hole
-outward, and ONLY the holes - it has not touched the nub since 2026-08-29,
-because gear A1's notch is already cut and tightening the holes would have grown
-the nub into it. Raise it if the pegs bind; raising it also eats into the margin
-that stops a peg entering the wrong hole (0.890 mm at the default, 0.50 mm at
-the maximum).
+Four dials are new, one per gear: **`key_clearance_a1_mm`, `_a2_mm`, `_b1_mm`
+and `_b2_mm`** (the shared `key_clearance_mm` they replaced in 2.11.0 is gone),
+each 0.075 mm per side by default and adjustable from 0 to 0.5 mm in steps of
+0.005. Each grows ITS gear's hole outward, and ONLY that hole, so one peg's fit
+can be tuned without moving the other three - none of them has touched the nub
+since 2026-08-29, because gear A1's notch is already cut and tightening the
+holes would have grown the nub into it. Raise a value if that peg binds, lower
+it if the peg is loose; raising one also eats into the margin that stops a peg
+entering the wrong hole (0.925 mm at the default, 0.50 mm at the maximum).
+The default is what four printed rounds settled on with the cylinders on Bambu
+Studio's 0.12 mm Fine Detail preset and the gears on 0.2 mm Strength; the
+earlier shared 0.110 printed a touch loose there.
 
 **Both cylinder ends key against their gear.** Each plate stands a 3 mm
 anti-rotation nub proud of its TOP face and sinks a matching socket into its
@@ -604,7 +624,7 @@ What helps:
   `tactile_indicator_width`
 
 ### Dots Don't Align
-- Check `braille_y_adjust` for vertical offset, or `seam_offset_degrees` for angular offset around the cylinder
+- Check `braille_y_adjust` for vertical offset (`seam_offset_degrees` turns only the polygonal cutout; it never moves the dots)
 - Ensure spacing settings match between emboss and counter plates
 
 ### Plates Don't Fit Together
@@ -702,5 +722,5 @@ For general braille embossing questions, see the [web app](https://braille-cylin
 
 ---
 
-**Version**: 2.9.1  
-**Last Updated**: 2026-09-23
+**Version**: 2.11.0  
+**Last Updated**: 2026-10-01

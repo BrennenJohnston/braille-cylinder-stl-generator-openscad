@@ -28,7 +28,9 @@ openscad.com --hardwarnings --check-parameter-ranges=true --export-format binstl
 ```
 
 Every other parameter at its default — note that `Line_1` **and** `Line_2`
-default to text. Use `tests/test_seam_channel_scad.py` rather than a bare
+default to text. Since 2026-09-24 the Version 2 file defaults to `Tactile`, so
+its two records also pass `-D indicator_mode="Visual"` — the style every record
+was made in; the recorded bytes and signatures did not change. Use `tests/test_seam_channel_scad.py` rather than a bare
 render.
 
 ## Re-recording

@@ -7,6 +7,134 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.11.0] - 2026-10-01
+
+Parity with the web generator through 2026-10-01. With gears off the Version 1
+files render exactly as in 2.10.0 (only the Seam Offset and Y Adjust
+descriptions changed); with gears on they carry the corrected Version 1 gear
+assets (Fixed, below) and the vent and self-supporting gear sockets (Changed,
+below). The Version 2 files gain one key clearance dial per gear and the coned
+top gear socket, and the MakerWorld quick start describes the cylinders as the
+card embosser's rollers.
+
+### Fixed
+
+- **The Seam Offset description says what the dial does (2026-10-01).**
+  `seam_offset_degrees` turns only the polygonal cutout, so its Customizer
+  text now reads "Turns the polygonal cutout around the cylinder's axis. The
+  braille does not move." - the web app's wording, S-SO1, signed by Brennen
+  on 2026-10-01 - instead of "Rotates starting position around cylinder", and
+  the note above Y Adjust no longer tells users to turn the braille with it.
+  The dial text changes in both Version 1 files and the note in all four model
+  files; `tests/parameter_mapping.json` follows, and the README's "Dots Don't
+  Align" tip, `docs/PARAMETER_MAPPING.md` and the coordinate-system document
+  stop saying it moves the pattern. No geometry changes.
+- **The Version 1 fixed gears are the Version 1 embosser's gears (2026-09-28,
+  found by Brennen's print).** `assets/gears_a.stl` and `gears_b.stl` are
+  regenerated from the web repo's new `gears_{a,b}.bin`: the gear rings of his
+  Version 1 gear holders, cut free of the boss and seated on the barrel end,
+  instead of the 2026-08-24 sample gears whose Cylinder B gears carry the newer
+  design's smaller hub (a 9 mm bore where the Version 1 housing pin needs the
+  14 mm pocket). Teeth, meshing, the 72 mm roller and the `[Gears]` switch are
+  unchanged; `tests/test_gear_assets.py` and `tests/test_gear_rollers_scad.py`
+  count teeth at the chevron apex.
+
+### Changed
+
+- **The Version 1 fixed-gear roller prints without support inside its gear
+  sockets (2026-09-30, Brennen's approved plan; the web generator's change of
+  the same day).** With `integrated_gears` On, each gear's housing-pin socket
+  used to end in a flat roof 8.5 mm in, which a roller printed bottom gear down
+  could only make over support. Both sockets now end in a 45 degree cone that
+  continues the socket's own taper to a 2 mm vent along the whole axis, so the
+  roller also comes off the embosser's pin without a vacuum: Version 2's v9
+  change, ported. The pin's fit is untouched: each cone runs 0.02 mm inside the
+  taper, so the mouth chamfer, the 14 mm key bore and the taper are exactly as
+  the assets have them (`tests/test_gear_rollers_scad.py` samples them on the
+  render). New constants mirror `app/geometry/gears.py`; `$fn` policy case 7,
+  `AXIS_CUT_FN` 48, joins the Version 1 file. No barrel chamfer on Version 1.
+  The MakerWorld copy carries the same body, with the switch still hidden.
+- **Customizer wording signed off by Brennen (2026-09-28).** The `[Gears]` tab
+  now says "Print bottom gear down with supports off."; the `indicator_mode`
+  description ends "Tactile arrows are the default for Version 2, as in the web
+  app. Choose Visual for letter and triangle markers."; each key clearance
+  dial reads, for example, "Gear A1, the top of Cylinder A: room around its peg,
+  per side. Raise if it binds, lower if loose."; and the tactile-recess wall
+  warning ends "or lower a clearance dial." Both Version 2 files; no geometry
+  changes.
+- **The fused roller's top gear socket is coned like its bottom one.** With
+  `integrated_gears` On, the socket in gears A1 / B1 (a flat floor 1.5 mm
+  above the barrel's top face) is now the same 45 degree cone down to the 2 mm
+  vent that the bottom sockets got in 2.10.0 (`V2_TOP_GEAR_SOCKET_A/_B`,
+  measured off the gear assets: bore 7.0 / 5.0, rim 5.2 / 3.2), so both ends
+  match and the roller prints support-free either way up. Bottom gear down is
+  still the advice. Brennen's print testing of 2026-09-30 printed it and found
+  it fits; it also found the housing peg does not reach the cone and the
+  0.14 mm ledge under the barrel needs no support.
+- **One key clearance dial per gear, each 0.075 mm.** The `[Version 2 Keyed
+  Cutouts]` tab's single `key_clearance_mm` is replaced by
+  `key_clearance_a1_mm`, `key_clearance_a2_mm`, `key_clearance_b1_mm` and
+  `key_clearance_b2_mm` (each `0.075; // [0:0.005:0.5]`), so one peg's fit can
+  be tuned without moving the other three: each half of the keyed
+  through-hole and its mouth chamfer take the dial of the gear that seats
+  there, and the tactile-recess wall guard reads every key at its own dial.
+  The default is what four printed rounds settled on (cylinders on Bambu
+  Studio's 0.12 mm Fine Detail preset, gears on 0.2 mm Strength); the old
+  shared 0.110 printed a touch loose there. The nub and sockets still follow no
+  dial. A saved Customizer preset that names `key_clearance_mm` is ignored
+  for that key (OpenSCAD drops unknown names); set the four dials instead.
+
+- **The MakerWorld quick start describes the embosser's rollers (2026-10-01,
+  Brennen's call, matching the web app's help).** The spice jar, medicine
+  bottle and water bottle examples, the advice to measure a container for the
+  diameter, and the tip to raise the diameter "for a larger container" are
+  gone: the card-stock presets set the size the embosser was built for. The
+  sizing section also says that `seam_offset_degrees` turns only the
+  cutout. `docs/MakerWorld_Quick_Start_Guide.pdf` is regenerated from the
+  markdown with `scripts/generate_quick_start_pdf.py`.
+
+### Removed
+
+- `key_clearance_mm`. A `-D key_clearance_mm=...` on the command line is now
+  an unknown variable and warns; use the four per-gear dials.
+
+## [2.10.0] - 2026-09-24
+
+Parity with the web generator's 2026-09-24 programme. **Only the Embosser
+Version 2 file and its MakerWorld copy change**; the Version 1 files render
+exactly as in 2.9.1.
+
+### Changed
+
+- **The fused Version 2 roller prints support-free, bottom gear down.** With
+  `integrated_gears` On, the barrel's bottom edge is chamfered 0.65 mm x 45
+  degrees (the gear face the barrel stands on reaches only r 14.61, so the
+  15.4 mm barrel overhung it by 0.79 mm all round and the slicer supported
+  that ring; 0.65 leaves 0.14 mm, inside one extrusion width, and spends 0.65
+  of the 1 mm card shelf at that end); a 2 mm vent runs the whole axis, so the
+  bottom gear's socket - a snug fit on the embosser's peg - breathes out
+  through the top gear's open mouth instead of holding a vacuum; and the
+  bottom socket's flat ceiling is replaced by a 45 degree cone up to that
+  vent, so the slicer lays nothing over air there and adds no support inside
+  the socket. The cuts come last, after the gears are unioned. Every number
+  mirrors `app/geometry/version2.py` in the web generator
+  (`V2_FUSED_BARREL_CHAMFER`, `V2_VENT_R`, the measured `V2_GEAR_SOCKET_A/B`
+  table, the cone's growth and overlap; `AXIS_CUT_FN` 48 is tessellation case
+  7) and `tests/test_embosser_v2_gears_scad.py` diffs them, probes the vent,
+  the chamfer and the cone on both plates, and still proves one body. The
+  `[Gears]` description says which end goes on the build plate. Gears Off is
+  untouched: the recorded pre-gears signature still matches.
+- **The Version 2 file defaults to the tactile seam arrow** (`indicator_mode =
+  "Tactile"`), as the web app does for Version 2 since 2026-09-24 - in the
+  canonical file and its MakerWorld copy alike. The Version 1 file and its
+  MakerWorld copy keep `Visual`. Two tests that assert visual-mode facts of the
+  Version 2 file (its keyed plates as one watertight body; the fused roller's
+  groove at the visual angles) now pin `indicator_mode = "Visual"` rather than
+  re-recording anything, and a new guard pins the four files' defaults. Known
+  and unchanged: a tactile emboss plate's chained raised arrows touch apex to
+  base exactly (one body, three non-manifold edges on the arrows' own outline),
+  the contact the web generator grows by 5 um in gear mode only.
+
 ### Fixed
 
 - A comment in the MakerWorld Version 2 upload's hidden gear note still named

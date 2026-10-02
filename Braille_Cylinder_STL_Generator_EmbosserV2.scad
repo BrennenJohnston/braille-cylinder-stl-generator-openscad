@@ -26,11 +26,16 @@
 //     taller than the 52 mm card at EACH end, so a slightly mis-rolled card
 //     rides the shelf instead of ruffling over the cylinder edges. Version 1
 //     stays 52: the height is what tells the two cylinders apart;
-//   • one new dial, key_clearance_mm, under [Version 2 Keyed Cutouts];
+//   • four dials under [Version 2 Keyed Cutouts], one key clearance per gear
+//     (key_clearance_a1_mm, _a2_mm, _b1_mm, _b2_mm), so one peg's fit can be
+//     tuned without moving the other three;
 //   • an Integrated Gears switch that fuses the VERSION 2 drive gears to the
 //     barrel (assets/v2_gears_a.stl and _b.stl, desktop build only): the
 //     barrel then prints solid with no keyed holes, nub or socket, and each
 //     top gear's notch is filled by hidden material so no void is sealed in;
+//     it prints support-free with the bottom gear on the build plate (the
+//     barrel's foot is chamfered, a vent runs the axis, both gear sockets
+//     end in a cone to it);
 //   • no polygonal cutout, and no seam offset: the keyed hole IS the bore, and
 //     the keys sit on the arrow column, so turning the seam would break them.
 //  Everything else — the braille, the dot shapes, the presets, the indicators
@@ -212,6 +217,7 @@ interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
 // barrel prints solid with no keyed holes; the cylinder must stay 30.8 mm x
 // 54 mm. Needs assets/v2_gears_a.stl and assets/v2_gears_b.stl, which ship
 // with the desktop build.
+// Print bottom gear down with supports off.
 // COMPATIBILITY: Version 2 fixed gears fit only the Version 2 fixed-gear
 // housing. The standard Version 2 housing takes the standard keyed cylinders.
 integrated_gears = "Off"; // [Off, On]
@@ -236,8 +242,8 @@ render_both_plates = "On"; // [Off, On]
 pair_spacing_mm = 10; // [2:1:50]
 
 /* [Row Indicator Style] */
-// How each row is marked for alignment. Visual = today's recessed triangle (plus the optional letter square) in marker cells at the start of every row. Tactile = a raised arrow on the embossing plate and a matching recess on the counter plate, centred in the seam gap and pointing at the cylinder top, so a blind user can find the alignment point and tell which end is up by touch. Tactile removes the marker cells (freeing them for text) and ignores the Indicator Letters toggle.
-indicator_mode = "Visual"; // [Visual, Tactile]
+// How each row is marked for alignment. Visual = today's recessed triangle (plus the optional letter square) in marker cells at the start of every row. Tactile = a raised arrow on the embossing plate and a matching recess on the counter plate, centred in the seam gap and pointing at the cylinder top, so a blind user can find the alignment point and tell which end is up by touch. Tactile removes the marker cells (freeing them for text) and ignores the Indicator Letters toggle. Tactile arrows are the default for Version 2, as in the web app. Choose Visual for letter and triangle markers.
+indicator_mode = "Tactile"; // [Visual, Tactile]
 // Tactile only: indicator width measured around the cylinder (mm)
 tactile_indicator_width = 4.0; // [2:0.1:10]
 // Tactile only: indicator length measured along the cylinder axis (mm). The default is long enough for a fingertip to read the direction of the point in one pass; at the 10 mm default line_spacing it also means each row's arrow meets the base of the one above.
@@ -288,9 +294,7 @@ dot_spacing = 2.5; // [1:0.1:5] Spacing between dots within a cell (mm)
 
 // --- Braille Positioning ---
 // Note: on a cylinder, X = angular wrap around the seam — a linear "X adjust"
-// has no useful meaning, so only the vertical adjust is exposed. Use
-// `seam_offset_degrees` (Expert Mode - Cylinder Dimensions) to rotate the
-// braille pattern around the cylinder axis.
+// has no useful meaning, so only the vertical adjust is exposed.
 braille_y_adjust = 0.0; // [-10:0.1:10] Vertical adjustment of braille pattern (mm)
 
 /* [Expert Mode - Braille Dot Adjustments] */
@@ -321,17 +325,32 @@ render_quality = "Medium"; // [Low, Medium, High]
 cone_segments = 16; // [8:1:64] Number of segments for cone shapes
 
 /* [Version 2 Keyed Cutouts] */
-// Extra room around each gear peg, per side (mm). 0.110 mm suits most printers;
-// raise it if pegs bind. It grows every keyed hole outward - the key nub does
-// not move with it - and raising it eats into the margin that stops a peg
-// entering the wrong hole: 0.890 mm at 0.110, 0.50 mm at the 0.5 maximum.
-key_clearance_mm = 0.110; // [0:0.005:0.5]
-// The two printed rounds bracketed the default: too loose at 0.15, too tight
-// at 0.075. The nub is pinned at V2_NUB_CLEARANCE because gear A1's notch is
-// already cut - re-coupling it to this dial would grow the nub into a notch
-// that cannot be recut. The step is 0.005: a default that is not a whole
-// number of steps above the minimum makes the Customizer refuse the input,
-// and 0.110 / 0.005 = 22.
+// One dial per gear, so one peg's fit can be tuned without moving the other
+// three. Each dial is the extra room around ITS gear's peg, per side (mm): it
+// grows that keyed hole outward - the key nub does not move with any dial -
+// and raising it eats into the margin that stops a peg entering the wrong
+// hole: 0.925 mm at 0.075, 0.50 mm at the 0.5 maximum. The defaults suit
+// most printers; raise a value if that peg binds, lower it if the peg is
+// loose.
+
+// Gear A1, the top of Cylinder A: room around its peg, per side. Raise if it binds, lower if loose.
+key_clearance_a1_mm = 0.075; // [0:0.005:0.5]
+// Gear A2, the bottom of Cylinder A: room around its peg, per side. Raise if it binds, lower if loose.
+key_clearance_a2_mm = 0.075; // [0:0.005:0.5]
+// Gear B1, the top of Cylinder B: room around its peg, per side. Raise if it binds, lower if loose.
+key_clearance_b1_mm = 0.075; // [0:0.005:0.5]
+// Gear B2, the bottom of Cylinder B: room around its peg, per side. Raise if it binds, lower if loose.
+key_clearance_b2_mm = 0.075; // [0:0.005:0.5]
+
+// History: two printed rounds bracketed the one shared dial these replace -
+// too loose at 0.15, too tight at 0.075 - and it sat at 0.110 until rounds
+// with the cylinders on 0.12 mm layers found the larger pegs loose there:
+// 0.095 fitted only the bottom gears, the top gears settled at 0.075, and one
+// more print brought the bottom gears to 0.075 as well. The nub is pinned at
+// V2_NUB_CLEARANCE because gear A1's notch is already cut - re-coupling it to
+// a dial would grow the nub into a notch that cannot be recut. The step is
+// 0.005: a default that is not a whole number of steps above the minimum
+// makes the Customizer refuse the input, and 0.075 / 0.005 = 15.
 
 /* [Hidden] */
 $fn = 32; // Resolution for curved surfaces
@@ -371,9 +390,9 @@ PI = 3.14159265359;
 //   * polygon_cutout_radius_mm, polygon_cutout_points and seam_offset_degrees
 //     are ABSENT. preset_value() falls back to the file-scope constants for a
 //     missing key, and Version 2 fixes those three in the Hidden section.
-// key_clearance_mm is deliberately NOT preset-owned: a preset-owned key
-// silently ignores -D, and the clearance is the one dial a user tunes per
-// printer.
+// The four key_clearance_*_mm dials are deliberately NOT preset-owned: a
+// preset-owned key silently ignores -D, and the clearances are the dials a
+// user tunes per printer.
 //
 // NOTE: grid_columns and grid_rows are deliberately ABSENT here too, exactly as
 // in the Version 1 tables, so the sliders always govern text capacity.
@@ -1515,6 +1534,10 @@ function get_dot_pattern(char) =
 //      groove, and a multiple of 4 so each cone has a vertex straight across
 //      the barrel and a straight run keeps the exact V of the straight cut.
 //
+//   7. AXIS_CUT_FN = 48 — the fused Version 2 roller's axis vent and its
+//      bottom-socket cone (2026-09-24). Fixed, like case 6, to the web
+//      worker's AXIS_CUT_SEGMENTS so both generators cut the same hole.
+//
 // If you add a new curved primitive, pick the case that matches and pass
 // its constant explicitly. Do not rely on the global $fn for any visible
 // curved surface or you will silently desync from the web preview.
@@ -1550,6 +1573,9 @@ CYLINDER_SHELL_FN = 64;
 
 // The tactile seam channel's sweep cones ($fn TESSELLATION POLICY case 6).
 SEAM_CHANNEL_CONE_FN = 32;
+
+// The fused roller's axis vent and socket cone ($fn TESSELLATION POLICY case 7).
+AXIS_CUT_FN = 48;
 
 // -----------------------------------------------------------------------------
 // RAISED-DOT BASE EMBED
@@ -1681,7 +1707,7 @@ V2_GEAR_TRIANGLE_INSET = 0.15;
 V2_ANTIROT_B1_NOTCH = [9.80, 13.10, 1.65];
 V2_ANTIROT_B2_PIN   = [10.05, 13.05, 1.50];
 
-// The nub's inset, which key_clearance_mm deliberately does NOT control
+// The nub's inset, which the key_clearance_*_mm dials deliberately do NOT control
 // (revised 2026-08-29). Gear A1's notch is a fixed negative that is already
 // cut, and when the dial also drove the nub, lowering it to tighten the holes
 // GREW the nub into that notch. Change this only alongside a matching gear A1.
@@ -1704,13 +1730,28 @@ V2_SOCKET_MAX_RADIUS = 14.0;
 // bottom out before the two faces meet.
 V2_SOCKET_DEPTH = V2_NUB_HEIGHT + V2_ANTIROT_CLEARANCE;
 
-// The dial is bounded in the Customizer; this catches a -D that is not.
-assert(key_clearance_mm >= 0 && key_clearance_mm <= 0.5,
-       "key_clearance_mm must be between 0 and 0.5 mm.");
+// The dials are bounded in the Customizer; these catch a -D that is not.
+assert(key_clearance_a1_mm >= 0 && key_clearance_a1_mm <= 0.5,
+       "key_clearance_a1_mm must be between 0 and 0.5 mm.");
+assert(key_clearance_a2_mm >= 0 && key_clearance_a2_mm <= 0.5,
+       "key_clearance_a2_mm must be between 0 and 0.5 mm.");
+assert(key_clearance_b1_mm >= 0 && key_clearance_b1_mm <= 0.5,
+       "key_clearance_b1_mm must be between 0 and 0.5 mm.");
+assert(key_clearance_b2_mm >= 0 && key_clearance_b2_mm <= 0.5,
+       "key_clearance_b2_mm must be between 0 and 0.5 mm.");
 
 // Which key sits at which end of which plate.
 function v2_bottom_key(emboss) = emboss ? V2_KEY_A2 : V2_KEY_B2;
 function v2_top_key(emboss)    = emboss ? V2_KEY_A1 : V2_KEY_B1;
+
+// Which dial grows which key: one clearance per gear, and a key this file
+// does not know stops the render rather than borrowing a neighbour's number.
+function v2_key_clearance(key) =
+    key == V2_KEY_A1 ? key_clearance_a1_mm :
+    key == V2_KEY_A2 ? key_clearance_a2_mm :
+    key == V2_KEY_B1 ? key_clearance_b1_mm :
+    key == V2_KEY_B2 ? key_clearance_b2_mm :
+    assert(false, str("no key clearance dial for key ", key)) 0;
 
 // One key outline, grown by `clearance` as an EXACT parallel curve: the sides
 // grow by 2*clearance and the corner radius by clearance, so the corner comes
@@ -1804,7 +1845,7 @@ module bottom_key_socket(bottom_face_z, emboss) {
 module keyed_half_cutout(key, z0, z1) {
     translate([0, 0, z0 - V2_OVERLAP])
         linear_extrude(height = (z1 - z0) + 2 * V2_OVERLAP)
-            key_profile_2d(key, key_clearance_mm);
+            key_profile_2d(key, v2_key_clearance(key));
 }
 
 // One mouth chamfer: the hull of the flared outline at the face and the hole
@@ -1824,10 +1865,10 @@ module mouth_countersink(key, face_z, into_plus_z) {
     hull() {
         translate([0, 0, face_lo])
             linear_extrude(height = V2_SLAB)
-                key_profile_2d(key, key_clearance_mm + V2_COUNTERSINK_OFFSET);
+                key_profile_2d(key, v2_key_clearance(key) + V2_COUNTERSINK_OFFSET);
         translate([0, 0, inner_lo])
             linear_extrude(height = V2_SLAB)
-                key_profile_2d(key, key_clearance_mm);
+                key_profile_2d(key, v2_key_clearance(key));
     }
 }
 
@@ -1937,6 +1978,11 @@ module cylinder_shell_v2(emboss, channel_theta_deg = undef, channel_path = undef
             seam_channel_cut(channel_theta_deg);
         }
 
+        // The fused roller's bottom-edge chamfer, on the bare barrel like the
+        // channel (2026-09-24). Brace-less on purpose: the housing note below
+        // is the file's first `if (gears_on) {` block and a test reads it so.
+        if (gears_on) fused_barrel_chamfer();
+
         // The keyed hole, its mouths and the socket exist only for separately
         // printed gears; the fused roller keeps the barrel solid.
         if (!gears_on) {
@@ -2041,6 +2087,70 @@ assert(v2_notch_fill_reach(true) <= V2_NOTCH_FILL_MAX_RADIUS
        && v2_notch_fill_reach(false) <= V2_NOTCH_FILL_MAX_RADIUS,
        "a notch fill reaches past V2_NOTCH_FILL_MAX_RADIUS");
 
+// -----------------------------------------------------------------------------
+// The v9 update to the fused roller (2026-09-24; the web generator's decisions
+// D-1, D-2 and D-6). The roller prints standing on its BOTTOM gear, and three
+// things about that end were found by printing:
+//
+//   * The barrel's bottom face overhung the gear face. Every gear body's faces
+//     are chamfered 1.5 mm at 45 degrees from the 16.11 mm tips, so the face
+//     the barrel stands on reaches only r 14.61 while the barrel is r 15.4 - a
+//     0.79 mm ledge all round that the slicer supported. A 0.65 mm x 45 degree
+//     chamfer on the barrel's bottom edge leaves 0.14 mm, inside one extrusion
+//     width, and spends 0.65 of the 1 mm card shelf at that end.
+//   * The housing-peg socket in the bottom gear sealed a vacuum: the peg is a
+//     snug fit in the bore and the socket's ceiling was blind. The gear assets
+//     already carry a 2 mm hole from each socket's ceiling into their peg; the
+//     solid barrel sealed it. One 2 mm cut along the whole axis joins them, so
+//     the bottom socket breathes out through the top gear's open mouth. It is
+//     cut AFTER the gears are unioned: the assets' own holes sit 0.05 mm off
+//     the axis, and cutting the barrel first would let a peg refill a crescent.
+//   * The socket's flat ceiling was the overhang the auto-supports fought. The
+//     socket's own 45 degree taper now continues from its rim to the vent, a
+//     cone the slicer lays nothing over air for and puts no support under.
+//     Nothing to remove from the hole, so there is no support switch.
+//
+// Every number mirrors app/geometry/version2.py and gears.py in the web
+// generator (tests/test_embosser_v2_gears_scad.py diffs them); the socket
+// table is MEASURED off the v8 gear assets, like V2_ANTIROT_*.
+V2_FUSED_BARREL_CHAMFER = 0.65;   // the chamfer's size, 45 degrees
+V2_FUSED_CHAMFER_LIP = 1.0;       // the cutter overshoots outward and downward by this
+V2_VENT_R = 1.0;                  // the 2 mm vent
+V2_VENT_OVERSHOOT = 1.0;          // past both gear mouths
+V2_GEAR_BODY_T = 10.0;            // each gear body's thickness (the bed plane is h/2 + this below the barrel's centre)
+V2_CARD_SHELF = 1.0;              // the 54 mm barrel is the 52 mm card plus this at each end; the chamfer may not spend more
+V2_GEAR_ROOT_RADIUS = 13.6613;    // the gears' root circle: the chamfer may never stand the barrel's foot inside it
+// [bore radius, rim radius where the 45 degree taper met the old flat ceiling,
+//  ceiling depth below the barrel face, mouth chamfer at the bed]
+V2_GEAR_SOCKET_A = [7.0, 5.3, 1.5, 1.0];
+V2_GEAR_SOCKET_B = [5.0, 3.3, 1.5, 1.0];
+// The TOP gear sockets (A1 / B1), measured off the same assets: [bore radius,
+// rim radius at the floor vertex, floor height above the barrel's top face].
+// Printed bottom gear down that floor faces up and never needed support; the
+// cone mirrors the bottom one so both ends match and the roller prints
+// support-free either way up. The bottom table's rim was read 0.1 up the
+// taper and stays as printed - recorded per gear, never averaged.
+V2_TOP_GEAR_SOCKET_A = [7.0, 5.2, 1.5];
+V2_TOP_GEAR_SOCKET_B = [5.0, 3.2, 1.5];
+V2_SOCKET_CONE_GROWTH = 0.01;     // the cone is grown radially so it overlaps the socket's taper instead of sharing its surface
+V2_SOCKET_CONE_OVERLAP = 0.5;     // the cone starts this far below the old ceiling, inside the socket's air
+
+assert(V2_FUSED_BARREL_CHAMFER > 0 && V2_FUSED_BARREL_CHAMFER <= V2_CARD_SHELF,
+       "the barrel chamfer must lie within the card shelf");
+assert(V2_GEAR_BARREL_DIAMETER_MM / 2 - V2_FUSED_BARREL_CHAMFER > V2_GEAR_ROOT_RADIUS,
+       "the barrel chamfer would stand the barrel's foot inside the gear root circle");
+assert(V2_VENT_R > 0 && V2_VENT_R < GEAR_WELD_RING_R_IN, "the vent would reach the weld rings");
+assert(V2_GEAR_SOCKET_A[1] < V2_GEAR_SOCKET_A[0] && V2_GEAR_SOCKET_B[1] < V2_GEAR_SOCKET_B[0],
+       "a socket rim must be inside its bore");
+assert(V2_GEAR_SOCKET_A[1] + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH < GEAR_WELD_RING_R_IN
+       && V2_GEAR_SOCKET_B[1] + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH < GEAR_WELD_RING_R_IN,
+       "a socket cone would reach the weld rings");
+assert(V2_TOP_GEAR_SOCKET_A[1] < V2_TOP_GEAR_SOCKET_A[0] && V2_TOP_GEAR_SOCKET_B[1] < V2_TOP_GEAR_SOCKET_B[0],
+       "a top socket rim must be inside its bore");
+assert(V2_TOP_GEAR_SOCKET_A[1] + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH < GEAR_WELD_RING_R_IN
+       && V2_TOP_GEAR_SOCKET_B[1] + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH < GEAR_WELD_RING_R_IN,
+       "a top socket cone would reach the weld rings");
+
 // The size gate, the web generator's own sentence for the Version 2 gears: a
 // HARD STOP covering both dimensions, judged by output text like the Version 1
 // file's. OpenSCAD cannot test whether an imported file exists, so this is the
@@ -2072,6 +2182,49 @@ module notch_fill(emboss) {
     translate([0, 0, half_h - V2_NOTCH_FILL_OVERLAP])
         linear_extrude(height = V2_GEAR_NOTCH_DEPTH + 2 * V2_NOTCH_FILL_OVERLAP)
             notch_fill_2d(emboss);
+}
+
+// The barrel's bottom-edge chamfer, cut from the bare barrel in
+// cylinder_shell_v2 right after the seam channel (fused mode only): a
+// revolved right triangle whose 45 degree edge passes through r = R - c at the
+// bottom face, with the lip overshooting outward and downward so no face of
+// it is coplanar with the barrel or with the gear unioned later.
+module fused_barrel_chamfer() {
+    r = active_cylinder_diameter_mm / 2;
+    half_h = active_cylinder_height_mm / 2;
+    c = V2_FUSED_BARREL_CHAMFER;
+    lip = V2_FUSED_CHAMFER_LIP;
+    rotate_extrude($fn = CYLINDER_SHELL_FN)
+        polygon([[r - c, -half_h], [r + lip, -half_h - lip], [r + lip, -half_h + c + lip]]);
+}
+
+// The two axis cuts, subtracted LAST in each plate module - after every
+// union, as the web worker does - in the plate modules' LOCAL frame (barrel
+// -h/2..+h/2): the vent the whole roller plus the overshoot out of each mouth,
+// and this plate's bottom-socket cone from V2_SOCKET_CONE_OVERLAP below the
+// old ceiling, at the rim grown by the overlap and the growth, up at 45
+// degrees to the vent radius. Its apex lands rim - vent above the old ceiling:
+// 4.3 mm on Cylinder A, 2.3 on B, inside the buried peg.
+module fused_axis_cuts(emboss) {
+    half_h = active_cylinder_height_mm / 2;
+    socket = emboss ? V2_GEAR_SOCKET_A : V2_GEAR_SOCKET_B;
+    rim = socket[1];
+    ceiling = -half_h - socket[2];
+    cylinder(h = 2 * (half_h + V2_GEAR_BODY_T + V2_VENT_OVERSHOOT), r = V2_VENT_R,
+             center = true, $fn = AXIS_CUT_FN);
+    translate([0, 0, ceiling - V2_SOCKET_CONE_OVERLAP])
+        cylinder(h = V2_SOCKET_CONE_OVERLAP + (rim - V2_VENT_R),
+                 r1 = rim + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH,
+                 r2 = V2_VENT_R + V2_SOCKET_CONE_GROWTH, $fn = AXIS_CUT_FN);
+    // The top socket's mirror cone: apex rim - vent below the floor, mouth
+    // V2_SOCKET_CONE_OVERLAP above it, the web generator's third axis cut.
+    top = emboss ? V2_TOP_GEAR_SOCKET_A : V2_TOP_GEAR_SOCKET_B;
+    top_rim = top[1];
+    floor_z = half_h + top[2];
+    translate([0, 0, floor_z - (top_rim - V2_VENT_R)])
+        cylinder(h = (top_rim - V2_VENT_R) + V2_SOCKET_CONE_OVERLAP,
+                 r1 = V2_VENT_R + V2_SOCKET_CONE_GROWTH,
+                 r2 = top_rim + V2_SOCKET_CONE_OVERLAP + V2_SOCKET_CONE_GROWTH, $fn = AXIS_CUT_FN);
 }
 
 // Both gears, their two weld rings and the top notch fill, in the plate
@@ -2111,9 +2264,10 @@ function v2_key_max_radius(key, clearance) =
     sqrt(pow(key[0] / 2 - V2_KEY_CORNER_R, 2) + pow(key[1] / 2 - V2_KEY_CORNER_R, 2))
     + V2_KEY_CORNER_R + clearance;
 
-function v2_widest_key_radius(clearance) =
-    max(v2_key_max_radius(V2_KEY_A1, clearance), v2_key_max_radius(V2_KEY_A2, clearance),
-        v2_key_max_radius(V2_KEY_B1, clearance), v2_key_max_radius(V2_KEY_B2, clearance));
+// Each key at ITS OWN dial: the guard follows whichever dial is raised.
+function v2_widest_key_radius() =
+    max(v2_key_max_radius(V2_KEY_A1, key_clearance_a1_mm), v2_key_max_radius(V2_KEY_A2, key_clearance_a2_mm),
+        v2_key_max_radius(V2_KEY_B1, key_clearance_b1_mm), v2_key_max_radius(V2_KEY_B2, key_clearance_b2_mm));
 
 if (active_cylinder_diameter_mm != 30.8 || active_cylinder_height_mm != 54) {
     echo(str("NOTE: The Version 2 embosser expects a 30.8 mm x 54 mm cylinder. Received ",
@@ -2128,7 +2282,7 @@ TACTILE_SEAM_WALL_MIN = 1.2;   // FDM minimum printable wall, mm
 tactile_seam_wall_mm =
     (radius - tactile_indicator_raise - tactile_recess_extra_depth)
         * cos(180 / CYLINDER_SHELL_FN)
-    - v2_widest_key_radius(key_clearance_mm);
+    - v2_widest_key_radius();
 
 // Gear mode has no keyed hole, so there is no wall for this guard to protect.
 tactile_seam_wall_too_thin = tactile_on && !gears_on
@@ -2141,7 +2295,7 @@ if (tactile_seam_wall_too_thin)
              " mm of wall is left between the tactile arrow recess and the ",
              "keyed cutout; the printable minimum is ", TACTILE_SEAM_WALL_MIN,
              " mm. Lower tactile_indicator_raise or tactile_recess_extra_depth, ",
-             "or lower key_clearance_mm."));
+             "or lower a clearance dial."));
 
 module indicator_triangle_2d(rotate_180 = false) {
     // Isosceles triangle with vertical base on LEFT, apex RIGHT (default).
@@ -2856,6 +3010,13 @@ module cylinder_emboss_plate() {
             if (ds_on) {
                 ds_back_recesses();
             }
+
+            // The fused roller's axis vent and bottom-socket cone, cut last of
+            // all (2026-09-24): the vent must pass through the buried pegs,
+            // which only exist once the gears are unioned in.
+            if (gears_on) {
+                fused_axis_cuts(true);
+            }
         }
     }
 }
@@ -2965,6 +3126,12 @@ module cylinder_counter_plate() {
             // the same reason ds_back_recesses() is on the emboss plate.
             if (ds_on) {
                 ds_front_recesses();
+            }
+
+            // The fused roller's axis vent and bottom-socket cone, cut last of
+            // all (2026-09-24), as on the Embossing Plate.
+            if (gears_on) {
+                fused_axis_cuts(false);
             }
         }
 
