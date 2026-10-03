@@ -6,6 +6,8 @@
 > rule: user-facing text is never finalized without his sign-off. The
 > pre-publish checklist is at the bottom.
 
+Fact-checked against v2.11.0 on 2026-10-02; awaiting sign-off.
+
 **Upload file:** `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`
 (a test-guarded build of the canonical root
 `Braille_Cylinder_STL_Generator_EmbosserV2.scad` under the same three-layer
@@ -73,14 +75,16 @@ squares — will enter an R14 hole.
 2. Paste the braille into `Line_1`–`Line_4`.
 3. Pick `paper_thickness_preset` for your card stock: `0.4mm` (default) or
    `0.3mm`.
-4. Render: one render gives the pair, the **Embossing Plate** and the
+4. Row markers default to the tactile seam arrow, which a blind user can
+   feel. Set `indicator_mode` to `Visual` for letter and triangle markers.
+5. Render: one render gives the pair, the **Embossing Plate** and the
    **Counter Plate** side by side. For one plate at a time, set
    `render_both_plates` to `Off` and choose `plate_type`.
-5. For double-sided cards, set `double_sided` to `On` and fill
+6. For double-sided cards, set `double_sided` to `On` and fill
    `Back_Line_1`–`Back_Line_4`. Each cylinder then carries its own face's
    raised dots plus one recessed seat for every dot the other cylinder
    raises.
-6. If a printed gear peg binds in its hole, raise that gear's dial —
+7. If a printed gear peg binds in its hole, raise that gear's dial —
    `key_clearance_a1_mm`, `_a2_mm`, `_b1_mm` or `_b2_mm` (default 0.075 mm,
    steps of 0.005) — and reprint the cylinder; lower it if the peg is loose.
    The other three holes, the nub and the sockets deliberately do not move
@@ -101,7 +105,7 @@ squares — will enter an R14 hole.
 | 1 | Hero: both cylinders side by side, braille dots facing camera | "Two yellow 3D-printed cylinders standing upright, each covered in rows of raised braille dots." |
 | 2 | Top face close-up of Cylinder A: keyed hole, countersink, triangle nub | "Close-up of a cylinder's top face showing a square keyed hole with a chamfered mouth and a small triangular nub near the rim." |
 | 3 | Gear seated on a cylinder end (requires printed v7.2 gear) | "A printed gear seated flush on the end of a cylinder, its peg inside the keyed hole." |
-| 4 | Customizer screenshot: the four Line fields and the preset dropdown | "MakerWorld parameter panel with four braille text fields, a card-stock preset dropdown, and a plate-type choice." |
+| 4 | Customizer screenshot: the four Line fields and the sections below them, Card Sides to Card Thickness | "MakerWorld parameter panel showing four braille text fields above sections for Card Sides, Cylinders to Generate, Row Indicator Style and Card Thickness." |
 | 5 | An embossed business card produced by the pair (double-sided if possible) | "A business card held up to raking light, showing crisp embossed braille dots across four rows." |
 
 ---
