@@ -414,13 +414,16 @@ def test_the_switch_is_declared_off_above_the_first_hidden_tab(source_text):
         "the gear switch is hidden from the Customizer"
     )
     description = source_text.split(declaration)[0].split("/* [Gears] */")[1]
-    assert description.lstrip().startswith("// Adds the Version 2 drive gears"), (
-        description
-    )
+    # Brennen's shortened wording of 2026-10-07: the long one lost its last
+    # line to the Customizer's wrapping.
+    assert description.strip() == (
+        "// Makes each cylinder one solid piece with its top and bottom gears; "
+        "needs the assets folder beside this file. Fixed gears fit only the "
+        "fixed-gear housing; the standard housing takes the standard cylinders."
+    ), description
     lowered = description.lower()
     for tag in ("draft", "sign", "brennen"):
         assert tag not in lowered, f"{tag!r} reaches the Customizer description"
-    assert "assets/v2_gears_a.stl and assets/v2_gears_b.stl" in description
 
 
 def test_the_gate_is_normalised_and_not_preset_owned(source_text):

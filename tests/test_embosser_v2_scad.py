@@ -595,7 +595,7 @@ def test_the_version2_file_is_self_contained(source_text):
 
 def test_the_version2_tab_sits_above_the_first_hidden_tab(source_text):
     """Anything below the first /* [Hidden] */ never reaches the Customizer."""
-    tab = source_text.index("/* [Version 2 Keyed Cutouts] */")
+    tab = source_text.index("/* [Expert Mode - Version 2 Keyed Cutouts] */")
     hidden = source_text.index("/* [Hidden] */")
     assert tab < hidden, "the Version 2 tab is hidden from the Customizer"
     # One dial per gear since 2.11.0 (web decision D-K6: 0.075 on all four);

@@ -1222,7 +1222,13 @@ class TestSourceGuards:
 # Phase 12: the Customizer surface, and the back-line validation it carries
 # ---------------------------------------------------------------------------
 
+# The double-sided controls sit where the web app puts them (2026-10-07): the
+# switch in Card Sides at the top, the back text after the front text, and the
+# interpoint offsets - which the web app never shows - in an Expert Mode tab.
 DS_TAB = "/* [Card Sides] */"
+BACK_TAB = "/* [Back of Card - Pre-Translated Braille] */"
+OFFSET_TAB = "/* [Expert Mode - Card Sides] */"
+DS_TABS = (DS_TAB, BACK_TAB, OFFSET_TAB)
 # tests/validate_parameter_schema.py stops parsing at the FIRST /* [Hidden] */,
 # and the Customizer hides everything grouped under one, so a control declared
 # below it reaches neither.
@@ -1230,10 +1236,10 @@ FIRST_HIDDEN = "/* [Hidden] */"
 SYNC_MARKER = "// BACKWARD COMPATIBILITY - Test System Parameters"
 
 
-def _ds_tab_body(scad_source):
-    """Everything between the double-sided tab header and the next tab header."""
-    start = scad_source.index(DS_TAB)
-    return scad_source[start : scad_source.index("/* [", start + len(DS_TAB))]
+def _tab_body(scad_source, tab):
+    """Everything between a tab header and the next tab header."""
+    start = scad_source.index(tab)
+    return scad_source[start : scad_source.index("/* [", start + len(tab))]
 
 
 class TestCustomizerSurface:
@@ -1242,35 +1248,37 @@ class TestCustomizerSurface:
     run in the no-OpenSCAD CI job.
     """
 
-    def test_the_tab_exists_and_sits_above_both_markers(self, scad_source):
-        assert DS_TAB in scad_source, "The [Card Sides] tab is missing."
-        assert scad_source.index(DS_TAB) < scad_source.index(FIRST_HIDDEN), (
+    @pytest.mark.parametrize("tab", DS_TABS)
+    def test_the_tab_exists_and_sits_above_both_markers(self, scad_source, tab):
+        assert tab in scad_source, f"The {tab} tab is missing."
+        assert scad_source.index(tab) < scad_source.index(FIRST_HIDDEN), (
             "The tab must sit above the first /* [Hidden] */ or neither the "
             "Customizer nor the parameter-schema validator will see its controls."
         )
-        assert scad_source.index(DS_TAB) < scad_source.index(SYNC_MARKER), (
+        assert scad_source.index(tab) < scad_source.index(SYNC_MARKER), (
             "Everything from the MakerWorld sync marker to EOF is re-flattened in "
             "its own phase, so parameters must stay above it."
         )
 
-    def test_the_tab_holds_every_double_sided_control(self, scad_source):
-        body = _ds_tab_body(scad_source)
-        assert 'double_sided = "Off"; // [Off, On]' in body, (
-            "The gate must be a dropdown in this tab, defaulting to Off so "
+    def test_each_tab_holds_its_double_sided_controls(self, scad_source):
+        assert 'double_sided = "Off"; // [Off, On]' in _tab_body(scad_source, DS_TAB), (
+            "The gate must be a dropdown in Card Sides, defaulting to Off so "
             "toggle-off behaviour stays the single-sided behaviour."
         )
+        back = _tab_body(scad_source, BACK_TAB)
         missing = [
             f"Back_Line_{n}"
             for n in range(1, 11)
-            if not re.search(rf'^Back_Line_{n}\s*=\s*""', body, re.MULTILINE)
+            if not re.search(rf'^Back_Line_{n}\s*=\s*""', back, re.MULTILINE)
         ]
         assert not missing, (
-            f"Back_Line fields outside the double-sided tab: {missing}. All ten "
-            "rows live here - the front's 8 + 2 split exists only to cap the "
+            f"Back_Line fields outside the back-of-card tab: {missing}. All ten "
+            "rows live there - the front's 8 + 2 split exists only to cap the "
             "always-visible main text tab at eight fields."
         )
+        offsets = _tab_body(scad_source, OFFSET_TAB)
         for axis in ("x", "y"):
-            assert f"interpoint_offset_{axis}_mm = 1.25; // [1.15:0.01:1.35]" in body
+            assert f"interpoint_offset_{axis}_mm = 1.25; // [1.15:0.01:1.35]" in offsets
 
     def test_the_offset_sliders_match_the_range_the_guard_enforces(self, scad_source):
         """
@@ -1306,7 +1314,7 @@ class TestCustomizerSurface:
         paper_thickness_preset. Tactile geometry is the accessibility feature -
         it must not become something a user can nudge from the Customizer.
         """
-        body = _ds_tab_body(scad_source)
+        body = "".join(_tab_body(scad_source, tab) for tab in DS_TABS)
         exposed = [
             name
             for name in (

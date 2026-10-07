@@ -4,8 +4,10 @@ The public .scad files speak the web app's language (v2.9.0).
 The web generator took double-sided cards and integrated gears out of beta on
 2026-09-20, has built both cylinders by default since 2026-09-21, and names its
 sections Card sides, Gears, Cylinders to Generate, Row Indicator Style and Card
-Thickness. These guards hold the files a user opens - the two desktop files,
-their two MakerWorld uploads and presets.scad - to the same terms:
+Thickness - the last three inside Expert Mode, which the Customizer mirrors as
+"Expert Mode - " tabs since 2026-10-07 (tests/test_customizer_layout.py pins
+the whole order). These guards hold the files a user opens - the two desktop
+files, their MakerWorld uploads and presets.scad - to the same terms:
 
 * no BETA label anywhere;
 * no internal sign-off bookkeeping (Brennen's rule, 2026-09-01): the
@@ -34,15 +36,16 @@ DESKTOP = [
 MAKERWORLD = [
     PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad",
     PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2.scad",
+    PROJECT_ROOT / "makerworld" / "Braille_Cylinder_STL_Generator_MakerWorld_v2_Fixed_Gears.scad",
 ]
 MODELS = DESKTOP + MAKERWORLD
 PUBLIC_FILES = MODELS + [PROJECT_ROOT / "presets.scad"]
 
 WEB_SECTIONS = [
     "/* [Card Sides] */",
-    "/* [Cylinders to Generate] */",
-    "/* [Row Indicator Style] */",
-    "/* [Card Thickness] */",
+    "/* [Expert Mode - Cylinders to Generate] */",
+    "/* [Expert Mode - Row Indicator Style] */",
+    "/* [Expert Mode - Card Thickness] */",
 ]
 GEARS_SECTION = "/* [Gears] */"
 RETIRED_SECTIONS = [
@@ -51,6 +54,14 @@ RETIRED_SECTIONS = [
     "/* [Plate Selection] */",
     "/* [Indicator Mode] */",
     "/* [Paper Thickness Preset] */",
+    # Main tabs before 2026-10-07, when the web app's Expert Mode dials moved
+    # under "Expert Mode - " tabs.
+    "/* [Cylinders to Generate] */",
+    "/* [Row Indicator Style] */",
+    "/* [Card Thickness] */",
+    "/* [Version 2 Keyed Cutouts] */",
+    "/* [Rendering Quality] */",
+    "/* [Expert Mode - Cylinder Dimensions] */",
 ]
 DEVELOPMENT_TAGS = ("signed off", "sign-off", "reword only", "re-signed")
 

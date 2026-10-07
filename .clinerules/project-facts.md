@@ -4,8 +4,11 @@ Offline OpenSCAD companion of the braille-cylinder web app: braille embossing
 and counter plates for cylinders, fully client-free. Working branch: develop.
 
 1. Main model: Braille_Cylinder_STL_Generator.scad. Presets: presets.scad.
-   MakerWorld variant: makerworld\Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad
-   (keep deliberately in sync when the main model changes).
+   Version 2 model: Braille_Cylinder_STL_Generator_EmbosserV2.scad.
+   MakerWorld uploads in makerworld\: _v1.5.scad (Version 1) and _v2.scad
+   (Version 2) - keep them deliberately in sync with their model - and
+   _v2_Fixed_Gears.scad, which is GENERATED (python
+   scripts\build_makerworld_fixed_gears.py; never edit it by hand).
 2. Named checks: powershell -ExecutionPolicy Bypass -File scripts\scad-check.ps1
    (after every .scad edit) and python -m pytest tests/ -v (before commits).
    CI renders with OpenSCAD 2026.01.03 — same as the local canonical binary.
@@ -29,3 +32,13 @@ and counter plates for cylinders, fully client-free. Working branch: develop.
    (render_both_plates = "On", about 82 mm wide): use distance 200 and add
    --render (a preview of the counter plate comes out blank), or pass
    -D 'render_both_plates="Off"' to look at one plate.
+7. The Customizer MIRRORS THE WEB APP'S UI (Brennen, 2026-10-07): the same
+   sections in the same top-down order under the same names, and every dial
+   the web app keeps under Expert Mode in an "Expert Mode - <its submenu>"
+   tab. A dial the web app lacks goes at the end of its section or in the
+   OpenSCAD-only Expert tabs after the mirrored ones. Each dial's
+   description is ONE comment line directly above it: OpenSCAD and
+   MakerWorld show only that line. tests/test_customizer_layout.py pins all
+   of this. When a web app UI change adds, moves, renames or reorders a
+   control or section, change the four model files and that test, and
+   regenerate the fixed-gear upload, in the same round.
