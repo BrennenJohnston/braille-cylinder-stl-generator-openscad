@@ -1329,6 +1329,44 @@ if (tactile_card_too_long) {
              " mm. Lower grid_columns to ", tactile_card_max_cells, " or fewer."));
 }
 
+// Rows fit (Brennen, 2026-10-09): the braille rows' dots must stay on the card
+// and the per-row tactile arrows on the barrel, or the model stops with the
+// same sentence the web generator refuses with (its app/validation.py
+// validate_braille_rows_fit, measured by app/geometry_spec.py
+// braille_rows_extent). Rows are centred on the height and moved by
+// braille_y_adjust. The outer dots reach the dot spacing plus the widest dot or
+// bowl radius past the outer row centre (seam_channel_footprint_mm's radius).
+// The arrows are measured on the counter plate's recess, grown by
+// tactile_recess_clearance (or the gear weld, if larger) with a sharp tip, which
+// moves the tip delta * sqrt(1 + (2 * length / width)^2) - 6.02 mm above the row
+// centre at the defaults. The card is the limit when it is the shorter of the
+// two (the 52 mm card sits in the middle of Version 2's 54 mm barrel). At the
+// defaults 5 Visual and 4 Tactile rows fit 52 mm. tests/test_rows_fit.py pins
+// the rule and both sentences against the web repo.
+CARD_HEIGHT_MM = 52;
+function rows_fit_mm(x) = str(round(x * 1000) / 1000);
+rows_fit_span = (active_grid_rows - 1) * active_line_spacing;
+rows_fit_top_row = rows_fit_span / 2 + active_braille_y_adjust;
+rows_fit_bottom_row = rows_fit_top_row - rows_fit_span;
+rows_fit_dot_reach = seam_channel_footprint_mm + active_dot_spacing / 2;
+rows_fit_dots_need = 2 * max(rows_fit_top_row + rows_fit_dot_reach, rows_fit_dot_reach - rows_fit_bottom_row);
+rows_fit_card_limits = CARD_HEIGHT_MM < active_cylinder_height_mm;
+rows_fit_arrow_delta = gears_on ? max(tactile_recess_clearance, GEAR_ARROW_WELD_MM) : tactile_recess_clearance;
+rows_fit_arrows_need = (tactile_on && !tactile_three_spaced)
+    ? 2 * max(rows_fit_top_row + tactile_indicator_length / 2
+                  + rows_fit_arrow_delta * sqrt(1 + pow(2 * tactile_indicator_length / tactile_indicator_width, 2)),
+              tactile_indicator_length / 2 + rows_fit_arrow_delta - rows_fit_bottom_row)
+    : 0;
+rows_fit_barrel_need = max(rows_fit_card_limits ? 0 : rows_fit_dots_need, rows_fit_arrows_need);
+assert(!(rows_fit_card_limits && rows_fit_dots_need > CARD_HEIGHT_MM + 1e-9),
+       str("These ", active_grid_rows, " rows need ", rows_fit_mm(rows_fit_dots_need), " mm of the card's ",
+           rows_fit_mm(CARD_HEIGHT_MM), " mm height, so the top and bottom rows would run off the card. ",
+           "Use fewer rows or a smaller line spacing."));
+assert(rows_fit_barrel_need <= active_cylinder_height_mm + 1e-9,
+       str("These ", active_grid_rows, " rows need ", rows_fit_mm(rows_fit_barrel_need), " mm of the cylinder's ",
+           rows_fit_mm(active_cylinder_height_mm), " mm height, so the top and bottom rows would run off the ends. ",
+           "Use fewer rows, a smaller line spacing, or a taller cylinder."));
+
 // The groove's window, Visual mode: between the last cell's dots and column 0's
 // triangle. Tactile mode has no window - the groove runs down the arrow column
 // itself, the full height - but on the emboss plate it steps round the raised

@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Rows that would run off the card or the cylinder stop the model
+  (2026-10-09, Brennen's decision, matching the web generator).** In all four
+  model files and the regenerated fixed-gear upload: the braille rows' dots
+  must stay on the 52 mm card and the per-row tactile arrows on the barrel,
+  with `braille_y_adjust` counted. Otherwise an assert stops the render with
+  the web generator's own sentence, which says how much height the rows need,
+  for example "These 6 rows need 56.8 mm of the cylinder's 52 mm height, so
+  the top and bottom rows would run off the ends. Use fewer rows, a smaller
+  line spacing, or a taller cylinder." Before, too many rows rendered with the
+  outer dots or arrows past the ends. At the default spacing 5 Visual and 4
+  Tactile rows fit 52 mm. `tests/test_rows_fit.py` pins the block, the
+  sentences and the constants against the web repository and evaluates the
+  models on the web repository's cases.
+
 - **A fixed-gear MakerWorld upload for Embosser Version 2 (2026-10-07).**
   `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2_Fixed_Gears.scad`
   builds each cylinder with its top and bottom drive gears on. MakerWorld
