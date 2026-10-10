@@ -7,6 +7,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.12.0] - 2026-10-09
+
+Parity with the web generator through 2026-10-09. Renders do not change,
+except that rows which would run off the card or the cylinder now stop the
+model with the web generator's own sentence (Added, below). The Customizer
+follows the web app's layout with every description on one line (Changed and
+Fixed, below), and Embosser Version 2 gains a fixed-gear MakerWorld upload.
+
+### Added
+
+- **Rows that would run off the card or the cylinder stop the model
+  (2026-10-09, Brennen's decision, matching the web generator).** In all four
+  model files and the regenerated fixed-gear upload: the braille rows' dots
+  must stay on the 52 mm card and the per-row tactile arrows on the barrel,
+  with `braille_y_adjust` counted. Otherwise an assert stops the render with
+  the web generator's own sentence, which says how much height the rows need,
+  for example "These 6 rows need 56.8 mm of the cylinder's 52 mm height, so
+  the top and bottom rows would run off the ends. Use fewer rows, a smaller
+  line spacing, or a taller cylinder." Before, too many rows rendered with the
+  outer dots or arrows past the ends. At the default spacing 5 Visual and 4
+  Tactile rows fit 52 mm. `tests/test_rows_fit.py` pins the block, the
+  sentences and the constants against the web repository and evaluates the
+  models on the web repository's cases.
+
+- **A fixed-gear MakerWorld upload for Embosser Version 2 (2026-10-07).**
+  `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2_Fixed_Gears.scad`
+  builds each cylinder with its top and bottom drive gears on. MakerWorld
+  takes no mesh files: Brennen's test upload of the desktop file showed the
+  cylinders with no gears, only the hidden weld rings, notch fills and vent,
+  because `assets/v2_gears_a.stl` and `_b.stl` could not load. This file
+  carries the two meshes as polyhedron data, every coordinate exact, so its
+  render matches the desktop build's fused roller in triangle count, vertex
+  cloud, volume and area. `scripts/build_makerworld_fixed_gears.py` writes it
+  from the standard Version 2 upload, which keeps its gear switch hidden;
+  `tests/test_makerworld_fixed_gears.py` fails while it is out of date and
+  compares a render with the desktop build. The cost: about 3 MB, and a render
+  takes about twice as long as the standard upload's.
+
+### Changed
+
+- **The Customizer follows the web app's layout (2026-10-07, Brennen's
+  rule).** In all four model files: Gears and Card Sides first, then the front
+  text, then the back text in a new Back of Card - Pre-Translated Braille tab;
+  every dial the web app keeps under Expert Mode now sits in an "Expert Mode - "
+  tab, in the web app's order (Cylinders to Generate, Card Thickness, Row
+  Indicator Style, Shape Selection, Braille Spacing, Braille Dot Adjustments,
+  Surface Dimensions - renamed from Cylinder Dimensions to the web app's name -
+  and Version 2 Keyed Cutouts). The interpoint offsets, which the web app never
+  shows, left Card Sides for Expert Mode - Card Sides; Rendering Quality became
+  Expert Mode - Rendering Quality; the TEXT TOO LONG switch joined Braille
+  Spacing. `tests/test_customizer_layout.py` pins the order. Parameter names,
+  defaults and ranges are unchanged, so saved Customizer settings and `-D`
+  overrides keep working, and renders do not change.
+
+### Fixed
+
+- **Every Customizer description shows in full (2026-10-07).** OpenSCAD and
+  MakerWorld show only the one comment line directly above a dial, so a
+  wrapped description reached users as its last fragment ("exactly as they
+  are.", "fixed in the Hidden section below."), a section label became the
+  description of the dial under it, and text written after a slider's range
+  never showed. Each description is now one line with the same words; the
+  Line 1 hint drops "https://", which the Customizer cut at the "//". Five
+  were still too long for the desktop Customizer, which hid their last
+  wrapped line: integrated gears, double sided, Back Line 1, render both
+  plates and indicator mode now have shorter wording, each signed by Brennen
+  on 2026-10-07. `tests/test_customizer_layout.py` holds the rule and pins
+  the five.
+
 ## [2.11.0] - 2026-10-01
 
 Parity with the web generator through 2026-10-01. With gears off the Version 1

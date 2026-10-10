@@ -1,16 +1,24 @@
-# MakerWorld Listing — Embosser Version 2 (ROUGH DRAFT)
+# MakerWorld Listing — Embosser Version 2 (SIGNED TEXT, NOT YET POSTED)
 
-> **ROUGH DRAFT — DO NOT PUBLISH YET.** Every block below is either quoted
-> verbatim from wording Brennen has already signed off (marked **SIGNED**) or
-> is new draft text awaiting his review (marked **DRAFT**). Accessibility
-> rule: user-facing text is never finalized without his sign-off. The
+> **SIGNED TEXT — NOT POSTED YET.** Every block below is wording Brennen has
+> signed (marked **SIGNED** with its date). Accessibility rule: user-facing
+> text is never finalized without his sign-off, and a reworded block goes
+> back to DRAFT. The photos, the license and posting are his; the
 > pre-publish checklist is at the bottom.
+
+Fact-checked against v2.11.0 on 2026-10-02 and signed the same day.
 
 **Upload file:** `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`
 (a test-guarded build of the canonical root
 `Braille_Cylinder_STL_Generator_EmbosserV2.scad` under the same three-layer
 sync model as the Version 1 upload, with the fixed-gear switch hidden because
 MakerWorld cannot carry the gear assets; see `makerworld/README.md`).
+
+**Second upload file (2026-10-07):**
+`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2_Fixed_Gears.scad`,
+generated from the first with the gears on and the two gear meshes written into
+the file, for the fixed-gear housing. No block below mentions it yet; a line
+for "How to use it" needs drafting and Brennen's sign-off before posting.
 
 ---
 
@@ -20,7 +28,7 @@ MakerWorld cannot carry the gear assets; see `makerworld/README.md`).
 
 ---
 
-## Short description — DRAFT
+## Short description — SIGNED (2026-10-02)
 
 Parametric braille embossing cylinders for the Embosser Version 2 machine.
 Type nothing here that isn't braille: paste pre-translated Unicode braille,
@@ -30,7 +38,7 @@ Double-sided (interpoint) embossing included.
 
 ---
 
-## Full description — DRAFT (signed passages inset and marked)
+## Full description — SIGNED (2026-10-02; the inset was signed on 2026-08-28)
 
 This model generates the two rolling cylinders — an Embossing Plate and a
 Counter Plate — that press braille dots into business-card stock in the
@@ -47,7 +55,7 @@ Embosser Version 2 machine.
 > (2026-09-01). *(The signed 2026-08-28 "work-in-progress prototype" sentence
 > was dropped on Brennen's instruction, 2026-09-21.)*
 
-**What each cylinder has** — DRAFT:
+**What each cylinder has** — SIGNED (2026-10-02):
 
 - A 30.8 × 54 mm barrel. The extra height is a 1 mm shelf past each edge of
   the 52 mm card, so a card that rolls in slightly off-axis rides the shelf
@@ -60,12 +68,12 @@ Embosser Version 2 machine.
 - Up to 4 rows of braille per face, at standard braille spacing
   (2.5 mm dot / 6.5 mm cell / 10 mm line).
 
-**Compatibility warning — DRAFT (facts from the signed status note):**
-The holes fit **only gears with R14 pegs** (the v7.2 gear set). None of the
+**Compatibility warning — SIGNED (2026-10-02):**
+The holes fit **only gears with R14 pegs** (the v7.2 gear set, also called v8). None of the
 earlier v7 pegs — the six-scallop star, the hexagon, or the 15 × 15 mm
 squares — will enter an R14 hole.
 
-**How to use it** — DRAFT:
+**How to use it** — SIGNED (2026-10-02):
 
 1. Translate your text at branah.com/braille-translator (Grade 2
    recommended; select **Unicode Braille**, not ASCII). Or use the web app,
@@ -73,20 +81,23 @@ squares — will enter an R14 hole.
 2. Paste the braille into `Line_1`–`Line_4`.
 3. Pick `paper_thickness_preset` for your card stock: `0.4mm` (default) or
    `0.3mm`.
-4. Render: one render gives the pair, the **Embossing Plate** and the
+4. Row markers default to the tactile seam arrow, which a blind user can
+   feel. Set `indicator_mode` to `Visual` for letter and triangle markers on
+   single-sided cards.
+5. Render: one render gives the pair, the **Embossing Plate** and the
    **Counter Plate** side by side. For one plate at a time, set
    `render_both_plates` to `Off` and choose `plate_type`.
-5. For double-sided cards, set `double_sided` to `On` and fill
+6. For double-sided cards, set `double_sided` to `On` and fill
    `Back_Line_1`–`Back_Line_4`. Each cylinder then carries its own face's
    raised dots plus one recessed seat for every dot the other cylinder
    raises.
-6. If a printed gear peg binds in its hole, raise that gear's dial —
+7. If a printed gear peg binds in its hole, raise that gear's dial —
    `key_clearance_a1_mm`, `_a2_mm`, `_b1_mm` or `_b2_mm` (default 0.075 mm,
    steps of 0.005) — and reprint the cylinder; lower it if the peg is loose.
    The other three holes, the nub and the sockets deliberately do not move
    with it.
 
-**Print notes — DRAFT, CONFIRM BEFORE PUBLISHING:**
+**Print notes — SIGNED (2026-10-02):**
 
 - Print each cylinder standing on end (the keyed sockets are shaped for a
   vertically printed barrel).
@@ -94,19 +105,19 @@ squares — will enter an R14 hole.
 
 ---
 
-## Media / images shot list — DRAFT (alt text drafts included, all await review)
+## Media / images shot list — alt texts SIGNED (2026-10-02); photos not taken yet
 
-| # | Shot | Draft alt text |
+| # | Shot | Alt text |
 |---|------|----------------|
-| 1 | Hero: both cylinders side by side, braille dots facing camera | "Two yellow 3D-printed cylinders standing upright, each covered in rows of raised braille dots." |
+| 1 | Hero: both cylinders side by side, braille dots facing camera | "Two 3D-printed cylinders standing upright side by side: one covered in rows of raised braille dots, the other in matching rows of small recesses." |
 | 2 | Top face close-up of Cylinder A: keyed hole, countersink, triangle nub | "Close-up of a cylinder's top face showing a square keyed hole with a chamfered mouth and a small triangular nub near the rim." |
 | 3 | Gear seated on a cylinder end (requires printed v7.2 gear) | "A printed gear seated flush on the end of a cylinder, its peg inside the keyed hole." |
-| 4 | Customizer screenshot: the four Line fields and the preset dropdown | "MakerWorld parameter panel with four braille text fields, a card-stock preset dropdown, and a plate-type choice." |
+| 4 | Customizer screenshot: the Card Sides switch, the four Line fields and the four Back Line fields, with the Expert Mode groups below | **DRAFT (2026-10-07, the Customizer now follows the web app's layout; the signed text named sections that moved):** "MakerWorld parameter panel showing the Card Sides switch, four braille text fields and four back-of-card fields, with the Expert Mode groups below them." |
 | 5 | An embossed business card produced by the pair (double-sided if possible) | "A business card held up to raking light, showing crisp embossed braille dots across four rows." |
 
 ---
 
-## Suggested tags — DRAFT
+## Suggested tags — SIGNED (2026-10-02)
 
 braille, accessibility, assistive-technology, embosser, tactile,
 business-card, parametric, openscad
@@ -115,13 +126,15 @@ business-card, parametric, openscad
 
 ## Pre-publish checklist (for Brennen)
 
-- [ ] Review and sign every **DRAFT** block above (a11y rule: no
-      user-facing text ships unsigned).
+- [x] Review and sign every block above — signed by Brennen on 2026-10-02
+      (a11y rule: no user-facing text ships unsigned).
 - [x] Print-test a 30.8 × 54 pair — done and **passed** (Brennen,
       2026-09-01); the 54 mm warning that stood in the print notes is
       deleted.
-- [ ] Confirm the print-orientation advice.
-- [ ] Take the five photos/screenshots; approve or rewrite the alt text.
+- [x] Confirm the print-orientation advice — confirmed by signing the Print
+      notes, 2026-10-02.
+- [ ] Take the five photos/screenshots; the alt texts are signed, so check
+      each still describes its photo, and reword it (back to DRAFT) if not.
 - [ ] Decide the listing's license and profile settings on MakerWorld.
 - [ ] After posting, update `docs/specifications/EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md`
       §12 in the web repo ("there is no MakerWorld listing" becomes a link).

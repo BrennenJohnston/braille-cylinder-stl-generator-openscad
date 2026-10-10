@@ -82,11 +82,14 @@ its canonical file, and every parameter default above it equal, by
 
 3. **Configure**:
    - Paste braille into `Line_1`, `Line_2`, etc.
+   - The Customizer follows the web app's layout: Gears, Card Sides and the
+     text first, then the **Expert Mode** groups in the web app's order.
    - Both cylinders render side by side by default. For one plate, set
      `render_both_plates` to `Off` and choose `plate_type`: Embossing Plate or
-     Counter Plate
-   - Choose `paper_thickness_preset`: 0.4mm, 0.3mm, or Custom
-   - Choose `dot_shape`: Rounded or Cone
+     Counter Plate (**Expert Mode - Cylinders to Generate**)
+   - Choose `paper_thickness_preset`: 0.4mm, 0.3mm, or Custom (**Expert Mode -
+     Card Thickness**)
+   - Choose `dot_shape`: Rounded or Cone (**Expert Mode - Shape Selection**)
 
 4. **Generate**:
    - Render: F6 (or Design → Render)
@@ -149,7 +152,8 @@ v2.10.0, as the web app does for Version 2.
   2.8.2 it steps round each raised arrow on the first-cell side instead of
   cutting through it, so the arrows keep their points (in 2.8.1 each lost
   its point to the groove)
-- Five sliders tune it: `tactile_indicator_width` / `_length` / `_raise`, plus
+- Five sliders under **[Expert Mode - Row Indicator Style]** tune it:
+  `tactile_indicator_width` / `_length` / `_raise`, plus
   `tactile_recess_clearance` and `tactile_recess_extra_depth` for the counter
   plate's fit
 
@@ -163,7 +167,7 @@ slicer's default *Aligned* seam mode snaps each layer's seam to a concave
 corner, and on a smooth barrel the only corners are where dots meet the
 surface — a seam inside a dot ruins that dot on paper. The groove gives the
 slicer a better corner, so no seam painting is needed. It is **On by default**
-on both plates (`seam_channel` in **[Expert Mode - Cylinder Dimensions]**; set
+on both plates (`seam_channel` in **[Expert Mode - Surface Dimensions]**; set
 it to `Off` for a plain surface). Its size is a constant, not a dial, the same
 numbers as the web app. When it cannot fit — the free window under 1.5 mm, as
 with 15 columns in Tactile mode, or too little wall under it — it is left out
@@ -269,10 +273,11 @@ the model says so on the console and in red text above the cylinder.
    translated exactly like the front; this version still has no automatic
    translation.
 2. Paste the front braille into `Line_1`, `Line_2`, … as usual.
-3. Open the **`[Card Sides]`** tab, set `double_sided` to `On`,
-   and paste the back braille into `Back_Line_1` – `Back_Line_10`. **All ten
-   back-line fields are in that one tab** — there is no back-side counterpart to
-   the front's `[More Braille Lines (Advanced)]` tab.
+3. Open the **`[Card Sides]`** tab and set `double_sided` to `On`, then paste
+   the back braille into `Back_Line_1` – `Back_Line_10` in the
+   **`[Back of Card - Pre-Translated Braille]`** tab. **All ten back-line
+   fields are in that one tab** — there is no back-side counterpart to the
+   front's `[More Braille Lines (Advanced)]` tab.
 4. Check `paper_thickness_preset` matches the card stock you will emboss (see
    the footprint table below).
 5. **Render.** One render builds both cylinders side by side; export it as
@@ -291,8 +296,9 @@ naming the `Back_Line` that overflowed.
 ### Interpoint offsets
 
 The two faces are offset from each other so a dot on one side never lands on a
-dot on the other. `interpoint_offset_x_mm` and `interpoint_offset_y_mm` both
-default to **1.25 mm** and are adjustable over **1.15–1.35 mm**.
+dot on the other. `interpoint_offset_x_mm` and `interpoint_offset_y_mm`, under
+**[Expert Mode - Card Sides]**, both default to **1.25 mm** and are adjustable
+over **1.15–1.35 mm**. The web app keeps them at 1.25 mm and shows no dial.
 
 Clearance between a raised dot and its neighbouring recess is **widest at
 1.25 mm and falls off symmetrically toward both ends** of that range — so if a
@@ -390,7 +396,7 @@ Version 2 upload hides the switch for the same reason as the Version 1 build.
 
 ## 🔄 Rendering Both Plates At Once
 
-`render_both_plates` (in **[Cylinders to Generate]**) builds the **complete
+`render_both_plates` (in **[Expert Mode - Cylinders to Generate]**) builds the **complete
 pair in one render** — Cylinder A, the embossing plate, on the left, and
 Cylinder B, the counter plate, on the right. It is **On by default** since
 v2.9.0, matching the web app, whose Generate builds both cylinders. Set it to
@@ -503,8 +509,9 @@ None of the earlier star, hexagon or 15 x 15 mm square pegs will enter an R14
 hole, so a cylinder printed from this file pairs only with gears cut to the R14
 spec.
 
-Four dials are new, one per gear: **`key_clearance_a1_mm`, `_a2_mm`, `_b1_mm`
-and `_b2_mm`** (the shared `key_clearance_mm` they replaced in 2.11.0 is gone),
+Four dials are new, one per gear, under **[Expert Mode - Version 2 Keyed
+Cutouts]**: **`key_clearance_a1_mm`, `_a2_mm`, `_b1_mm` and `_b2_mm`** (the
+shared `key_clearance_mm` they replaced in 2.11.0 is gone),
 each 0.075 mm per side by default and adjustable from 0 to 0.5 mm in steps of
 0.005. Each grows ITS gear's hole outward, and ONLY that hole, so one peg's fit
 can be tuned without moving the other three - none of them has touched the nub
@@ -530,7 +537,10 @@ since 2026-09-21 it also offers **[Gears]** — the fused Version 2
 roller, see [Integrated Gears](#️-integrated-gears). The MakerWorld
 Version 2 upload, `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`,
 is this file with that switch hidden, kept in step by
-`tests/test_makerworld_sync.py`.
+`tests/test_makerworld_sync.py`; the fixed-gear upload,
+`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2_Fixed_Gears.scad`, is
+generated from it with the gears on and their meshes written into the file (see
+[`makerworld/README.md`](makerworld/README.md)).
 
 ## Rendering feels very slow
 
@@ -566,7 +576,7 @@ What helps:
   `render_both_plates` to `Off` — it is On by default, so the counter plate
   renders too — and turn it back On for the pair when you need it.
 - For a smoother preview while editing, set `render_quality = "Low"`
-  (Rendering Quality section) — **and set it back to your intended quality
+  (Expert Mode - Rendering Quality section) — **and set it back to your intended quality
   before exporting**, because unlike a preview-only trick this genuinely
   changes the exported dot tessellation.
 - Trust F6 for the real result: a slow, choppy preview does not make the
@@ -722,5 +732,5 @@ For general braille embossing questions, see the [web app](https://braille-cylin
 
 ---
 
-**Version**: 2.11.0  
-**Last Updated**: 2026-10-01
+**Version**: 2.12.0  
+**Last Updated**: 2026-10-09
