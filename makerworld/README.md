@@ -8,6 +8,7 @@ STL Generator for uploading to
 |------|---------|
 | [`Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`](Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad) | The single `.scad` file to upload to the **Version 1** MakerWorld listing. |
 | [`Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`](Braille_Cylinder_STL_Generator_MakerWorld_v2.scad) | The single `.scad` file to upload to the **Embosser Version 2** MakerWorld listing. |
+| [`Braille_Cylinder_STL_Generator_MakerWorld_v2_Fixed_Gears.scad`](Braille_Cylinder_STL_Generator_MakerWorld_v2_Fixed_Gears.scad) | A second upload for the **Embosser Version 2** listing: each cylinder comes out with its drive gears on, for the fixed-gear housing. Generated; see below. |
 
 ## Embosser Version 2
 
@@ -39,7 +40,34 @@ pins the hidden switch. **Re-sync after editing the canonical file:** copy it
 from the marker to EOF over this file's body, carry across any changed
 declaration above the marker, and keep `integrated_gears` in the Hidden tab.
 Then render this file once headless (`scripts\scad-check.ps1 -File
-makerworld\Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`).
+makerworld\Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`) and rebuild the
+fixed-gear upload from it (next section).
+
+## Embosser Version 2 with fixed gears
+
+`Braille_Cylinder_STL_Generator_MakerWorld_v2_Fixed_Gears.scad` is a second
+upload for the Version 2 listing, for the fixed-gear housing: each cylinder
+comes out as one solid roller with its top and bottom drive gears on, the web
+app's "Simplified: gears fixed to the cylinders". MakerWorld takes no mesh
+files, so the two gear meshes are written into the file as polyhedron data,
+every coordinate exact. A render matches the desktop build's fused roller in
+triangle count, vertex cloud, volume and area.
+
+The file is **generated**; never edit it by hand. After any change to
+`Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` or to
+`../assets/v2_gears_a.stl` / `_b.stl`, run
+`python scripts/build_makerworld_fixed_gears.py`;
+`tests/test_makerworld_fixed_gears.py` fails while the file is out of date.
+Apart from the meshes it differs from the standard upload in three ways: its
+header, `integrated_gears` switched on in the Hidden tab, and the cylinder size
+and the four key clearances hidden as well, because the gears fit only the
+30.8 x 54 mm barrel and a fused roller has no keyed holes.
+
+Carrying the meshes has a cost: the file is about 3 MB, and a render takes
+about twice as long as the standard upload's (both plates, measured locally on
+2026-10-07: about 3 s for the standard file, about 6 s for this one).
+MakerWorld does not publish its time limit, so check that a both-plates render
+finishes there before you publish the file.
 
 **Listing label (S-V12) — signed off by Brennen 2026-08-28; reword only with
 his sign-off:**
@@ -89,7 +117,7 @@ all above the marker, and there are four of them:
   ```
 
 - **A MakerWorld-specific header block** in place of the desktop header.
-- **A three-line `dot_shape` comment** explaining this build's Rounded default.
+- **A `dot_shape` description** that explains this build's Rounded default.
 - **`integrated_gears` sits in a `[Hidden]` tab** here instead of a visible one,
   so the Customizer never offers it. The parameter itself is identical in both
   files — only which tab it appears under differs, which is invisible to the
@@ -117,12 +145,15 @@ test run rather than by counting lines.)
 3. Upload **only** `Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`.
 4. In the generated parameter panel:
    - Paste braille into `Line_1`, `Line_2`, … (do **not** type plain English).
-   - Both cylinders render side by side by default. For one plate, set
-     `render_both_plates` to `Off` and choose `plate_type`: *Embossing Plate*
-     or *Counter Plate*.
-   - Choose `indicator_mode`: `Visual` (the Version 1 default) or `Tactile`
-     (the Version 2 upload's default) — see below.
-   - Choose `paper_thickness_preset`: `0.4mm`, `0.3mm`, or `Custom`.
+   - The rest sits in the **Expert Mode** groups below the text, in the web
+     app's order. Both cylinders render side by side by default; for one plate,
+     set `render_both_plates` to `Off` and choose `plate_type` (*Embossing
+     Plate* or *Counter Plate*) under **Expert Mode - Cylinders to Generate**.
+   - Choose `indicator_mode` under **Expert Mode - Row Indicator Style**:
+     `Visual` (the Version 1 default) or `Tactile` (the Version 2 upload's
+     default) — see below.
+   - Choose `paper_thickness_preset` under **Expert Mode - Card Thickness**:
+     `0.4mm`, `0.3mm`, or `Custom`.
    - `dot_shape` is already set to `Rounded`; switch to `Cone` if preferred.
 5. Generate / render and download the STL.
 
@@ -134,7 +165,7 @@ test run rather than by counting lines.)
 
 ## Both plates in one render
 
-`render_both_plates` (in **[Cylinders to Generate]**, default `On` since v2.9.0,
+`render_both_plates` (in **[Expert Mode - Cylinders to Generate]**, default `On` since v2.9.0,
 matching the web app) builds Cylinder A, the embossing plate, on the left and
 Cylinder B, the counter plate, on the right in a single render. `plate_type` is
 ignored while it is `On`.
@@ -167,8 +198,9 @@ If you want geared cylinders, use either:
   the `assets/` folder beside it, or
 - the **web app**, which generates them in the browser.
 
-The same limit applies to the Version 2 upload above: its `integrated_gears`
-switch is hidden for the same reason.
+The standard Version 2 upload hides its `integrated_gears` switch for the same
+reason. For Version 2 there is a third way: the fixed-gear upload (above)
+carries the gear meshes inside the file.
 
 Everything else on this page — braille, both plates, double-sided cards, the
 tactile indicators — works here exactly as it does on the desktop.
@@ -179,16 +211,18 @@ tactile indicators — works here exactly as it does on the desktop.
 
 ## Double-sided cards
 
-The `[Card Sides]` tab embosses braille on **both** faces of one
-card in a single pass. Set `double_sided` to `On`, translate the back of the
+A double-sided card has braille embossed on **both** faces in a single pass.
+Set `double_sided` to `On` in the `[Card Sides]` tab, translate the back of the
 card the same way as the front, and paste it into `Back_Line_1` –
-`Back_Line_10` — all ten are in that one tab. One render builds both
+`Back_Line_10` in the `[Back of Card - Pre-Translated Braille]` tab, which
+holds all ten. One render builds both
 cylinders: the Embossing Plate is Cylinder A, the Counter Plate is Cylinder B,
 and they only work as the pair you rendered from one set of settings.
 
 Row indicators are forced to **Tactile** in this mode, and the double-sided dot
 and recess sizes are fixed — they follow `paper_thickness_preset` and there are
-deliberately no dials for them. The two interpoint offset sliders default to
+deliberately no dials for them. The two interpoint offset sliders, under
+`[Expert Mode - Card Sides]`, default to
 1.25 mm each; clearance is widest there and falls off toward both ends of the
 1.15–1.35 mm range, so if `DOTS TOO CLOSE` appears, move both back toward
 1.25 mm rather than up or down.
@@ -224,7 +258,8 @@ which cylinder you are holding. The arrow is deliberately lower than the
 braille dots (0.5 mm vs 1.0 mm) so the dots, not the indicator, take the
 rolling pressure.
 
-Five Tactile-only sliders are available if you need to tune the fit:
+Five Tactile-only sliders under `[Expert Mode - Row Indicator Style]` are
+available if you need to tune the fit:
 `tactile_indicator_width`, `tactile_indicator_length`,
 `tactile_indicator_raise`, `tactile_recess_clearance`, and
 `tactile_recess_extra_depth`. The defaults are validated; raise the two recess
@@ -283,7 +318,8 @@ change. Do it manually (no codegen step is committed) and let
 2. **Re-sync everything else above the marker.** Two parts, both required:
 
    a. **The Customizer parameters** — if any parameter names, defaults, ranges,
-      or section headings changed upstream, copy them across. Both files
+      or section headings changed upstream, copy them across;
+      `tests/test_customizer_layout.py` pins the tab order in every build. Both files
       currently default `dot_shape` to `"Rounded"`; if the upstream default ever
       diverges, decide deliberately which default this single-file build should
       ship.

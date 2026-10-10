@@ -14,6 +14,12 @@ Fact-checked against v2.11.0 on 2026-10-02 and signed the same day.
 sync model as the Version 1 upload, with the fixed-gear switch hidden because
 MakerWorld cannot carry the gear assets; see `makerworld/README.md`).
 
+**Second upload file (2026-10-07):**
+`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2_Fixed_Gears.scad`,
+generated from the first with the gears on and the two gear meshes written into
+the file, for the fixed-gear housing. No block below mentions it yet; a line
+for "How to use it" needs drafting and Brennen's sign-off before posting.
+
 ---
 
 ## Listing title — SIGNED (S-V12, 2026-08-28); "prototype" dropped on Brennen's instruction 2026-09-21
@@ -106,7 +112,7 @@ squares — will enter an R14 hole.
 | 1 | Hero: both cylinders side by side, braille dots facing camera | "Two 3D-printed cylinders standing upright side by side: one covered in rows of raised braille dots, the other in matching rows of small recesses." |
 | 2 | Top face close-up of Cylinder A: keyed hole, countersink, triangle nub | "Close-up of a cylinder's top face showing a square keyed hole with a chamfered mouth and a small triangular nub near the rim." |
 | 3 | Gear seated on a cylinder end (requires printed v7.2 gear) | "A printed gear seated flush on the end of a cylinder, its peg inside the keyed hole." |
-| 4 | Customizer screenshot: the four Line fields and the sections below them, Card Sides to Card Thickness | "MakerWorld parameter panel showing four braille text fields above sections for Card Sides, Cylinders to Generate, Row Indicator Style and Card Thickness." |
+| 4 | Customizer screenshot: the Card Sides switch, the four Line fields and the four Back Line fields, with the Expert Mode groups below | **DRAFT (2026-10-07, the Customizer now follows the web app's layout; the signed text named sections that moved):** "MakerWorld parameter panel showing the Card Sides switch, four braille text fields and four back-of-card fields, with the Expert Mode groups below them." |
 | 5 | An embossed business card produced by the pair (double-sided if possible) | "A business card held up to raking light, showing crisp embossed braille dots across four rows." |
 
 ---

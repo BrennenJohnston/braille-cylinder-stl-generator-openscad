@@ -78,9 +78,10 @@ def test_indicator_mode_dropdown(scad_path):
         '`indicator_mode = "Visual"; // [Visual, Tactile]`. Visual is the '
         "default so existing models keep rendering unchanged."
     )
-    assert "/* [Row Indicator Style] */" in scad, (
+    assert "/* [Expert Mode - Row Indicator Style] */" in scad, (
         "Expected the tactile parameters grouped under their own "
-        "`/* [Row Indicator Style] */` Customizer section (the web app's name)."
+        "`/* [Expert Mode - Row Indicator Style] */` Customizer section (the "
+        "web app's name, inside its Expert Mode)."
     )
 
 
