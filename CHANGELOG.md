@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.12.0] - 2026-10-09
+
+Parity with the web generator through 2026-10-09. Renders do not change,
+except that rows which would run off the card or the cylinder now stop the
+model with the web generator's own sentence (Added, below). The Customizer
+follows the web app's layout with every description on one line (Changed and
+Fixed, below), and Embosser Version 2 gains a fixed-gear MakerWorld upload.
+
 ### Added
 
 - **Rows that would run off the card or the cylinder stop the model

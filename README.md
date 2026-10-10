@@ -732,5 +732,5 @@ For general braille embossing questions, see the [web app](https://braille-cylin
 
 ---
 
-**Version**: 2.11.0  
-**Last Updated**: 2026-10-01
+**Version**: 2.12.0  
+**Last Updated**: 2026-10-09
